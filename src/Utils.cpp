@@ -66,58 +66,58 @@ void readSTIPFeatures(const std::string& filePath,
                       std::vector<cv::Vec3i>& points) {
     std::string file = readFile(filePath);
     std::vector<std::string> lines = string::split(file, '\n');
-    for (const auto& line : lines) {
-        if (line.find('#') != std::string::npos) {
-            continue;
-        }
+    // for (const auto& line : lines) {
+    //    if (line.find('#') != std::string::npos) {
+    //        continue;
+    //    }
 
-        std::vector<std::string> splitResults = string::split(line, ' ');
+    //    std::vector<std::string> splitResults = string::split(line, ' ');
 
-        if (splitResults.size() == 1) {
-            break;
-        } else if (splitResults.size() != 172) {
-            break;
-        }
+    //    if (splitResults.size() == 1) {
+    //        break;
+    //    } else if (splitResults.size() != 172) {
+    //        break;
+    //    }
 
-        int xIndex = 5;
-        int yIndex = 4;
-        int tIndex = 6;
-        cv::Vec3i centerPoint;
-        boost::spirit::qi::parse(std::begin(splitResults.at(tIndex)),
-                                 std::end(splitResults.at(tIndex)), boost::spirit::qi::int_,
-                                 centerPoint(T));
-        boost::spirit::qi::parse(std::begin(splitResults.at(yIndex)),
-                                 std::end(splitResults.at(yIndex)), boost::spirit::qi::int_,
-                                 centerPoint(Y));
-        boost::spirit::qi::parse(std::begin(splitResults.at(xIndex)),
-                                 std::end(splitResults.at(xIndex)), boost::spirit::qi::int_,
-                                 centerPoint(X));
+    //    int xIndex = 5;
+    //    int yIndex = 4;
+    //    int tIndex = 6;
+    //    cv::Vec3i centerPoint;
+    //    boost::spirit::qi::parse(std::begin(splitResults.at(tIndex)),
+    //                             std::end(splitResults.at(tIndex)), boost::spirit::qi::int_,
+    //                             centerPoint(T));
+    //    boost::spirit::qi::parse(std::begin(splitResults.at(yIndex)),
+    //                             std::end(splitResults.at(yIndex)), boost::spirit::qi::int_,
+    //                             centerPoint(Y));
+    //    boost::spirit::qi::parse(std::begin(splitResults.at(xIndex)),
+    //                             std::end(splitResults.at(xIndex)), boost::spirit::qi::int_,
+    //                             centerPoint(X));
 
-        int hogBeginIndex = 9;
-        int numberOfHogDimension = 72;
-        Eigen::MatrixXf hog(1, numberOfHogDimension);
-        for (int i = 0; i < numberOfHogDimension; ++i) {
-            boost::spirit::qi::parse(std::begin(splitResults.at(i + hogBeginIndex)),
-                                     std::end(splitResults.at(i + hogBeginIndex)),
-                                     boost::spirit::qi::double_, hog.coeffRef(0, i));
-        }
+    //    int hogBeginIndex = 9;
+    //    int numberOfHogDimension = 72;
+    //    Eigen::MatrixXf hog(1, numberOfHogDimension);
+    //    for (int i = 0; i < numberOfHogDimension; ++i) {
+    //        boost::spirit::qi::parse(std::begin(splitResults.at(i + hogBeginIndex)),
+    //                                 std::end(splitResults.at(i + hogBeginIndex)),
+    //                                 boost::spirit::qi::double_, hog.coeffRef(0, i));
+    //    }
 
-        int hofBeginIndex = 81;
-        int numberOfHofDimension = 90;
-        Eigen::MatrixXf hof(1, numberOfHofDimension);
-        for (int i = 0; i < numberOfHofDimension; ++i) {
-            boost::spirit::qi::parse(std::begin(splitResults.at(i + hofBeginIndex)),
-                                     std::end(splitResults.at(i + hofBeginIndex)),
-                                     boost::spirit::qi::double_, hof.coeffRef(0, i));
-        }
+    //    int hofBeginIndex = 81;
+    //    int numberOfHofDimension = 90;
+    //    Eigen::MatrixXf hof(1, numberOfHofDimension);
+    //    for (int i = 0; i < numberOfHofDimension; ++i) {
+    //        boost::spirit::qi::parse(std::begin(splitResults.at(i + hofBeginIndex)),
+    //                                 std::end(splitResults.at(i + hofBeginIndex)),
+    //                                 boost::spirit::qi::double_, hof.coeffRef(0, i));
+    //    }
 
-        std::vector<Eigen::MatrixXf> featureVectors;
-        featureVectors.push_back(hog);
-        featureVectors.push_back(hof);
+    //    std::vector<Eigen::MatrixXf> featureVectors;
+    //    featureVectors.push_back(hog);
+    //    featureVectors.push_back(hof);
 
-        features.push_back(featureVectors);
-        points.push_back(centerPoint);
-    }
+    //    features.push_back(featureVectors);
+    //    points.push_back(centerPoint);
+    //}
 }
 
 void saveXYTPoint(cv::FileStorage& fileStorage, const std::string& name, const cv::Vec3f& vec) {

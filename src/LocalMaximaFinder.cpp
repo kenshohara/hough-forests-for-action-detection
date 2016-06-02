@@ -141,7 +141,7 @@ LocalMaxima LocalMaximaFinder::combineNeighborLocalMaxima(const LocalMaxima& loc
 
     KDE kde(localMaximumPoints, weights, bandwidths, bandDimensions);
     kde.buildTree();
-    
+
     std::vector<int> indices;
     for (int i = 0; i < localMaximumPoints.size(); ++i) {
         std::vector<Match> matches = kde.findNeighborPoints(localMaximumPoints.at(i));
@@ -150,9 +150,11 @@ LocalMaxima LocalMaximaFinder::combineNeighborLocalMaxima(const LocalMaxima& loc
 
         bool doesNeighborExist = false;
         for (int j = 0; j < matches.size(); ++j) {
-            if (std::find(std::begin(indices), std::end(indices), matches.at(j).first) != std::end(indices)) {
-                doesNeighborExist = isNeighbor(cv::Vec4f(localMaximumPoints.at(i).data()), 
-                                               cv::Vec4f(localMaximumPoints.at(matches.at(j).first).data()));
+            if (std::find(std::begin(indices), std::end(indices), matches.at(j).first) !=
+                std::end(indices)) {
+                doesNeighborExist =
+                        isNeighbor(cv::Vec4f(localMaximumPoints.at(i).data()),
+                                   cv::Vec4f(localMaximumPoints.at(matches.at(j).first).data()));
                 if (doesNeighborExist) {
                     break;
                 }
@@ -179,6 +181,5 @@ bool LocalMaximaFinder::isNeighbor(const cv::Vec4f& a, const cv::Vec4f& b) const
         return false;
     }
 }
-
 }
 }

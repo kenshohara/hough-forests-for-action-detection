@@ -79,8 +79,17 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
 
         for (int classLabel = 0; classLabel < totalLocalMaxima.size(); ++classLabel) {
             LocalMaxima oneClassLocalMaxima(totalLocalMaxima.at(classLabel));
-            std::copy(std::begin(localMaxima.at(classLabel)), std::end(localMaxima.at(classLabel)), std::back_inserter(oneClassLocalMaxima));
-            totalLocalMaxima.at(classLabel) = finder_.combineNeighborLocalMaxima(oneClassLocalMaxima);
+            std::copy(std::begin(localMaxima.at(classLabel)), std::end(localMaxima.at(classLabel)),
+                      std::back_inserter(oneClassLocalMaxima));
+            totalLocalMaxima.at(classLabel) =
+                    finder_.combineNeighborLocalMaxima(oneClassLocalMaxima);
+        }
+    }
+
+    detectionResults.resize(totalLocalMaxima.size());
+    for (int classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
+        for (const auto& localMaximum : totalLocalMaxima.at(classLabel)) {
+            detectionResults.at(classLabel).push_back(DetectionResult(localMaximum));
         }
     }
 }

@@ -32,6 +32,7 @@ class LocalMaximaFinder {
     typedef std::pair<std::uint32_t, float> Match;
 
    public:
+    LocalMaximaFinder(){};
     LocalMaximaFinder(const std::vector<int>& steps, const std::vector<double>& scales,
                       double sigma, double tau, double scaleBandwidth, double threshold = 0.1,
                       int maxIteration = 50)

@@ -180,7 +180,7 @@ class KernelDensityEstimation {
         return calculateWeightedMean(point, totalWeight);
     }
 
-    Point calculateWeightedMean(const Point& point, float& density) const {
+    Point calculateWeightedMean(const Point& point, double& density) const {
         Point mean = calculateWeightedSum(point, density);
         if (density >= std::numeric_limits<double>::epsilon()) {
             for (int i = 0; i < DIM; ++i) {
@@ -191,7 +191,7 @@ class KernelDensityEstimation {
         return mean;
     }
 
-    Point calculateWeightedSum(const Point& point, float& density) const {
+    Point calculateWeightedSum(const Point& point, double& density) const {
         std::vector<std::pair<std::uint32_t, T>> matches = findNeighborPoints(point);
 
         density = 0.0;

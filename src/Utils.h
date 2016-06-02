@@ -38,7 +38,6 @@ enum FeatureType {
 std::vector<std::string> getFeatureNames(FeatureType type);
 
 namespace string {
-
 std::vector<std::string> split(const std::string& str, char delimiter);
 }
 
