@@ -38,7 +38,8 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
             auto feature = std::make_shared<randomforests::STIPNode::FeatureType>(
                     features.at(i), points.at(i), cv::Vec3i(), std::make_pair(0.0, 0.0), 0);
             if (featuresMap.count(points.at(i)(T)) == 0) {
-                featuresMap.insert(std::make_pair(points.at(i)(T), std::vector<FeaturePtr>{feature}));
+                featuresMap.insert(
+                        std::make_pair(points.at(i)(T), std::vector<FeaturePtr>{feature}));
             } else {
                 featuresMap.at(points.at(i)(T)).push_back(feature);
             }
