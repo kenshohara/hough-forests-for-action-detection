@@ -76,7 +76,7 @@ class KernelDensityEstimation {
    private:
     std::unique_ptr<KDTree> kdTree_;
     DataAdaptor<T, DIM> dataAdaptor_;
-    std::vector<double> weights_;
+    std::vector<float> weights_;
     std::vector<double> bandwidths_;
     std::vector<int> bandDimensions_;
     std::vector<std::vector<double>> bandKernelLookupTable_;
@@ -105,7 +105,7 @@ class KernelDensityEstimation {
         init();
     };
 
-    KernelDensityEstimation(const std::vector<Point>& data, const std::vector<double>& weights,
+    KernelDensityEstimation(const std::vector<Point>& data, const std::vector<float>& weights,
                             const std::vector<double>& bandwidths,
                             const std::vector<int>& bandDimensions, int calculationRange = 3,
                             int kdTreeLeafSize = 10, int lookupTableSize_ = 100)
@@ -130,7 +130,7 @@ class KernelDensityEstimation {
         init();
     };
 
-    void addNewData(const Point& newData, double weight = 1.0) {
+    void addNewData(const Point& newData, float weight = 1.0) {
         dataAdaptor_.addNewData(newData);
         weights_.push_back(weight);
     }
@@ -180,7 +180,7 @@ class KernelDensityEstimation {
         return calculateWeightedMean(point, totalWeight);
     }
 
-    Point calculateWeightedMean(const Point& point, double& density) {
+    Point calculateWeightedMean(const Point& point, float& density) {
         Point mean = calculateWeightedSum(point, density);
         if (density >= std::numeric_limits<double>::epsilon()) {
             for (int i = 0; i < DIM; ++i) {
@@ -191,7 +191,7 @@ class KernelDensityEstimation {
         return mean;
     }
 
-    Point calculateWeightedSum(const Point& point, double& density) {
+    Point calculateWeightedSum(const Point& point, float& density) {
         std::vector<std::pair<std::uint32_t, T>> matches = findNeighborPoints(point);
 
         density = 0.0;
