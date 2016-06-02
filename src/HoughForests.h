@@ -89,13 +89,15 @@ class HoughForests {
 
    private:
     void initialize();
-    void calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex, std::vector<std::vector<VoteInfo>>& votesInfo) const;
+    void calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
+                        std::vector<std::vector<VoteInfo>>& votesInfo) const;
     std::vector<VoteInfo> calculateVotes(const FeaturePtr& feature, int scaleIndex,
                                          const std::vector<LeafPtr>& leavesData) const;
     cv::Vec3i calculateVotingPoint(const FeaturePtr& feature, double scale,
                                    const randomforests::STIPLeaf::FeatureInfo& featureInfo) const;
     void inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& votesInfo);
-    void getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& votesInfo, std::vector<std::pair<int, int>>& minMaxRanges) const;
+    void getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& votesInfo,
+                          std::vector<std::pair<int, int>>& minMaxRanges) const;
     std::vector<LocalMaxima> findLocalMaxima(const std::vector<std::pair<int, int>>& minMaxRanges);
     LocalMaxima findLocalMaxima(VotingSpace& votingSpace, int voteStartT, int voteEndT);
     std::vector<LocalMaxima> thresholdLocalMaxima(std::vector<LocalMaxima> localMaxima) const;

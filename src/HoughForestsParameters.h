@@ -43,7 +43,8 @@ class HoughForestsParameters {
     HoughForestsParameters(std::size_t width, std::size_t height, const std::vector<double>& scales,
                            int baseScale, int nClasses, double sigma, double tau,
                            double scaleBandwidth, int spatialStep, int temporalStep,
-                           int votesDeleteStep, int votesBufferLength, const std::vector<double>& scoreThresholds, bool hasNegativeClass,
+                           int votesDeleteStep, int votesBufferLength,
+                           const std::vector<double>& scoreThresholds, bool hasNegativeClass,
                            bool isBackprojection,
                            const randomforests::TreeParameters& treeParameters)
             : width_(width),
@@ -87,7 +88,7 @@ class HoughForestsParameters {
 
     int getVotesBufferLength() const { return votesBufferLength_; }
 
-    double getScoreThreshold(int classLabel) { return scoreThresholds_.at(classLabel); };
+    double getScoreThreshold(int classLabel) const { return scoreThresholds_.at(classLabel); };
 
     bool isBackprojection() const { return isBackprojection_; }
 

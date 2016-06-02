@@ -59,6 +59,7 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
     std::cout << "initialize" << std::endl;
     initialize();
 
+    std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
     for (int t = minT; t < maxT; ++t) {
         std::vector<std::vector<VoteInfo>> votesInfo;
         for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
@@ -74,8 +75,13 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
         getMinMaxVotingT(votesInfo, minMaxRanges);
 
         std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
+        localMaxima = thresholdLocalMaxima(localMaxima);
 
-
+        for (int classLabel = 0; classLabel < totalLocalMaxima.size(); ++classLabel) {
+            LocalMaxima oneClassLocalMaxima(totalLocalMaxima.at(classLabel));
+            std::copy(std::begin(localMaxima.at(classLabel)), std::end(localMaxima.at(classLabel)), std::back_inserter(oneClassLocalMaxima));
+            totalLocalMaxima.at(classLabel) = finder_.combineNeighborLocalMaxima(oneClassLocalMaxima);
+        }
     }
 }
 
@@ -84,8 +90,8 @@ void HoughForests::initialize() {
     std::vector<double> scales = parameters_.getScales();
     for (int i = 0; i < parameters_.getNumberOfPositiveClasses(); ++i) {
         votingSpaces_.push_back(VotingSpace(parameters_.getWidth(), parameters_.getHeight(),
-                                            scales.size(), scales,
-                                            parameters_.getVotesDeleteStep(), parameters_.getVotesBufferLength()));
+                                            scales.size(), scales, parameters_.getVotesDeleteStep(),
+                                            parameters_.getVotesBufferLength()));
     }
 
     std::vector<int> steps = {parameters_.getTemporalStep(), parameters_.getSpatialStep(),
@@ -94,15 +100,16 @@ void HoughForests::initialize() {
                                 parameters_.getScaleBandwidth());
 }
 
-void HoughForests::calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex, std::vector<std::vector<VoteInfo>>& votesInfo) const {
+void HoughForests::calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
+                                  std::vector<std::vector<VoteInfo>>& votesInfo) const {
     for (const auto& feature : features) {
         std::vector<LeafPtr> leavesData = randomForests_.match(feature);
         votesInfo.push_back(calculateVotes(feature, scaleIndex, leavesData));
     }
 }
 
-std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(const FeaturePtr& feature, int scaleIndex,
-                                                                 const std::vector<LeafPtr>& leavesData) const {
+std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(
+        const FeaturePtr& feature, int scaleIndex, const std::vector<LeafPtr>& leavesData) const {
     std::vector<VoteInfo> votesInfo;
     for (const auto& leafData : leavesData) {
         auto featuresInfo = leafData->getFeatureInfo();
@@ -112,7 +119,7 @@ std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(const FeaturePt
             int classLabel = featureInfo.getClassLabel();
             if (classLabel != parameters_.getNegativeLabel()) {
                 cv::Vec3i votingPoint = calculateVotingPoint(
-                    feature, parameters_.getScale(scaleIndex), featureInfo);
+                        feature, parameters_.getScale(scaleIndex), featureInfo);
                 VoteInfo voteInfo(votingPoint, weight, classLabel, scaleIndex);
                 votesInfo.push_back(voteInfo);
             }
@@ -135,12 +142,15 @@ cv::Vec3i HoughForests::calculateVotingPoint(
 void HoughForests::inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& votesInfo) {
     for (const auto& oneFeatureVotesInfo : votesInfo) {
         for (const auto& voteInfo : oneFeatureVotesInfo) {
-            votingSpaces_.at(voteInfo.getClassLabel()).inputVote(voteInfo.getVotingPoint(), voteInfo.getIndex(), voteInfo.getWeight());
+            votingSpaces_.at(voteInfo.getClassLabel())
+                    .inputVote(voteInfo.getVotingPoint(), voteInfo.getIndex(),
+                               voteInfo.getWeight());
         }
     }
 }
 
-void HoughForests::getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& votesInfo, std::vector<std::pair<int, int>>& minMaxRanges) const {
+void HoughForests::getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& votesInfo,
+                                    std::vector<std::pair<int, int>>& minMaxRanges) const {
     minMaxRanges.resize(parameters_.getNumberOfPositiveClasses());
     for (auto& oneClassRange : minMaxRanges) {
         int minT = std::numeric_limits<int>::max();
@@ -161,14 +171,21 @@ void HoughForests::getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& vo
     }
 }
 
-std::vector<LocalMaxima> HoughForests::findLocalMaxima(const std::vector<std::pair<int, int>>& minMaxRanges) {
+std::vector<LocalMaxima> HoughForests::findLocalMaxima(
+        const std::vector<std::pair<int, int>>& minMaxRanges) {
     std::vector<LocalMaxima> localMaxima(parameters_.getNumberOfPositiveClasses());
 
     typedef std::function<void()> FindingTask;
     std::queue<FindingTask> tasks;
     for (int classLabel = 0; classLabel < localMaxima.size(); ++classLabel) {
+        if (minMaxRanges.at(classLabel).first > minMaxRanges.at(classLabel).second) {
+            continue;
+        }
+
         tasks.push([&minMaxRanges, &localMaxima, this, classLabel]() {
-            localMaxima.at(classLabel) = findLocalMaxima(votingSpaces_.at(classLabel), minMaxRanges.at(classLabel).first, minMaxRanges.at(classLabel).second);
+            localMaxima.at(classLabel) =
+                    findLocalMaxima(votingSpaces_.at(classLabel), minMaxRanges.at(classLabel).first,
+                                    minMaxRanges.at(classLabel).second);
         });
     }
 
@@ -199,9 +216,12 @@ std::vector<LocalMaxima> HoughForests::thresholdLocalMaxima(
                       return maximum.getValue() > other.getValue();
                   });
 
-        for (int i = 0; i < std::min(static_cast<int>(localMaxima.at(classLabel).size()),
-                                     parameters_.getLocalMaximaSize());
-             ++i) {
+        for (int i = 0; i < localMaxima.at(classLabel).size(); ++i) {
+            if (localMaxima.at(classLabel).at(i).getValue() <
+                parameters_.getScoreThreshold(classLabel)) {
+                break;
+            }
+
             thresholdedLocalMaxima.at(classLabel).push_back(localMaxima.at(classLabel).at(i));
         }
     }

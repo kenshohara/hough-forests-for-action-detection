@@ -69,7 +69,8 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
     return localMaxima;
 }
 
-LocalMaximum LocalMaximaFinder::refineLocalMaximum(const KDE& kde, const Point& localMaximumPoint) const {
+LocalMaximum LocalMaximaFinder::refineLocalMaximum(const KDE& kde,
+                                                   const Point& localMaximumPoint) const {
     Point point = localMaximumPoint;
     Point meanPoint;
     int iteration = 0;
@@ -108,5 +109,76 @@ std::vector<LocalMaximaFinder::Point> LocalMaximaFinder::getGridPoints(
 
     return gridPoints;
 }
+
+LocalMaxima LocalMaximaFinder::combineNeighborLocalMaxima(const LocalMaxima& localMaxima) const {
+    if (localMaxima.empty()) {
+        return {};
+    }
+
+    LocalMaxima sortedMaxima = localMaxima;
+    std::sort(std::begin(sortedMaxima), std::end(sortedMaxima),
+              [](const LocalMaximum& a, const LocalMaximum& b) {
+                  return a.getValue() > b.getValue();
+              });
+
+    std::vector<Point> localMaximumPoints;
+    std::vector<float> weights;
+    localMaximumPoints.reserve(sortedMaxima.size());
+    weights.reserve(sortedMaxima.size());
+    for (int i = 0; i < sortedMaxima.size(); ++i) {
+        Point point;
+        cv::Vec4i vecPoint = sortedMaxima.at(i).getPoint();
+        for (int d = 0; d < point.size(); ++d) {
+            point.at(d) = vecPoint(d);
+        }
+        localMaximumPoints.push_back(point);
+        weights.push_back(sortedMaxima.at(i).getValue());
+    }
+
+    std::vector<double> bandwidths = {tau_, sigma_, scaleBandwidth_};
+    std::vector<int> bandDimensions = {TEMPORAL_DIMENSION_SIZE_, SPATIAL_DIMENSION_SIZE_,
+                                       SCALE_DIMENSION_SIZE_};
+
+    KDE kde(localMaximumPoints, weights, bandwidths, bandDimensions);
+    kde.buildTree();
+    
+    std::vector<int> indices;
+    for (int i = 0; i < localMaximumPoints.size(); ++i) {
+        std::vector<Match> matches = kde.findNeighborPoints(localMaximumPoints.at(i));
+        std::sort(std::begin(matches), std::end(matches),
+                  [](const Match& a, const Match& b) { return a.second < b.second; });
+
+        bool doesNeighborExist = false;
+        for (int j = 0; j < matches.size(); ++j) {
+            if (std::find(std::begin(indices), std::end(indices), matches.at(j).first) != std::end(indices)) {
+                doesNeighborExist = isNeighbor(cv::Vec4f(localMaximumPoints.at(i).data()), 
+                                               cv::Vec4f(localMaximumPoints.at(matches.at(j).first).data()));
+                if (doesNeighborExist) {
+                    break;
+                }
+            }
+        }
+        if (!doesNeighborExist) {
+            indices.push_back(i);
+        }
+    }
+
+    LocalMaxima combinedMaxima;
+    combinedMaxima.reserve(indices.size());
+    for (int index : indices) {
+        combinedMaxima.push_back(sortedMaxima.at(index));
+    }
+    return combinedMaxima;
+}
+
+bool LocalMaximaFinder::isNeighbor(const cv::Vec4f& a, const cv::Vec4f& b) const {
+    double distance = cv::norm(a - b);
+    if (distance < 10.0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 }
 }
