@@ -19,11 +19,11 @@ class VotingSpace {
     std::size_t nScales_;
     std::size_t maxT_;
     std::size_t minT_;
-    std::size_t deleteStep_;
+    int deleteStep_;
 
    public:
     VotingSpace(std::size_t width, std::size_t height, std::size_t nScales,
-                const std::vector<double>& scales, std::size_t deleteStep, std::size_t bufferLength)
+                const std::vector<double>& scales, int deleteStep, int bufferLength)
             : width_(width),
               height_(height),
               nScales_(nScales),
@@ -33,7 +33,7 @@ class VotingSpace {
               deleteStep_(deleteStep){};
     ~VotingSpace(){};
 
-    void addInput(const cv::Vec3i& point, std::size_t scaleIndex, float weight);
+    void inputVote(const cv::Vec3i& point, std::size_t scaleIndex, float weight);
     void deleteOldVotes();
     void getVotes(std::vector<std::array<float, 4>>& votingPoints, std::vector<float>& weights,
                   int startT, int endT) const;
@@ -43,11 +43,7 @@ class VotingSpace {
     std::size_t computeIndex(const cv::Vec3i& point, std::size_t scaleIndex) const;
 
     std::size_t getWidth() const { return width_; }
-
     std::size_t getHeight() const { return height_; }
-
-    // std::array<float, DIMENSION_SIZE_> convertFromVecToArray(const cv::Vec4f& point) const;
-    // cv::Vec4f convertFromArrayToVec(const std::array<float, DIMENSION_SIZE_>& point) const;
 };
 }
 }

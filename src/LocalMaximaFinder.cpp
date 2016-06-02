@@ -62,15 +62,32 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
     std::vector<double> localMaximumDensities;
     for (int i = 0; i < links.size(); ++i) {
         if (links.at(i) == -1) {
-            cv::Vec4f point;
-            for (int d = 0; d < point.rows; ++d) {
-                point(d) = gridPoints.at(i).at(d);
-            }
-            localMaxima.push_back(LocalMaximum(point, densities.at(i)));
+            localMaxima.push_back(refineLocalMaximum(kde, gridPoints.at(i)));
         }
     }
 
     return localMaxima;
+}
+
+LocalMaximum LocalMaximaFinder::refineLocalMaximum(const KDE& kde, const Point& localMaximumPoint) const {
+    Point point = localMaximumPoint;
+    Point meanPoint;
+    int iteration = 0;
+    double distance = 0.0;
+    do {
+        meanPoint = kde.calculateWeightedMean(point);
+
+        distance = 0.0;
+        for (int i = 0; i < DIMENSION_SIZE_; ++i) {
+            distance += (point[i] - meanPoint[i]) * (point[i] - meanPoint[i]);
+        }
+        distance = std::sqrt(distance);
+        ++iteration;
+        point = meanPoint;
+    } while (iteration < maxIteration_ && distance >= threshold_);
+
+    double density = kde.estimateDensity(meanPoint);
+    return LocalMaximum(cv::Vec4f(meanPoint.data()), density);
 }
 
 std::vector<LocalMaximaFinder::Point> LocalMaximaFinder::getGridPoints(

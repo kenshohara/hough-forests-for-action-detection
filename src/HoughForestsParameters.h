@@ -13,11 +13,12 @@ namespace houghforests {
 
 class HoughForestsParameters {
    private:
-    std::vector<std::size_t> sizes_;
+    std::size_t width_;
+    std::size_t height_;
     std::vector<double> scales_;
     int baseScale_;
 
-    int numberOfClasses_;
+    int nClasses_;
 
     double sigma_;
     double tau_;
@@ -26,7 +27,11 @@ class HoughForestsParameters {
     int spatialStep_;
     int temporalStep_;
 
-    int localMaximaSize_;
+    int votesDeleteStep_;
+    int votesBufferLength_;
+
+    std::vector<double> scoreThresholds_;
+
     bool hasNegativeClass_;
 
     bool isBackprojection_;
@@ -35,28 +40,32 @@ class HoughForestsParameters {
 
    public:
     HoughForestsParameters(){};
-    HoughForestsParameters(const std::vector<std::size_t>& sizes, const std::vector<double>& scales,
-                           int baseScale, int numberOfClasses, double sigma, double tau,
+    HoughForestsParameters(std::size_t width, std::size_t height, const std::vector<double>& scales,
+                           int baseScale, int nClasses, double sigma, double tau,
                            double scaleBandwidth, int spatialStep, int temporalStep,
-                           int localMaximaSize, bool hasNegativeClass, bool isBackprojection,
+                           int votesDeleteStep, int votesBufferLength, const std::vector<double>& scoreThresholds, bool hasNegativeClass,
+                           bool isBackprojection,
                            const randomforests::TreeParameters& treeParameters)
-            : sizes_(sizes),
+            : width_(width),
+              height_(height),
               scales_(scales),
               baseScale_(baseScale),
-              numberOfClasses_(numberOfClasses),
+              nClasses_(nClasses),
               sigma_(sigma),
               tau_(tau),
               scaleBandwidth_(scaleBandwidth),
               spatialStep_(spatialStep),
               temporalStep_(temporalStep),
-              localMaximaSize_(localMaximaSize),
+              votesDeleteStep_(votesDeleteStep),
+              votesBufferLength_(votesBufferLength),
+              scoreThresholds_(scoreThresholds),
               hasNegativeClass_(hasNegativeClass),
               isBackprojection_(isBackprojection),
               treeParameters_(treeParameters){};
 
-    std::vector<std::size_t> getSizes() const { return sizes_; }
+    std::size_t getWidth() { return width_; }
 
-    int getSize(int index) const { return sizes_.at(index); }
+    std::size_t getHeight() { return height_; }
 
     std::vector<double> getScales() const { return scales_; }
 
@@ -70,17 +79,21 @@ class HoughForestsParameters {
 
     double getScaleBandwidth() const { return scaleBandwidth_; }
 
-    double getSpatialStep() const { return spatialStep_; }
+    int getSpatialStep() const { return spatialStep_; }
 
-    double getTemporalStep() const { return temporalStep_; }
+    int getTemporalStep() const { return temporalStep_; }
 
-    int getLocalMaximaSize() const { return localMaximaSize_; }
+    int getVotesDeleteStep() const { return votesDeleteStep_; }
+
+    int getVotesBufferLength() const { return votesBufferLength_; }
+
+    double getScoreThreshold(int classLabel) { return scoreThresholds_.at(classLabel); };
 
     bool isBackprojection() const { return isBackprojection_; }
 
     bool hasNegativeClass() const { return hasNegativeClass_; }
 
-    int getNumberOfClasses() const { return numberOfClasses_; }
+    int getNumberOfClasses() const { return nClasses_; }
 
     int getNumberOfPositiveClasses() const {
         if (hasNegativeClass_) {

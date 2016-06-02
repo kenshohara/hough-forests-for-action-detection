@@ -53,6 +53,7 @@ class LocalMaximaFinder {
                                      std::size_t startSIndex, std::size_t endSIndex) const;
     LocalMaxima findLocalMaxima(const VotingSpace& votingSpace,
                                 const std::vector<Point>& gridPoints) const;
+    LocalMaximum refineLocalMaximum(const KDE& kde, const Point& localMaximumPoint) const;
 };
 }
 }

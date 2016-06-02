@@ -96,7 +96,7 @@ class CoordinateValueScaleVer {
 template <std::size_t DIM>
 class VoteInfo {
    private:
-    cv::Vec<float, DIM> votingPoint_;
+    cv::Vec<int, DIM> votingPoint_;
     double weight_;
     int classLabel_;
     int index_;
@@ -104,10 +104,10 @@ class VoteInfo {
    public:
     VoteInfo(){};
 
-    VoteInfo(const cv::Vec<float, DIM>& votingPoint, double weight, int classLabel, int index)
+    VoteInfo(const cv::Vec<int, DIM>& votingPoint, double weight, int classLabel, int index)
             : votingPoint_(votingPoint), weight_(weight), classLabel_(classLabel), index_(index){};
 
-    cv::Vec<float, DIM> getVotingPoint() const { return votingPoint_; }
+    cv::Vec<int, DIM> getVotingPoint() const { return votingPoint_; }
 
     double getWeight() const { return weight_; }
 
@@ -115,7 +115,7 @@ class VoteInfo {
 
     int getIndex() const { return index_; }
 
-    void setVotingPoint(const cv::Vec<float, DIM>& votingPoint) { votingPoint_ = votingPoint; }
+    void setVotingPoint(const cv::Vec<int, DIM>& votingPoint) { votingPoint_ = votingPoint; }
 
     void setWeight(double weight) { weight_ = weight; }
 

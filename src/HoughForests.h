@@ -7,7 +7,8 @@
 #include "STIPNode.h"
 #include "Storage.h"
 #include "Utils.h"
-#include "ActionHoughQuickShift.h"
+#include "VotingSpace.h"
+#include "LocalMaximaFinder.h"
 
 #include <opencv2/core/core.hpp>
 
@@ -24,7 +25,6 @@ class HoughForests {
    private:
     typedef std::shared_ptr<randomforests::STIPNode::FeatureType> FeaturePtr;
     typedef std::shared_ptr<randomforests::STIPNode::LeafType> LeafPtr;
-    typedef ActionHoughQuickShift MSType;
     typedef storage::VoteInfo<3> VoteInfo;
     typedef storage::VotesInfoMap<3> VotesInfoMap;
     typedef storage::DetectionResult<4> DetectionResult;
@@ -35,7 +35,8 @@ class HoughForests {
    private:
     randomforests::RandomForests<randomforests::STIPNode> randomForests_;
 
-    std::vector<std::unique_ptr<MSType>> meanShifts_;
+    std::vector<VotingSpace> votingSpaces_;
+    LocalMaximaFinder finder_;
 
     HoughForestsParameters parameters_;
 
@@ -87,20 +88,16 @@ class HoughForests {
     void load(const std::string& directoryPath);
 
    private:
-    void calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
-                        VotesInfoMap& votesInfoMap) const;
-    void calculateVotesBasedOnOnePatch(const FeaturePtr& feature, int scaleIndex,
-                                       const std::vector<LeafPtr>& votingData,
-                                       VotesInfoMap& votesInfoMap) const;
-    void inputToMeanShift(VotesInfoMap& votesInfoMap);
-    cv::Vec3f calculateVotingPoint(const FeaturePtr& feature, double scale,
+    void initialize();
+    void calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex, std::vector<std::vector<VoteInfo>>& votesInfo) const;
+    std::vector<VoteInfo> calculateVotes(const FeaturePtr& feature, int scaleIndex,
+                                         const std::vector<LeafPtr>& leavesData) const;
+    cv::Vec3i calculateVotingPoint(const FeaturePtr& feature, double scale,
                                    const randomforests::STIPLeaf::FeatureInfo& featureInfo) const;
-    void initializeMeanShifts();
-    std::vector<LocalMaxima> findLocalMaxima();
-    LocalMaxima findOneClassLocalMaxima(std::unique_ptr<MSType>& meanShift);
-    std::vector<cv::Vec4f> prepareGridPoints() const;
-    std::vector<LocalMaxima> verifyLocalMaxima(const VotesInfoMap& votesInfoMap,
-                                               const std::vector<LocalMaxima>& localMaxima) const;
+    void inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& votesInfo);
+    void getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& votesInfo, std::vector<std::pair<int, int>>& minMaxRanges) const;
+    std::vector<LocalMaxima> findLocalMaxima(const std::vector<std::pair<int, int>>& minMaxRanges);
+    LocalMaxima findLocalMaxima(VotingSpace& votingSpace, int voteStartT, int voteEndT);
     std::vector<LocalMaxima> thresholdLocalMaxima(std::vector<LocalMaxima> localMaxima) const;
 };
 }
