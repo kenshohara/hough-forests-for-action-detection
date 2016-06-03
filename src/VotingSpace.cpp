@@ -1,12 +1,14 @@
 #include "VotingSpace.h"
 #include "Utils.h"
 
+#include <iostream>
+
 namespace nuisken {
 namespace houghforests {
 
 void VotingSpace::inputVote(const cv::Vec3i& point, std::size_t scaleIndex, float weight) {
-    if (point(T) < 0 || point(X) < 0 || point(X) >= width_ || point(Y) < 0 || point(Y) >= height_ ||
-        scaleIndex < 0 || scaleIndex >= nScales_) {
+    if (point(T) < minT_ || point(X) < 0 || point(X) >= width_ || point(Y) < 0 ||
+        point(Y) >= height_ || scaleIndex < 0 || scaleIndex >= nScales_) {
         return;
     }
 
@@ -16,9 +18,9 @@ void VotingSpace::inputVote(const cv::Vec3i& point, std::size_t scaleIndex, floa
 
 void VotingSpace::deleteOldVotes() {
     int deleteEndT = minT_ + deleteStep_;
-    int startIndex = minT_ * height_ * width_ * nScales_;
-    int endIndex = deleteEndT * height_ * width_ * nScales_;
-    for (auto it = std::cbegin(votes_); it != std::cend(votes_); ++it) {
+    std::size_t startIndex = computeIndex(cv::Vec3i(minT_, 0, 0), 0);
+    std::size_t endIndex = computeIndex(cv::Vec3i(deleteEndT, 0, 0), 0);
+    for (auto it = std::cbegin(votes_); it != std::cend(votes_);) {
         if (it->first >= startIndex && it->first < endIndex) {
             votes_.erase(it++);
         } else {
@@ -32,8 +34,8 @@ void VotingSpace::deleteOldVotes() {
 
 void VotingSpace::getVotes(std::vector<std::array<float, 4>>& votingPoints,
                            std::vector<float>& weights, int startT, int endT) const {
-    int startIndex = startT * height_ * width_ * nScales_;
-    int endIndex = endT * height_ * width_ * nScales_;
+    int startIndex = computeIndex(cv::Vec3i(startT, 0, 0), 0);
+    int endIndex = computeIndex(cv::Vec3i(endT, 0, 0), 0);
     for (const auto& vote : votes_) {
         if (vote.first >= startIndex && vote.first < endIndex) {
             votingPoints.push_back(computePoint(vote.first));

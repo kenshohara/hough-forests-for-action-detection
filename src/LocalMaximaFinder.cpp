@@ -1,25 +1,30 @@
 #include "LocalMaximaFinder.h"
 
+#include <chrono>
+
 namespace nuisken {
 namespace houghforests {
 
 LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
-                                               std::size_t voteStartT, std::size_t voteEndT) const {
+                                               double scoreThreshold, std::size_t voteStartT,
+                                               std::size_t voteEndT) const {
     int bandwidthRange = 3.0 * tau_;
     int findStartT = voteStartT - bandwidthRange;
     int findEndT = voteEndT + bandwidthRange;
 
-    return findLocalMaxima(votingSpace,
-                           getGridPoints(findStartT, findEndT, 0, votingSpace.getHeight(), 0,
-                                         votingSpace.getWidth(), 0, scales_.size()));
+    std::vector<Point> gridPoints = getGridPoints(findStartT, findEndT, 0, votingSpace.getHeight(),
+                                                  0, votingSpace.getWidth(), 0, scales_.size());
+    return findLocalMaxima(votingSpace, scoreThreshold, voteStartT, voteEndT, gridPoints);
 }
 
 LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
+                                               double scoreThreshold, std::size_t voteStartT,
+                                               std::size_t voteEndT,
                                                const std::vector<Point>& gridPoints) const {
     std::vector<std::array<float, DIMENSION_SIZE_>> votingPoints;
     std::vector<float> weights;
-    votingSpace.getVotes(votingPoints, weights, 0, 0);
-    if (!votingPoints.empty()) {
+    votingSpace.getVotes(votingPoints, weights, voteStartT, voteEndT);
+    if (votingPoints.empty()) {
         return {};
     }
 
@@ -61,7 +66,7 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
     std::vector<Point> localMaximumPoints;
     std::vector<double> localMaximumDensities;
     for (int i = 0; i < links.size(); ++i) {
-        if (links.at(i) == -1) {
+        if (links.at(i) == -1 && densities.at(i) > scoreThreshold) {
             localMaxima.push_back(refineLocalMaximum(kde, gridPoints.at(i)));
         }
     }

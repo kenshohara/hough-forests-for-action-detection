@@ -59,8 +59,12 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
     std::cout << "initialize" << std::endl;
     initialize();
 
+    std::cout << "votes" << std::endl;
     std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
     for (int t = minT; t < maxT; ++t) {
+        std::cout << "t: " << t << std::endl;
+        auto start = std::chrono::system_clock::now();
+
         std::vector<std::vector<VoteInfo>> votesInfo;
         for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
             if (scaleFeatures.at(scaleIndex).count(t) == 0) {
@@ -69,14 +73,19 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
 
             calculateVotes(scaleFeatures.at(scaleIndex).at(t), scaleIndex, votesInfo);
         }
+        auto inputStart = std::chrono::system_clock::now();
         inputInVotingSpace(votesInfo);
 
+        auto calcMMStart = std::chrono::system_clock::now();
         std::vector<std::pair<int, int>> minMaxRanges;
         getMinMaxVotingT(votesInfo, minMaxRanges);
 
+        auto findStart = std::chrono::system_clock::now();
         std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
+        auto threshStart = std::chrono::system_clock::now();
         localMaxima = thresholdLocalMaxima(localMaxima);
 
+        auto combineStart = std::chrono::system_clock::now();
         for (int classLabel = 0; classLabel < totalLocalMaxima.size(); ++classLabel) {
             LocalMaxima oneClassLocalMaxima(totalLocalMaxima.at(classLabel));
             std::copy(std::begin(localMaxima.at(classLabel)), std::end(localMaxima.at(classLabel)),
@@ -84,8 +93,18 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
             totalLocalMaxima.at(classLabel) =
                     finder_.combineNeighborLocalMaxima(oneClassLocalMaxima);
         }
+
+        for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
+            deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
+        }
+
+        auto end = std::chrono::system_clock::now();
+        std::cout << "one cycle: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+                  << std::endl;
     }
 
+    std::cout << "output process" << std::endl;
     detectionResults.resize(totalLocalMaxima.size());
     for (int classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
         for (const auto& localMaximum : totalLocalMaxima.at(classLabel)) {
@@ -123,7 +142,6 @@ std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(
     for (const auto& leafData : leavesData) {
         auto featuresInfo = leafData->getFeatureInfo();
         double weight = 1.0 / (featuresInfo.size() * leavesData.size());
-
         for (const auto& featureInfo : featuresInfo) {
             int classLabel = featureInfo.getClassLabel();
             if (classLabel != parameters_.getNegativeLabel()) {
@@ -192,9 +210,9 @@ std::vector<LocalMaxima> HoughForests::findLocalMaxima(
         }
 
         tasks.push([&minMaxRanges, &localMaxima, this, classLabel]() {
-            localMaxima.at(classLabel) =
-                    findLocalMaxima(votingSpaces_.at(classLabel), minMaxRanges.at(classLabel).first,
-                                    minMaxRanges.at(classLabel).second);
+            localMaxima.at(classLabel) = findLocalMaxima(
+                    votingSpaces_.at(classLabel), parameters_.getScoreThreshold(classLabel),
+                    minMaxRanges.at(classLabel).first, minMaxRanges.at(classLabel).second);
         });
     }
 
@@ -203,8 +221,10 @@ std::vector<LocalMaxima> HoughForests::findLocalMaxima(
     return localMaxima;
 }
 
-LocalMaxima HoughForests::findLocalMaxima(VotingSpace& votingSpace, int voteStartT, int voteEndT) {
-    LocalMaxima localMaxima = finder_.findLocalMaxima(votingSpace, voteStartT, voteEndT);
+LocalMaxima HoughForests::findLocalMaxima(VotingSpace& votingSpace, double scoreThreshold,
+                                          int voteStartT, int voteEndT) {
+    LocalMaxima localMaxima =
+            finder_.findLocalMaxima(votingSpace, scoreThreshold, voteStartT, voteEndT);
     LocalMaxima trueLocalMaxima;
     for (const auto& localMaximum : localMaxima) {
         int t = localMaximum.getPoint()(T);
@@ -236,6 +256,19 @@ std::vector<LocalMaxima> HoughForests::thresholdLocalMaxima(
     }
 
     return thresholdedLocalMaxima;
+}
+
+void HoughForests::deleteOldVotes(int classLabel, int voteMaxT) {
+    if (voteMaxT < votingSpaces_.at(classLabel).getMaxT()) {
+        return;
+    }
+
+    std::cout << "delete votes: class " << classLabel << std::endl;
+    std::cout << "before: " << votingSpaces_.at(classLabel).getVotesCount() << std::endl;
+    
+    votingSpaces_.at(classLabel).deleteOldVotes();
+
+    std::cout << "after: " << votingSpaces_.at(classLabel).getVotesCount() << std::endl;
 }
 
 void HoughForests::save(const std::string& directoryPath) const {

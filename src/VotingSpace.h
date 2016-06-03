@@ -42,8 +42,10 @@ class VotingSpace {
     std::array<float, 4> computePoint(std::size_t index) const;
     std::size_t computeIndex(const cv::Vec3i& point, std::size_t scaleIndex) const;
 
+    std::size_t getVotesCount() const { return votes_.size(); };
     std::size_t getWidth() const { return width_; }
     std::size_t getHeight() const { return height_; }
+    std::size_t getMaxT() const { return maxT_; }
 };
 }
 }

@@ -45,8 +45,8 @@ class LocalMaximaFinder {
               maxIteration_(maxIteration){};
     ~LocalMaximaFinder(){};
 
-    LocalMaxima findLocalMaxima(const VotingSpace& votingSpace, std::size_t voteStartT,
-                                std::size_t voteEndT) const;
+    LocalMaxima findLocalMaxima(const VotingSpace& votingSpace, double scoreThreshold,
+                                std::size_t voteStartT, std::size_t voteEndT) const;
 
     LocalMaxima combineNeighborLocalMaxima(const LocalMaxima& localMaxima) const;
 
@@ -54,7 +54,8 @@ class LocalMaximaFinder {
     std::vector<Point> getGridPoints(std::size_t startT, std::size_t endT, std::size_t startY,
                                      std::size_t endY, std::size_t startX, std::size_t endX,
                                      std::size_t startSIndex, std::size_t endSIndex) const;
-    LocalMaxima findLocalMaxima(const VotingSpace& votingSpace,
+    LocalMaxima findLocalMaxima(const VotingSpace& votingSpace, double scoreThreshold,
+                                std::size_t voteStartT, std::size_t voteEndT,
                                 const std::vector<Point>& gridPoints) const;
     LocalMaximum refineLocalMaximum(const KDE& kde, const Point& localMaximumPoint) const;
     bool isNeighbor(const cv::Vec4f& a, const cv::Vec4f& b) const;
