@@ -198,7 +198,7 @@ std::vector<LocalMaxima> HoughForests::findLocalMaxima(
         });
     }
 
-    thread::threadProcess(tasks, maxNumberOfThreads_);
+    thread::threadProcess(tasks, nThreads_);
 
     return localMaxima;
 }

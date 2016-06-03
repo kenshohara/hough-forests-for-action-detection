@@ -42,19 +42,19 @@ class HoughForests {
 
     std::vector<std::vector<int>> trainingDataWidths_;
 
-    int maxNumberOfThreads_;
+    int nThreads_;
 
    private:
     randomforests::STIPNode stipNode_;
 
    public:
-    HoughForests(int maxNumberOfThreads = 1) : maxNumberOfThreads_(maxNumberOfThreads){};
+    HoughForests(int nThreads = 1) : nThreads_(nThreads){};
     HoughForests(const randomforests::STIPNode& stipNode, const HoughForestsParameters& parameters,
-                 int maxNumberOfThreads = 1)
+                 int nThreads = 1)
             : stipNode_(stipNode),
               randomForests_(stipNode, parameters.getTreeParameters()),
               parameters_(parameters),
-              maxNumberOfThreads_(maxNumberOfThreads){};
+              nThreads_(nThreads){};
     virtual ~HoughForests(){};
 
     void detect(const std::vector<std::string>& featureFilePaths,
@@ -73,8 +73,6 @@ class HoughForests {
     void setHoughForestsParameters(const HoughForestsParameters& parameters) {
         parameters_ = parameters;
     }
-
-    int getMaxNumberOfThreads() const { return maxNumberOfThreads_; }
 
     // void train(const std::vector<FeaturePtr>& features);
 
