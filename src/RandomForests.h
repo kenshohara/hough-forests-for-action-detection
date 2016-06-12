@@ -52,7 +52,7 @@ class RandomForests {
         forests.clear();
         forests.reserve(parameters.getNumberOfTrees());
         for (int i = 0; i < parameters.getNumberOfTrees(); ++i) {
-            forests.push_back(std::move(DecisionTree<Type>(type, parameters)));
+            forests.emplace_back(type, parameters);
         }
     }
 

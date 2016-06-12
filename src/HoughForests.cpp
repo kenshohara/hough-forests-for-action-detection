@@ -108,7 +108,7 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
     detectionResults.resize(totalLocalMaxima.size());
     for (int classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
         for (const auto& localMaximum : totalLocalMaxima.at(classLabel)) {
-            detectionResults.at(classLabel).push_back(DetectionResult(localMaximum));
+            detectionResults.at(classLabel).emplace_back(localMaximum);
         }
     }
 }
@@ -117,9 +117,9 @@ void HoughForests::initialize() {
     votingSpaces_.clear();
     std::vector<double> scales = parameters_.getScales();
     for (int i = 0; i < parameters_.getNumberOfPositiveClasses(); ++i) {
-        votingSpaces_.push_back(VotingSpace(parameters_.getWidth(), parameters_.getHeight(),
+        votingSpaces_.emplace_back(parameters_.getWidth(), parameters_.getHeight(),
                                             scales.size(), scales, parameters_.getVotesDeleteStep(),
-                                            parameters_.getVotesBufferLength()));
+                                            parameters_.getVotesBufferLength());
     }
 
     std::vector<int> steps = {parameters_.getTemporalStep(), parameters_.getSpatialStep(),
@@ -147,8 +147,7 @@ std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(
             if (classLabel != parameters_.getNegativeLabel()) {
                 cv::Vec3i votingPoint = calculateVotingPoint(
                         feature, parameters_.getScale(scaleIndex), featureInfo);
-                VoteInfo voteInfo(votingPoint, weight, classLabel, scaleIndex);
-                votesInfo.push_back(voteInfo);
+                votesInfo.emplace_back(votingPoint, weight, classLabel, scaleIndex);
             }
         }
     }
@@ -265,7 +264,7 @@ void HoughForests::deleteOldVotes(int classLabel, int voteMaxT) {
 
     std::cout << "delete votes: class " << classLabel << std::endl;
     std::cout << "before: " << votingSpaces_.at(classLabel).getVotesCount() << std::endl;
-    
+
     votingSpaces_.at(classLabel).deleteOldVotes();
 
     std::cout << "after: " << votingSpaces_.at(classLabel).getVotesCount() << std::endl;

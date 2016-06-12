@@ -334,7 +334,7 @@ class DetectionResult {
     }
 
     void addContributionPoint(const cv::Vec3f& featurePoint, double contributionScore) {
-        contributionPoints_.push_back(ContributionPoint(featurePoint, contributionScore));
+        contributionPoints_.emplace_back(featurePoint, contributionScore);
     }
 };
 

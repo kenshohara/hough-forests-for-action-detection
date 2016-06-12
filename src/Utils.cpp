@@ -30,11 +30,11 @@ std::vector<std::string> split(const std::string& str, char delimiter) {
     std::size_t current = 0;
     std::size_t found;
     while ((found = str.find_first_of(delimiter, current)) != std::string::npos) {
-        results.push_back(std::string(str, current, found - current));
+        results.emplace_back(str, current, found - current);
         current = found + 1;
     }
 
-    results.push_back(std::string(str, current, str.size() - current));
+    results.emplace_back(str, current, str.size() - current);
     return results;
 }
 }
@@ -191,7 +191,7 @@ std::vector<std::pair<double, cv::Vec3f>> readActionPositions(const std::string&
 
             cv::Vec3f actionPosition(std::stod(tokens.at(0)), std::stod(tokens.at(1)),
                                      std::stod(tokens.at(2)));
-            actionPositions.push_back(std::make_pair(std::stod(tokens.at(3)), actionPosition));
+            actionPositions.emplace_back(std::stod(tokens.at(3)), actionPosition);
         }
     }
 
@@ -229,7 +229,7 @@ void readActionPositions(const std::string& filePath,
 
             cv::Vec3f actionPosition(std::stod(tokens.at(1)), std::stod(tokens.at(2)),
                                      std::stod(tokens.at(3)));
-            actionPositions.push_back(std::make_pair(std::stod(tokens.at(4)), actionPosition));
+            actionPositions.emplace_back(std::stod(tokens.at(4)), actionPosition);
         } else if (!line.empty()) {
             boost::char_separator<char> separator(",");
             boost::tokenizer<boost::char_separator<char>> tokenizer(line, separator);
@@ -242,7 +242,7 @@ void readActionPositions(const std::string& filePath,
             auto y = std::stoi(tokens.at(3));
 
             cv::Vec3i point(frame, y, x);
-            contributionPointsAndScores.push_back(std::make_pair(contributionScore, point));
+            contributionPointsAndScores.emplace_back(contributionScore, point);
         }
     }
 

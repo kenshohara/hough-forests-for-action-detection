@@ -33,8 +33,7 @@ bool TreeNode<Type>::train(const std::vector<FeatureRawPtr>& features,
         std::vector<Container> splitValues;
         splitValues.reserve(features.size());
         for (const auto& feature : features) {
-            splitValues.push_back(
-                    std::make_pair(type.calculateSplitValue(feature, tempParameter), feature));
+            splitValues.emplace_back(type.calculateSplitValue(feature, tempParameter), feature);
         }
         std::sort(std::begin(splitValues), std::end(splitValues),
                   [](const Container& x, const Container& y) { return x.first < y.first; });
