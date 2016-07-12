@@ -2,8 +2,8 @@
 #define RANDOM_FORESTS_INL
 
 #include "RandomForests.h"
-#include "ThreadProcess.h"
 #include "RandomGenerator.h"
+#include "ThreadProcess.h"
 
 #include <chrono>
 
@@ -150,7 +150,7 @@ void RandomForests<Type>::load(const std::string& directoryPath) {
     for (std::tr2::sys::directory_iterator itr(directory); itr != end; ++itr) {
         auto index = itr->path().filename().string().find("tree");
         if (index != std::string::npos) {
-            treeFilePaths.push_back(directory.string() + itr->path().leaf());
+            treeFilePaths.push_back(directory.string() + itr->path().filename().string());
         }
     }
 

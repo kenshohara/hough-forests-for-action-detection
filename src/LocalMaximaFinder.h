@@ -2,12 +2,12 @@
 #define LOCAL_MAXIMA_FINDER
 
 #include "KernelDensityEstimation.h"
-#include "VotingSpace.h"
 #include "Storage.h"
 #include "Utils.h"
+#include "VotingSpace.h"
 
-#include <vector>
 #include <array>
+#include <vector>
 
 namespace nuisken {
 namespace houghforests {

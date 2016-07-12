@@ -6,11 +6,11 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include <memory>
-#include <vector>
 #include <fstream>
+#include <memory>
 #include <queue>
 #include <tuple>
+#include <vector>
 
 namespace nuisken {
 namespace randomforests {

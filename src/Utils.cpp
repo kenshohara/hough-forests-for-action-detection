@@ -4,11 +4,11 @@
 
 #include <Eigen/Core>
 
-#include <boost/tokenizer.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/tokenizer.hpp>
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <memory>
 
 namespace nuisken {

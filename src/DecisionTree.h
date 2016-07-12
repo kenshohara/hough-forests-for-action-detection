@@ -6,9 +6,9 @@
 
 #include <opencv2/core/core.hpp>
 
+#include <fstream>
 #include <map>
 #include <memory>
-#include <fstream>
 
 namespace nuisken {
 namespace randomforests {

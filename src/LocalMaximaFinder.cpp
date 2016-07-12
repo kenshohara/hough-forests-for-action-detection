@@ -105,7 +105,8 @@ std::vector<LocalMaximaFinder::Point> LocalMaximaFinder::getGridPoints(
         for (std::size_t y = startY; y < endY; y += steps_.at(Y)) {
             for (std::size_t x = startX; x < endX; x += steps_.at(X)) {
                 for (std::size_t s = startSIndex; s < endSIndex; ++s) {
-                    gridPoints.push_back(Point{t, y, x, scales_.at(s)});
+                    gridPoints.emplace_back(Point{static_cast<float>(t), static_cast<float>(y),
+                                                  static_cast<float>(x), static_cast<float>(scales_.at(s))});
                 }
             }
         }

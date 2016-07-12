@@ -1,8 +1,8 @@
 ﻿#ifndef THREAD_PROCESS
 #define THREAD_PROCESS
 
-#include <queue>
 #include <functional>
+#include <queue>
 
 namespace nuisken {
 namespace thread {

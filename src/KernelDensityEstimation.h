@@ -3,12 +3,12 @@
 
 #include <nanoflann.hpp>
 
-#include <iostream>
 #include <array>
 #include <cmath>
-#include <numeric>
-#include <memory>
 #include <cstdint>
+#include <iostream>
+#include <memory>
+#include <numeric>
 
 namespace nuisken {
 /**
@@ -70,7 +70,8 @@ class KernelDensityEstimation {
 
     typedef nanoflann::KDTreeSingleIndexAdaptor<
             nanoflann::L2_Simple_Adaptor<T, DataAdaptor<T, DIM>>, DataAdaptor<T, DIM>, DIM,
-            std::uint32_t> KDTree;
+            std::uint32_t>
+            KDTree;
     typedef std::array<T, DIM> Point;
 
    private:

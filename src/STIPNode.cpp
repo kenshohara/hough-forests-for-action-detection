@@ -128,9 +128,9 @@ std::shared_ptr<STIPLeaf> STIPNode::calculateLeafData(
 
     auto end = std::end(features);
     for (auto itr = std::begin(features); itr != end; ++itr) {
-        featureInfo.emplace_back(
-                (*itr)->getIndex(), (*itr)->getClassLabel(), (*itr)->getSpatialScale(),
-                (*itr)->getTemporalScale(), (*itr)->getDisplacementVector());
+        featureInfo.emplace_back((*itr)->getIndex(), (*itr)->getClassLabel(),
+                                 (*itr)->getSpatialScale(), (*itr)->getTemporalScale(),
+                                 (*itr)->getDisplacementVector());
     }
 
     return std::make_shared<STIPLeaf>(featureInfo);

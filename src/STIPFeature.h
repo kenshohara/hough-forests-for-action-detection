@@ -1,8 +1,8 @@
 ﻿#ifndef STIP_FEATURE
 #define STIP_FEATURE
 
-#include <opencv2/core/core.hpp>
 #include <Eigen/Core>
+#include <opencv2/core/core.hpp>
 
 #include <memory>
 #include <vector>

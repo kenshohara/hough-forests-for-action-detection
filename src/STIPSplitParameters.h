@@ -3,8 +3,8 @@
 
 #include <opencv2/core/core.hpp>
 
-#include <queue>
 #include <fstream>
+#include <queue>
 
 namespace nuisken {
 namespace randomforests {

@@ -1,11 +1,11 @@
 ﻿#ifndef RANDOM_GENERATOR
 #define RANDOM_GENERATOR
 
+#include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <random>
-#include <cstdint>
-#include <algorithm>
 
 namespace nuisken {
 class RandomGenerator {

@@ -7,10 +7,10 @@
 
 #include <boost/tokenizer.hpp>
 
-#include <random>
-#include <memory>
 #include <algorithm>
+#include <memory>
 #include <queue>
+#include <random>
 
 namespace nuisken {
 namespace randomforests {

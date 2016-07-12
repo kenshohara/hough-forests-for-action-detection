@@ -9,8 +9,8 @@
 
 #include <Eigen/Core>
 
-#include <tuple>
 #include <map>
+#include <tuple>
 
 namespace nuisken {
 namespace houghforests {

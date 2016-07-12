@@ -1,17 +1,17 @@
 ﻿#ifndef RANDOM_FORESTS
 #define RANDOM_FORESTS
 
-#include "TreeParameters.h"
 #include "DecisionTree.hpp"
+#include "TreeParameters.h"
 
 #include <opencv2/core/core.hpp>
 
-#include <vector>
-#include <string>
-#include <functional>
-#include <thread>
-#include <mutex>
 #include <filesystem>
+#include <functional>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 
 namespace nuisken {
 namespace randomforests {

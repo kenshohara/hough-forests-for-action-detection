@@ -3,9 +3,9 @@
 
 #include <opencv2/core/core.hpp>
 
-#include <vector>
 #include <array>
 #include <unordered_map>
+#include <vector>
 
 namespace nuisken {
 namespace houghforests {

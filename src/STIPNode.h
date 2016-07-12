@@ -1,13 +1,13 @@
 ﻿#ifndef SITP_NODE
 #define SITP_NODE
 
-#include "STIPFeature.h"
-#include "STIPSplitParameters.h"
-#include "STIPLeaf.h"
 #include "RandomGenerator.h"
+#include "STIPFeature.h"
+#include "STIPLeaf.h"
+#include "STIPSplitParameters.h"
 
-#include <random>
 #include <memory>
+#include <random>
 
 namespace nuisken {
 namespace randomforests {

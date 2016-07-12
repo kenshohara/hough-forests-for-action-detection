@@ -1,7 +1,7 @@
 ﻿#include "ThreadProcess.h"
 
-#include <thread>
 #include <mutex>
+#include <thread>
 
 namespace nuisken {
 namespace thread {

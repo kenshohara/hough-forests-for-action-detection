@@ -1,22 +1,22 @@
 #ifndef HOUGH_FORESTS
 #define HOUGH_FORESTS
 
-#include "RandomForests.hpp"
 #include "HoughForestsParameters.h"
-#include "TreeParameters.h"
+#include "LocalMaximaFinder.h"
+#include "RandomForests.hpp"
 #include "STIPNode.h"
 #include "Storage.h"
+#include "TreeParameters.h"
 #include "Utils.h"
 #include "VotingSpace.h"
-#include "LocalMaximaFinder.h"
 
 #include <opencv2/core/core.hpp>
 
+#include <array>
 #include <map>
+#include <memory>
 #include <tuple>
 #include <utility>
-#include <memory>
-#include <array>
 
 namespace nuisken {
 namespace houghforests {

@@ -1,22 +1,22 @@
 #define NOMINMAX
 
 #include "HoughForests.h"
-#include "Utils.h"
 #include "ThreadProcess.h"
+#include "Utils.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <limits>
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <map>
-#include <queue>
-#include <thread>
-#include <mutex>
-#include <functional>
 #include <algorithm>
 #include <chrono>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <mutex>
+#include <queue>
+#include <thread>
+#include <vector>
 
 namespace nuisken {
 namespace houghforests {
@@ -117,9 +117,9 @@ void HoughForests::initialize() {
     votingSpaces_.clear();
     std::vector<double> scales = parameters_.getScales();
     for (int i = 0; i < parameters_.getNumberOfPositiveClasses(); ++i) {
-        votingSpaces_.emplace_back(parameters_.getWidth(), parameters_.getHeight(),
-                                            scales.size(), scales, parameters_.getVotesDeleteStep(),
-                                            parameters_.getVotesBufferLength());
+        votingSpaces_.emplace_back(parameters_.getWidth(), parameters_.getHeight(), scales.size(),
+                                   scales, parameters_.getVotesDeleteStep(),
+                                   parameters_.getVotesBufferLength());
     }
 
     std::vector<int> steps = {parameters_.getTemporalStep(), parameters_.getSpatialStep(),

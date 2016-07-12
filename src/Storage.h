@@ -3,8 +3,8 @@
 
 #include <opencv2/core/core.hpp>
 
-#include <vector>
 #include <map>
+#include <vector>
 
 namespace nuisken {
 namespace storage {
@@ -52,8 +52,7 @@ class CoordinateValue {
    public:
     CoordinateValue(){};
     template <typename T>
-    CoordinateValue(const T& point, double value)
-            : point_(point), value_(value){};
+    CoordinateValue(const T& point, double value) : point_(point), value_(value){};
 
     T getPoint() const { return point_; }
 
