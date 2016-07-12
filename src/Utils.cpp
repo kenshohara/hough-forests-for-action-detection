@@ -118,61 +118,6 @@ void readSTIPFeatures(const std::string& filePath,
         points.push_back(centerPoint);
     }
 }
-
-void saveXYTPoint(cv::FileStorage& fileStorage, const std::string& name, const cv::Vec3f& vec) {
-    cv::WriteStructContext writeStructContext(fileStorage, name, CV_NODE_MAP);
-    cv::write(fileStorage, "X", vec[2]);
-    cv::write(fileStorage, "Y", vec[1]);
-    cv::write(fileStorage, "T", vec[0]);
-}
-
-void saveXYTPoint(cv::FileStorage& fileStorage, const std::string& name, const cv::Vec3f& vec,
-                  int cameraNumber) {
-    cv::WriteStructContext writeStructContext(fileStorage, name, CV_NODE_MAP);
-    cv::write(fileStorage, "X", vec[2]);
-    cv::write(fileStorage, "Y", vec[1]);
-    cv::write(fileStorage, "T", vec[0]);
-    cv::write(fileStorage, "Cam", cameraNumber);
-}
-
-void saveXYTPoint(cv::FileStorage& fileStorage, const cv::Vec3f& vec) {
-    cv::WriteStructContext writeStructContext(fileStorage, "", CV_NODE_MAP);
-    cv::write(fileStorage, "X", vec[2]);
-    cv::write(fileStorage, "Y", vec[1]);
-    cv::write(fileStorage, "T", vec[0]);
-}
-
-cv::Vec3f loadXYTPoint(const cv::FileStorage& fileStorage, const std::string& name) {
-    cv::FileNode topNode(fileStorage.fs, 0);
-    cv::FileNode node = topNode[name];
-
-    return cv::Vec3i(node["T"], node["Y"], node["X"]);
-}
-
-cv::Vec3f loadXYTPoint(const cv::FileNode& node) {
-    return cv::Vec3i(node["T"], node["Y"], node["X"]);
-}
-
-void loadXYTPoint(const cv::FileNode& node, cv::Vec3f& point, int& cameraNumber) {
-    point = cv::Vec3i(node["T"], node["Y"], node["X"]);
-    cameraNumber = node["Cam"];
-}
-
-void saveRectangle(cv::FileStorage& fileStorage, const std::string& name,
-                   const cv::Rect& rectangle) {
-    cv::WriteStructContext ws(fileStorage, name, CV_NODE_MAP);
-    cv::write(fileStorage, "X", rectangle.x);
-    cv::write(fileStorage, "Y", rectangle.y);
-    cv::write(fileStorage, "WIDTH", rectangle.width);
-    cv::write(fileStorage, "HEIGHT", rectangle.height);
-}
-
-cv::Rect loadRectangle(const cv::FileStorage& fileStorage, const std::string& name) {
-    cv::FileNode topNode(fileStorage.fs, 0);
-    cv::FileNode node = topNode[name];
-
-    return cv::Rect(node["X"], node["Y"], node["WIDTH"], node["HEIGHT"]);
-}
 }
 
 namespace actionvolume {
