@@ -49,7 +49,11 @@ class LocalFeatureExtractor {
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
-              scales_(scales) {}
+              scales_(scales) {
+        makeLocalSizeOdd(localWidth_);
+        makeLocalSizeOdd(localHeight_);
+        makeLocalSizeOdd(localDuration_);
+    }
 
     LocalFeatureExtractor(const cv::VideoCapture& videoCapture, int localWidth, int localHeight,
                           int localDuration, int xStep, int yStep, int tStep,
@@ -63,7 +67,11 @@ class LocalFeatureExtractor {
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
-              scales_(scales) {}
+              scales_(scales) {
+        makeLocalSizeOdd(localWidth_);
+        makeLocalSizeOdd(localHeight_);
+        makeLocalSizeOdd(localDuration_);
+    }
 
     void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
                               std::vector<std::vector<Descriptor>> scaleDescriptors);
@@ -74,6 +82,7 @@ class LocalFeatureExtractor {
     }
 
    private:
+    void makeLocalSizeOdd(int& size) const;
     void readOriginalScaleVideo();
     void generateScaledVideos();
     void denseSampling(int scaleIndex, std::vector<cv::Vec3i>& points,
@@ -97,6 +106,10 @@ class LocalFeatureExtractor {
     Descriptor getLocalFeature(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
                                int height) const;
     int calculateFeatureIndex(int x, int y, int t, int width, int height) const;
+
+    void visualizeDenseFeature(const std::vector<cv::Vec3i>& points,
+                               const std::vector<Descriptor>& features,
+                               int width, int height, int duration) const;
 };
 }
 }

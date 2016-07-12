@@ -11,18 +11,25 @@ int main() {
     using namespace nuisken::houghforests;
     using namespace nuisken::storage;
 
-    int localWidth = 15;
+    int localWidth = 51;
     int localHeight = localWidth;
-    int localDuration = 5;
-    int xStep = 8;
+    int localDuration = 31;
+    int xStep = 25;
     int yStep = xStep;
-    int tStep = 3;
+    int tStep = 15;
     std::vector<double> scales = {1.0, 0.5};
-    LocalFeatureExtractor lfe("D:/UT-Interaction/unsegmented_half/seq1.avi", localWidth,
+    LocalFeatureExtractor lfe("D:/TestData/test_half.avi", localWidth,
                               localHeight, localDuration, xStep, yStep, tStep, scales);
     std::vector<std::vector<cv::Vec3i>> points;
     std::vector<std::vector<std::vector<float>>> descs;
     lfe.extractLocalFeatures(points, descs);
+    points.clear();
+    descs.clear();
+    lfe.extractLocalFeatures(points, descs);
+    points.clear();
+    descs.clear();
+    lfe.extractLocalFeatures(points, descs);
+
 
     // int validationIndex = 0;
     // int sequenceIndex = 5;
