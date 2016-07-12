@@ -148,7 +148,7 @@ void RandomForests<Type>::load(const std::string& directoryPath) {
     std::tr2::sys::path directory(directoryPath);
     std::tr2::sys::directory_iterator end;
     for (std::tr2::sys::directory_iterator itr(directory); itr != end; ++itr) {
-        auto index = itr->path().leaf().find("tree");
+        auto index = itr->path().filename().string().find("tree");
         if (index != std::string::npos) {
             treeFilePaths.push_back(directory.string() + itr->path().leaf());
         }
