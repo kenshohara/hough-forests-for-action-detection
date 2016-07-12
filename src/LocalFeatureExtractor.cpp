@@ -97,6 +97,16 @@ void LocalFeatureExtractor::extractFeatures(int scaleIndex, int startFrame, int 
 }
 
 void LocalFeatureExtractor::deleteOldData() {
+    if (localDuration_ <= tStep_) {
+        scaleVideos_ = std::vector<Video>(scales_.size());
+        scaleChannelFeatures_ =
+                std::vector<MultiChannelFeature>(scales_.size(), MultiChannelFeature(N_CHANNELS_));
+        storedStartT_ += tStep_;
+        nStoredFeatureFrames_ = 0;
+
+        return;
+    }
+
     for (auto& video : scaleVideos_) {
         video = {video.back()};
     }
