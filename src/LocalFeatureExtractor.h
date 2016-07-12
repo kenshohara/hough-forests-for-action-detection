@@ -22,10 +22,10 @@ class LocalFeatureExtractor {
     using MultiChannelFeature = std::vector<Feature>;
     using Video = std::vector<cv::Mat1b>;
 
-    std::string videoFilePath_;
     cv::VideoCapture videoCapture_;
     std::vector<Video> scaleVideos_;
     std::vector<MultiChannelFeature> scaleChannelFeatures_;
+    std::vector<double> scales_;
     int localWidth_;
     int localHeight_;
     int localDuration_;
@@ -35,40 +35,47 @@ class LocalFeatureExtractor {
     int width_;
     int height_;
     int storedStartT_;
-    std::vector<double> scales_;
+    int nStoredFeatureFrames_;
+    bool isEnd_;
 
    public:
-    LocalFeatureExtractor(const std::string& videoFilePath, int localWidth, int localHeight,
-                          int localDuration, int xStep, int yStep, int tStep,
-                          std::vector<double> scales)
+    LocalFeatureExtractor(const std::string& videoFilePath, std::vector<double> scales,
+                          int localWidth, int localHeight, int localDuration, int xStep, int yStep,
+                          int tStep)
             : videoCapture_(videoFilePath),
               scaleVideos_(scales.size()),
               scaleChannelFeatures_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
+              scales_(scales),
               localWidth_(localWidth),
               localHeight_(localHeight),
               localDuration_(localDuration),
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
-              scales_(scales) {
+              storedStartT_(0),
+              nStoredFeatureFrames_(0),
+              isEnd_(false) {
         makeLocalSizeOdd(localWidth_);
         makeLocalSizeOdd(localHeight_);
         makeLocalSizeOdd(localDuration_);
     }
 
-    LocalFeatureExtractor(const cv::VideoCapture& videoCapture, int localWidth, int localHeight,
-                          int localDuration, int xStep, int yStep, int tStep,
-                          std::vector<double> scales)
+    LocalFeatureExtractor(const cv::VideoCapture& videoCapture, std::vector<double> scales,
+                          int localWidth, int localHeight, int localDuration, int xStep, int yStep,
+                          int tStep)
             : videoCapture_(videoCapture),
               scaleVideos_(scales.size()),
               scaleChannelFeatures_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
+              scales_(scales),
               localWidth_(localWidth),
               localHeight_(localHeight),
               localDuration_(localDuration),
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
-              scales_(scales) {
+              storedStartT_(0),
+              nStoredFeatureFrames_(0),
+              isEnd_(false) {
         makeLocalSizeOdd(localWidth_);
         makeLocalSizeOdd(localHeight_);
         makeLocalSizeOdd(localDuration_);
@@ -109,8 +116,8 @@ class LocalFeatureExtractor {
     int calculateFeatureIndex(int x, int y, int t, int width, int height) const;
 
     void visualizeDenseFeature(const std::vector<cv::Vec3i>& points,
-                               const std::vector<Descriptor>& features,
-                               int width, int height, int duration) const;
+                               const std::vector<Descriptor>& features, int width, int height,
+                               int duration) const;
 };
 }
 }

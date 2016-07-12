@@ -19,19 +19,26 @@ void LocalFeatureExtractor::makeLocalSizeOdd(int& size) const {
     }
 }
 
-void LocalFeatureExtractor::extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
-                                                 std::vector<std::vector<Descriptor>> scaleDescriptors) {
+void LocalFeatureExtractor::extractLocalFeatures(
+        std::vector<std::vector<cv::Vec3i>>& scalePoints,
+        std::vector<std::vector<Descriptor>> scaleDescriptors) {
     readOriginalScaleVideo();
     generateScaledVideos();
     for (int scaleIndex = 0; scaleIndex < scales_.size(); ++scaleIndex) {
         extractFeatures(scaleIndex, 1, scaleVideos_[scaleIndex].size());
+        if (nStoredFeatureFrames_ < localDuration_) {
+            isEnd_ = true;
+            return;
+        }
+
         std::vector<cv::Vec3i> points;
         std::vector<std::vector<float>> descriptors;
         denseSampling(scaleIndex, points, descriptors);
         scalePoints.push_back(points);
         scaleDescriptors.push_back(descriptors);
     }
-    //visualizeDenseFeature(scalePoints.front(), scaleDescriptors.front(), width_, height_, localDuration_);
+    // visualizeDenseFeature(scalePoints.front(), scaleDescriptors.front(), width_, height_,
+    // localDuration_);
     deleteOldData();
 }
 
@@ -49,12 +56,15 @@ void LocalFeatureExtractor::readOriginalScaleVideo() {
 
         width_ = firstFrame.cols;
         height_ = firstFrame.rows;
-        storedStartT_ = 0;
     }
 
     for (int i = 0; i < nFrames; ++i) {
         cv::Mat frame;
         videoCapture_ >> frame;
+        if (frame.empty()) {
+            isEnd_ = true;
+            break;
+        }
         cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
         scaleVideos_.front().push_back(frame);
     }
@@ -73,17 +83,17 @@ void LocalFeatureExtractor::generateScaledVideos() {
 }
 
 void LocalFeatureExtractor::extractFeatures(int scaleIndex, int startFrame, int endFrame) {
-    extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0], scaleIndex, startFrame,
-                            endFrame);
+    extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0], scaleIndex, startFrame, endFrame);
     extractXDerivativeFeature(scaleChannelFeatures_[scaleIndex][1], scaleIndex, startFrame,
                               endFrame);
     extractYDerivativeFeature(scaleChannelFeatures_[scaleIndex][2], scaleIndex, startFrame,
                               endFrame);
     extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, startFrame,
                               endFrame);
-    extractFlowFeature(scaleChannelFeatures_[scaleIndex][4],
-                       scaleChannelFeatures_[scaleIndex][5], scaleIndex, startFrame,
-                       endFrame);
+    extractFlowFeature(scaleChannelFeatures_[scaleIndex][4], scaleChannelFeatures_[scaleIndex][5],
+                       scaleIndex, startFrame, endFrame);
+
+    nStoredFeatureFrames_ += endFrame - startFrame;
 }
 
 void LocalFeatureExtractor::deleteOldData() {
@@ -103,6 +113,7 @@ void LocalFeatureExtractor::deleteOldData() {
         }
     }
     storedStartT_ += tStep_;
+    nStoredFeatureFrames_ -= tStep_;
 }
 
 void LocalFeatureExtractor::extractIntensityFeature(Feature& features, int scaleIndex,
@@ -152,10 +163,8 @@ void LocalFeatureExtractor::extractFlowFeature(Feature& xFeatures, Feature& yFea
     for (int t = startFrame; t < endFrame; ++t) {
         cv::Mat next = scaleVideos_[scaleIndex][t];
         std::vector<Feature> feature = extractFlowFeature(prev, next);
-        std::copy(std::begin(feature[0]), std::end(feature[0]),
-                  std::back_inserter(xFeatures));
-        std::copy(std::begin(feature[1]), std::end(feature[1]),
-                  std::back_inserter(yFeatures));
+        std::copy(std::begin(feature[0]), std::end(feature[0]), std::back_inserter(xFeatures));
+        std::copy(std::begin(feature[1]), std::end(feature[1]), std::back_inserter(yFeatures));
 
         prev = next;
     }
@@ -296,6 +305,5 @@ void LocalFeatureExtractor::visualizeDenseFeature(const std::vector<cv::Vec3i>& 
         cv::waitKey(0);
     }
 }
-
 }
 }
