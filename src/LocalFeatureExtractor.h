@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LOCAL_FEATURE_EXTRACTOR
+#define LOCAL_FEATURE_EXTRACTOR
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui.hpp>
@@ -113,3 +114,5 @@ class LocalFeatureExtractor {
 };
 }
 }
+
+#endif
