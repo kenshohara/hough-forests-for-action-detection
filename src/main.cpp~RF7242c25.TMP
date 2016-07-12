@@ -90,7 +90,8 @@ void extractPositiveFeatures() {
 }
 
 void readLabelsInfo(const std::string& labelFilePath, int sequenceIndex,
-                    std::vector<int>& classLabels, std::vector<cv::Rect>& boxes,
+                    std::vector<int>& classLabels,
+                    std::vector<cv::Rect>& boxes,
                     std::vector<std::pair<int, int>>& temporalRanges) {
     std::ifstream inputStream(labelFilePath);
     std::string line;
@@ -151,7 +152,8 @@ bool contains(const cv::Rect& box, const std::pair<int, int>& temporalRange,
 }
 
 bool contains(const std::vector<cv::Rect>& boxes,
-              const std::vector<std::pair<int, int>>& temporalRanges, const cv::Vec3i& point) {
+              const std::vector<std::pair<int, int>>& temporalRanges,
+              const cv::Vec3i& point) {
     for (int i = 0; i < boxes.size(); ++i) {
         if (contains(boxes.at(i), temporalRanges.at(i), point)) {
             return true;
@@ -180,8 +182,7 @@ void extractNegativeFeatures() {
     std::string labelFilePath = "E:/Hara/UT-Interaction/labels.csv";
     std::string outputDirectoryPath = "E:/Hara/UT-Interaction/feature_hf/";
     for (int sequenceIndex = 1; sequenceIndex <= 6; ++sequenceIndex) {
-        std::string filePath =
-                (boost::format("%sseq%d.avi") % videoDirectoryPath % sequenceIndex).str();
+        std::string filePath = (boost::format("%sseq%d.avi") % videoDirectoryPath % sequenceIndex).str();
         std::vector<cv::Rect> boxes;
         std::vector<std::pair<int, int>> temporalRanges;
         readLabelsInfo(labelFilePath, sequenceIndex, boxes, temporalRanges);
@@ -260,16 +261,13 @@ void train() {
     const int N_CLASSES = 7;
 
     std::string rootDirectoryPath = "D:/UT-Interaction/";
-    // std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
+    //std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string featureDirectoryPath = rootDirectoryPath + "feature_hf/";
     std::string labelFilePath = rootDirectoryPath + "labels.csv";
     std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests/";
-    std::vector<std::vector<int>> validationCombinations = {{19, 5}, {12, 6}, {4, 7},   {16, 17},
-                                                            {9, 13}, {11, 8}, {10, 14}, {18, 15},
-                                                            {3, 20}, {2, 1}};
+    std::vector<std::vector<int>> validationCombinations = {{19, 5},{12, 6},{4, 7},{16, 17},{9, 13},{11, 8},{10, 14},{18, 15},{3, 20},{2, 1}};
 
-    for (int validationIndex = 0; validationIndex < validationCombinations.size();
-         ++validationIndex) {
+    for (int validationIndex = 0; validationIndex < validationCombinations.size(); ++validationIndex) {
         std::vector<std::shared_ptr<STIPFeature>> trainingData;
         for (int i = 0; i < validationCombinations.size(); ++i) {
             if (i == validationIndex) {
@@ -281,15 +279,12 @@ void train() {
                 std::vector<std::pair<int, int>> ranges;
                 readLabelsInfo(labelFilePath, sequenceIndex, classLabels, boxes, ranges);
                 for (int labelIndex = 0; labelIndex < classLabels.size(); ++labelIndex) {
-                    std::string baseFilePath =
-                            (boost::format("%sseq%d_%d_%d") % featureDirectoryPath % sequenceIndex %
-                             labelIndex % classLabels[labelIndex])
-                                    .str();
+                    std::string baseFilePath = (boost::format("%sseq%d_%d_%d") % featureDirectoryPath % sequenceIndex % labelIndex % classLabels[labelIndex]).str();
                     std::string pointFilePath = baseFilePath + "_pt.npy";
                     std::vector<int> pointShape;
                     std::vector<int> points;
                     aoba::LoadArrayFromNumpy<int>(pointFilePath, pointShape, points);
-
+                    
                     std::string descriptorFilePath = baseFilePath + "_desc.npy";
                     std::vector<int> descShape;
                     std::vector<float> descriptors;
@@ -299,15 +294,12 @@ void train() {
 
                     for (int localIndex = 0; localIndex < pointShape[1]; ++localIndex) {
                         int pointIndex = localIndex * 3;
-                        cv::Vec3i point(points[pointIndex], points[pointIndex + 1],
-                                        points[pointIndex + 2]);
+                        cv::Vec3i point(points[pointIndex], points[pointIndex + 1], points[pointIndex + 2]);
                         std::vector<Eigen::MatrixXf> features(N_CHANNELS);
                         for (int channelIndex = 0; channelIndex < N_CHANNELS; ++channelIndex) {
                             Eigen::MatrixXf feature(1, nChannelFeatures);
-                            for (int featureIndex = 0; featureIndex < nChannelFeatures;
-                                 ++featureIndex) {
-                                int index = localIndex * descShape[0] +
-                                            channelIndex * nChannelFeatures + featureIndex;
+                            for (int featureIndex = 0; featureIndex < nChannelFeatures; ++featureIndex) {
+                                int index = localIndex * descShape[0] + channelIndex * nChannelFeatures + featureIndex;
                                 feature.coeffRef(0, featureIndex) = descriptors[index];
                             }
                             features.at(channelIndex) = feature;
@@ -317,15 +309,14 @@ void train() {
                         actionPosition(1) = boxes[labelIndex].height / 2;
                         actionPosition(2) = boxes[labelIndex].width / 2;
                         cv::Vec3i offset = actionPosition - point;
-                        auto data = std::make_shared<STIPFeature>(features, point, offset,
-                                                                  std::make_pair(0.0, 0.0),
-                                                                  classLabels[labelIndex]);
+                        auto data = std::make_shared<STIPFeature>(
+                            features, point, offset,
+                            std::make_pair(0.0, 0.0), classLabels[labelIndex]);
                         trainingData.push_back(data);
                     }
                 }
 
-                std::string baseFilePath =
-                        (boost::format("%sseq%d") % featureDirectoryPath % sequenceIndex).str();
+                std::string baseFilePath = (boost::format("%sseq%d") % featureDirectoryPath % sequenceIndex).str();
                 std::string pointFilePath = baseFilePath + "_pt.npy";
                 std::vector<int> pointShape;
                 std::vector<int> points;
@@ -340,21 +331,19 @@ void train() {
 
                 for (int localIndex = 0; localIndex < pointShape[1]; ++localIndex) {
                     int pointIndex = localIndex * 3;
-                    cv::Vec3i point(points[pointIndex], points[pointIndex + 1],
-                                    points[pointIndex + 2]);
+                    cv::Vec3i point(points[pointIndex], points[pointIndex + 1], points[pointIndex + 2]);
                     std::vector<Eigen::MatrixXf> features(N_CHANNELS);
                     for (int channelIndex = 0; channelIndex < N_CHANNELS; ++channelIndex) {
                         Eigen::MatrixXf feature(1, nChannelFeatures);
-                        for (int featureIndex = 0; featureIndex < nChannelFeatures;
-                             ++featureIndex) {
-                            int index = localIndex * descShape[0] +
-                                        channelIndex * nChannelFeatures + featureIndex;
+                        for (int featureIndex = 0; featureIndex < nChannelFeatures; ++featureIndex) {
+                            int index = localIndex * descShape[0] + channelIndex * nChannelFeatures + featureIndex;
                             feature.coeffRef(0, featureIndex) = descriptors[index];
                         }
                         features.at(channelIndex) = feature;
                     }
                     auto data = std::make_shared<STIPFeature>(
-                            features, point, cv::Vec3i(), std::make_pair(0.0, 0.0), N_CLASSES - 1);
+                        features, point, cv::Vec3i(),
+                        std::make_pair(0.0, 0.0), N_CLASSES - 1);
                     trainingData.push_back(data);
                 }
             }
@@ -367,8 +356,8 @@ void train() {
         int nThresholds = 10;
         auto type = TreeParameters::ALL_RATIO;
         bool hasNegatieClass = true;
-        TreeParameters treeParameters(N_CLASSES, nTrees, bootstrapRatio, maxDepth, minData, nSplits,
-                                      nThresholds, type, hasNegatieClass);
+        TreeParameters treeParameters(N_CLASSES, nTrees, bootstrapRatio, maxDepth, 
+                                      minData, nSplits, nThresholds, type, hasNegatieClass);
         std::vector<int> numberOfFeatureDimensions(N_CHANNELS);
         for (auto i = 0; i < N_CHANNELS; ++i) {
             numberOfFeatureDimensions.at(i) = trainingData.front()->getNumberOfFeatureDimensions(i);
@@ -380,8 +369,7 @@ void train() {
         HoughForests houghForests(stipNode, houghParameters, nThreads);
         houghForests.train(trainingData);
 
-        std::string outputDirectoryPath =
-                (boost::format("%s%d/") % forestsDirectoryPath % validationIndex).str();
+        std::string outputDirectoryPath = (boost::format("%s%d/") % forestsDirectoryPath % validationIndex).str();
         std::tr2::sys::path directory(outputDirectoryPath);
         if (!std::tr2::sys::exists(directory)) {
             std::tr2::sys::create_directory(directory);
@@ -391,11 +379,13 @@ void train() {
     }
 }
 
-void detect() {}
+void detect() {
+
+}
 
 int main() {
-    // extractPositiveFeatures();
-    // extractNegativeFeatures();
+    //extractPositiveFeatures();
+    //extractNegativeFeatures();
     train();
 
     // using namespace nuisken;

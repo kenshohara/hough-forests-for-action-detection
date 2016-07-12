@@ -21,9 +21,9 @@
 namespace nuisken {
 namespace houghforests {
 
-// void HoughForests::train(const std::vector<FeaturePtr>& features) {
-//    randomForests_.train(features, maxNumberOfThreads_);
-//}
+void HoughForests::train(const std::vector<FeaturePtr>& features) {
+    randomForests_.train(features, nThreads_);
+}
 
 void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
                           std::vector<std::vector<DetectionResult>>& detectionResults) {

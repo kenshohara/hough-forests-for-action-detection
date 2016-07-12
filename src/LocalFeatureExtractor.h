@@ -82,7 +82,10 @@ class LocalFeatureExtractor {
     }
 
     void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
-                              std::vector<std::vector<Descriptor>> scaleDescriptors);
+                              std::vector<std::vector<Descriptor>>& scaleDescriptors);
+
+    bool isEnd() const { return isEnd_; }
+    int getStoredStartT() const { return storedStartT_; }
 
     static std::vector<std::string> getFeatureNames() {
         return std::vector<std::string>{"intensity",    "x_derivative", "y_derivative",

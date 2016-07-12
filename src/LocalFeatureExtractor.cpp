@@ -21,7 +21,7 @@ void LocalFeatureExtractor::makeLocalSizeOdd(int& size) const {
 
 void LocalFeatureExtractor::extractLocalFeatures(
         std::vector<std::vector<cv::Vec3i>>& scalePoints,
-        std::vector<std::vector<Descriptor>> scaleDescriptors) {
+        std::vector<std::vector<Descriptor>>& scaleDescriptors) {
     readOriginalScaleVideo();
     generateScaledVideos();
     for (int scaleIndex = 0; scaleIndex < scales_.size(); ++scaleIndex) {
@@ -37,8 +37,6 @@ void LocalFeatureExtractor::extractLocalFeatures(
         scalePoints.push_back(points);
         scaleDescriptors.push_back(descriptors);
     }
-    // visualizeDenseFeature(scalePoints.front(), scaleDescriptors.front(), width_, height_,
-    // localDuration_);
     deleteOldData();
 }
 

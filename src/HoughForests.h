@@ -57,6 +57,8 @@ class HoughForests {
               nThreads_(nThreads){};
     virtual ~HoughForests(){};
 
+    void HoughForests::train(const std::vector<FeaturePtr>& features);
+
     void detect(const std::vector<std::string>& featureFilePaths,
                 std::vector<std::vector<DetectionResult>>& detectionResults);
 
