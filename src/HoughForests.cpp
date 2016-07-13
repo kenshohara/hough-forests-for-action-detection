@@ -40,11 +40,12 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
         if (extractor.isEnd()) {
             break;
         }
-        std::vector<std::vector<FeaturePtr>> scaleFeatures;
+        std::cout << "convert type" << std::endl;
+        std::vector<std::vector<FeaturePtr>> scaleFeatures(scalePoints.size());
         int minT = std::numeric_limits<int>::max();
         int maxT = 0;
         for (int scaleIndex = 0; scaleIndex < scalePoints.size(); ++scaleIndex) {
-            std::vector<FeaturePtr> features(scalePoints[scaleIndex].size());
+            scaleFeatures.at(scaleIndex).reserve(scalePoints[scaleIndex].size());
             for (int i = 0; i < scalePoints[scaleIndex].size(); ++i) {
                 cv::Vec3i point = scalePoints.at(scaleIndex).at(i);
                 std::vector<Eigen::MatrixXf> channelFeatures(extractor.N_CHANNELS_);
@@ -60,12 +61,11 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
                 }
                 auto feature = std::make_shared<randomforests::STIPNode::FeatureType>(
                         channelFeatures, point, cv::Vec3i(), std::make_pair(0.0, 0.0), 0);
-                features.push_back(feature);
+                scaleFeatures.at(scaleIndex).push_back(feature);
             }
-            scaleFeatures.push_back(features);
         }
 
-        std::cout << "votes" << std::endl;
+        std::cout << "calculate votes" << std::endl;
         std::vector<std::vector<VoteInfo>> votesInfo;
         for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
             if (scaleFeatures.at(scaleIndex).empty()) {
@@ -75,13 +75,16 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
             calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo);
         }
         // auto inputStart = std::chrono::system_clock::now();
+        std::cout << "input in voting space" << std::endl;
         inputInVotingSpace(votesInfo);
 
         // auto calcMMStart = std::chrono::system_clock::now();
+        std::cout << "calc min max vote t" << std::endl;
         std::vector<std::pair<int, int>> minMaxRanges;
         getMinMaxVotingT(votesInfo, minMaxRanges);
 
         // auto findStart = std::chrono::system_clock::now();
+        std::cout << "find local maxima" << std::endl;
         std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
         // auto threshStart = std::chrono::system_clock::now();
         localMaxima = thresholdLocalMaxima(localMaxima);
@@ -224,6 +227,7 @@ std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(
     std::vector<VoteInfo> votesInfo;
     for (const auto& leafData : leavesData) {
         auto featuresInfo = leafData->getFeatureInfo();
+        //std::cout << featuresInfo.size() << std::endl;
         double weight = 1.0 / (featuresInfo.size() * leavesData.size());
         for (const auto& featureInfo : featuresInfo) {
             int classLabel = featureInfo.getClassLabel();
@@ -376,10 +380,12 @@ void HoughForests::visualize(const std::vector<cv::Mat3b>& video, int videoStart
     for (int t = 0; t < video.size(); ++t) {
         int visT = t + videoStartT;
         cv::Mat visFrame = video.at(t).clone();
-        for (const auto& vis : visualizeMap.at(visT)) {
-            cv::circle(visFrame, vis.second, 5, cv::Scalar(0, 0, 255), -1);
-            cv::putText(visFrame, std::to_string(vis.first), vis.second, cv::FONT_HERSHEY_PLAIN,
-                        1.0, cv::Scalar(0, 0, 255));
+        if (visualizeMap.count(t) != 0) {
+            for (const auto& vis : visualizeMap.at(visT)) {
+                cv::circle(visFrame, vis.second, 5, cv::Scalar(0, 0, 255), -1);
+                cv::putText(visFrame, std::to_string(vis.first), vis.second, cv::FONT_HERSHEY_PLAIN,
+                            1.0, cv::Scalar(0, 0, 255));
+            }
         }
         cv::imshow("vis", visFrame);
         cv::waitKey(5);

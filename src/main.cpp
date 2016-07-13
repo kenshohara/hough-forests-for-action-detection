@@ -42,7 +42,7 @@ void extractPositiveFeatures() {
         std::vector<cv::Vec3i> selectedPoints;
         std::vector<std::vector<float>> selectedDescriptors;
         while (true) {
-            std::cout << "frame: " << extractor.getStoredStartT() << std::endl;
+            std::cout << "frame: " << extractor.getStoredFeatureStartT() << std::endl;
             std::vector<std::vector<cv::Vec3i>> points;
             std::vector<std::vector<std::vector<float>>> descriptors;
             extractor.extractLocalFeatures(points, descriptors);
@@ -193,7 +193,7 @@ void extractNegativeFeatures() {
         std::vector<cv::Vec3i> selectedPoints;
         std::vector<std::vector<float>> selectedDescriptors;
         while (true) {
-            std::cout << "frame: " << extractor.getStoredStartT() << std::endl;
+            std::cout << "frame: " << extractor.getStoredFeatureStartT() << std::endl;
             std::vector<std::vector<cv::Vec3i>> points;
             std::vector<std::vector<std::vector<float>>> descriptors;
             extractor.extractLocalFeatures(points, descriptors);
@@ -262,7 +262,7 @@ void train() {
     const int N_CLASSES = 7;
 
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    // std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
+    //std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string featureDirectoryPath = rootDirectoryPath + "feature_hf/";
     std::string labelFilePath = rootDirectoryPath + "labels.csv";
     std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests/";
@@ -317,7 +317,7 @@ void train() {
                             features.at(channelIndex) = feature;
                         }
                         cv::Vec3i actionPosition;
-                        actionPosition(0) = ranges[labelIndex].second - ranges[labelIndex].first;
+                        actionPosition(0) = (ranges[labelIndex].second - ranges[labelIndex].first) / 2;
                         actionPosition(1) = boxes[labelIndex].height / 2;
                         actionPosition(2) = boxes[labelIndex].width / 2;
                         cv::Vec3i offset = actionPosition - point;
@@ -363,12 +363,13 @@ void train() {
                 }
             }
         }
+
         int nTrees = 15;
         double bootstrapRatio = 1.0;
         int maxDepth = 30;
         int minData = 5;
-        int nSplits = 30;
-        int nThresholds = 10;
+        int nSplits = 50;
+        int nThresholds = 30;
         auto type = TreeParameters::ALL_RATIO;
         bool hasNegatieClass = true;
         TreeParameters treeParameters(N_CLASSES, nTrees, bootstrapRatio, maxDepth, minData, nSplits,
@@ -395,12 +396,58 @@ void train() {
     }
 }
 
-void detect() {}
+void detect() {
+    using namespace nuisken::houghforests;
+    using namespace nuisken::randomforests;
+
+    std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
+    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests/0/";
+
+    int localWidth = 21;
+    int localHeight = localWidth;
+    int localDuration = 9;
+    int xStep = 10;
+    int yStep = xStep;
+    int tStep = 5;
+    std::vector<double> scales = {1.0, 0.707, 0.5};
+
+    std::string videoFilePath = rootDirectoryPath + "test.avi";// "unsegmented/seq5.avi";
+    LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight, localDuration,
+                                    xStep, yStep, tStep);
+
+    int nClasses = 7;
+    int nThreads = 6;
+    int width = 720;
+    int height = 480;
+    double initialScale = 1.0;
+    double scalingRate = 0.707;
+    int baseScale = 200;
+    std::vector<double> bandwidths = {10.0, 8.0, 0.5};
+    std::vector<int> steps = {20, 10};
+    int votesDeleteStep = 50;
+    int votesBufferLength = 200;
+    //std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    std::vector<double> scoreThresholds(6, 0.05);
+    bool hasNegativeClass = true;
+    bool isBackprojection = false;
+    TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
+                                  hasNegativeClass);
+    HoughForestsParameters parameters(width, height, scales, baseScale, nClasses, bandwidths.at(0),
+                                      bandwidths.at(1), bandwidths.at(2), steps.at(0), steps.at(1),
+                                      votesDeleteStep, votesBufferLength, scoreThresholds,
+                                      hasNegativeClass, isBackprojection, treeParameters);
+    HoughForests houghForests(nThreads);
+    houghForests.setHoughForestsParameters(parameters);
+    houghForests.load(forestsDirectoryPath);
+
+    houghForests.detect(extractor);
+}
 
 int main() {
     // extractPositiveFeatures();
-    //extractNegativeFeatures();
-     train();
+    // extractNegativeFeatures();
+    train();
+    //detect();
 
     // using namespace nuisken;
     // using namespace nuisken::houghforests;
