@@ -23,6 +23,7 @@ class LocalFeatureExtractor {
     using Video = std::vector<cv::Mat1b>;
 
     cv::VideoCapture videoCapture_;
+    Video colorVideo_;
     std::vector<Video> scaleVideos_;
     std::vector<MultiChannelFeature> scaleChannelFeatures_;
     std::vector<double> scales_;

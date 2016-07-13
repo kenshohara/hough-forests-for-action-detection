@@ -49,8 +49,8 @@ void LocalFeatureExtractor::extractLocalFeatures(
         scaleDescriptors.push_back(descriptors);
     }
 
-    for (int i = 1; i < scaleVideos_.front().size(); ++i) {
-        usedVideo.push_back(scaleVideos_.front()[i].clone());
+    for (const auto& frame : colorVideo_) {
+        usedVideo.push_back(frame.clone());
     }
 
     deleteOldData();
@@ -61,6 +61,7 @@ void LocalFeatureExtractor::readOriginalScaleVideo() {
     if (scaleVideos_.front().empty()) {
         cv::Mat firstFrame;
         videoCapture_ >> firstFrame;
+        colorVideo_.push_back(firstFrame.clone());
         cv::cvtColor(firstFrame, firstFrame, cv::COLOR_BGR2GRAY);
         scaleVideos_.front().push_back(
                 firstFrame);  // add dummy frame for t_derivative and optical flow
@@ -79,6 +80,7 @@ void LocalFeatureExtractor::readOriginalScaleVideo() {
             isEnd_ = true;
             break;
         }
+        colorVideo_.push_back(frame.clone());
         cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
         scaleVideos_.front().push_back(frame);
     }
@@ -119,6 +121,7 @@ void LocalFeatureExtractor::deleteOldData() {
         return;
     }
 
+    colorVideo_.clear();
     for (auto& video : scaleVideos_) {
         video = {video.back()};
     }
