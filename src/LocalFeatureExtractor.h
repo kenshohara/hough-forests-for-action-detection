@@ -85,6 +85,9 @@ class LocalFeatureExtractor {
 
     void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
                               std::vector<std::vector<Descriptor>>& scaleDescriptors);
+    void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
+                              std::vector<std::vector<Descriptor>>& scaleDescriptors,
+                              Video& usedVideo);
 
     bool isEnd() const { return isEnd_; }
     int getStoredStartT() const { return storedStartT_; }
