@@ -39,6 +39,8 @@ class LocalFeatureExtractor {
     bool isEnd_;
 
    public:
+    LocalFeatureExtractor(){};
+
     LocalFeatureExtractor(const std::string& videoFilePath, std::vector<double> scales,
                           int localWidth, int localHeight, int localDuration, int xStep, int yStep,
                           int tStep)

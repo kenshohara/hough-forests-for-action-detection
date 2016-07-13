@@ -25,7 +25,12 @@ void LocalFeatureExtractor::extractLocalFeatures(
     readOriginalScaleVideo();
     generateScaledVideos();
     for (int scaleIndex = 0; scaleIndex < scales_.size(); ++scaleIndex) {
-        extractFeatures(scaleIndex, 1, scaleVideos_[scaleIndex].size());
+        int startFrame = 1;
+        int endFrame = scaleVideos_[scaleIndex].size();
+        extractFeatures(scaleIndex, startFrame, endFrame);
+        if (scaleIndex == 0) {
+            nStoredFeatureFrames_ += endFrame - startFrame;
+        }
         if (nStoredFeatureFrames_ < localDuration_) {
             isEnd_ = true;
             return;
@@ -90,8 +95,6 @@ void LocalFeatureExtractor::extractFeatures(int scaleIndex, int startFrame, int 
                               endFrame);
     extractFlowFeature(scaleChannelFeatures_[scaleIndex][4], scaleChannelFeatures_[scaleIndex][5],
                        scaleIndex, startFrame, endFrame);
-
-    nStoredFeatureFrames_ += endFrame - startFrame;
 }
 
 void LocalFeatureExtractor::deleteOldData() {
