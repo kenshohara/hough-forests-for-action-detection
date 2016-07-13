@@ -179,11 +179,12 @@ void extractNegativeFeatures() {
     std::string videoDirectoryPath = "E:/Hara/UT-Interaction/unsegmented/";
     std::string labelFilePath = "E:/Hara/UT-Interaction/labels.csv";
     std::string outputDirectoryPath = "E:/Hara/UT-Interaction/feature_hf/";
-    for (int sequenceIndex = 1; sequenceIndex <= 6; ++sequenceIndex) {
+    for (int sequenceIndex = 19; sequenceIndex <= 20; ++sequenceIndex) {
         std::string filePath =
                 (boost::format("%sseq%d.avi") % videoDirectoryPath % sequenceIndex).str();
         std::vector<cv::Rect> boxes;
         std::vector<std::pair<int, int>> temporalRanges;
+        std::cout << "read labels" << std::endl;
         readLabelsInfo(labelFilePath, sequenceIndex, boxes, temporalRanges);
 
         std::cout << "extract" << std::endl;
@@ -200,6 +201,7 @@ void extractNegativeFeatures() {
                 break;
             }
 
+            std::cout << "select" << std::endl;
             for (int scaleIndex = 0; scaleIndex < points.size(); ++scaleIndex) {
                 std::vector<size_t> indices;
                 int index = 0;
@@ -207,7 +209,7 @@ void extractNegativeFeatures() {
                     cv::Vec3i scaledPoint(point);
                     scaledPoint(1) /= scales[scaleIndex];
                     scaledPoint(2) /= scales[scaleIndex];
-                    if (contains(boxes, temporalRanges, point)) {
+                    if (!contains(boxes, temporalRanges, point)) {
                         indices.push_back(index);
                     }
                     ++index;
@@ -259,7 +261,7 @@ void train() {
     const int N_CHANNELS = 6;
     const int N_CLASSES = 7;
 
-    std::string rootDirectoryPath = "D:/UT-Interaction/";
+    std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     // std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string featureDirectoryPath = rootDirectoryPath + "feature_hf/";
     std::string labelFilePath = rootDirectoryPath + "labels.csv";
@@ -270,12 +272,14 @@ void train() {
 
     for (int validationIndex = 0; validationIndex < validationCombinations.size();
          ++validationIndex) {
+        std::cout << "validation: " << validationIndex << std::endl;
         std::vector<std::shared_ptr<STIPFeature>> trainingData;
         for (int i = 0; i < validationCombinations.size(); ++i) {
             if (i == validationIndex) {
                 continue;
             }
             for (int sequenceIndex : validationCombinations.at(i)) {
+                std::cout << "read seq" << sequenceIndex << std::endl;
                 std::vector<int> classLabels;
                 std::vector<cv::Rect> boxes;
                 std::vector<std::pair<int, int>> ranges;
@@ -395,8 +399,8 @@ void detect() {}
 
 int main() {
     // extractPositiveFeatures();
-    // extractNegativeFeatures();
-    train();
+    //extractNegativeFeatures();
+     train();
 
     // using namespace nuisken;
     // using namespace nuisken::houghforests;

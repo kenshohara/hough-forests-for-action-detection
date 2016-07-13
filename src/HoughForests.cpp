@@ -25,6 +25,103 @@ void HoughForests::train(const std::vector<FeaturePtr>& features) {
     randomForests_.train(features, nThreads_);
 }
 
+void HoughForests::detect(LocalFeatureExtractor& extractor) {
+    std::cout << "initialize" << std::endl;
+    initialize();
+
+    while (true) {
+        std::cout << "read" << std::endl;
+        std::vector<std::vector<cv::Vec3i>> scalePoints;
+        std::vector<std::vector<std::vector<float>>> scaleDescriptors;
+        extractor.extractLocalFeatures(scalePoints, scaleDescriptors);
+        if (extractor.isEnd()) {
+            break;
+        }
+        std::vector<std::unordered_map<int, std::vector<FeaturePtr>>> scaleFeatures;
+        int minT = std::numeric_limits<int>::max();
+        int maxT = 0;
+        for (int scaleIndex = 0; scaleIndex < scalePoints.size(); ++scaleIndex) {
+            std::unordered_map<int, std::vector<FeaturePtr>> featuresMap(
+                    scalePoints[scaleIndex].size());
+            for (int i = 0; i < scalePoints[scaleIndex].size(); ++i) {
+                cv::Vec3i point = scalePoints.at(scaleIndex).at(i);
+                std::vector<Eigen::MatrixXf> features(extractor.N_CHANNELS_);
+                int nChannelFeatures =
+                        scaleDescriptors.at(scaleIndex).at(i).size() / extractor.N_CHANNELS_;
+                for (int channelIndex = 0; channelIndex < features.size(); ++channelIndex) {
+                    Eigen::MatrixXf feature(1, nChannelFeatures);
+                    for (int featureIndex = 0; featureIndex < nChannelFeatures; ++featureIndex) {
+                        int index = channelIndex * nChannelFeatures + featureIndex;
+                        feature.coeffRef(0, featureIndex) = scaleDescriptors[scaleIndex][i][index];
+                    }
+                    features.at(channelIndex) = feature;
+                }
+                auto feature = std::make_shared<randomforests::STIPNode::FeatureType>(
+                        features, point, cv::Vec3i(), std::make_pair(0.0, 0.0), 0);
+                if (featuresMap.count(point(T)) == 0) {
+                    featuresMap.insert(std::make_pair(point(T), std::vector<FeaturePtr>{feature}));
+                } else {
+                    featuresMap.at(point(T)).push_back(feature);
+                }
+
+                if (point(T) < minT) {
+                    minT = point(T);
+                }
+                if (point(T) > maxT) {
+                    maxT = point(T);
+                }
+            }
+            scaleFeatures.push_back(featuresMap);
+        }
+
+        std::cout << "votes" << std::endl;
+        std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
+        for (int t = minT; t < maxT; ++t) {
+            std::cout << "t: " << t << std::endl;
+            auto start = std::chrono::system_clock::now();
+
+            std::vector<std::vector<VoteInfo>> votesInfo;
+            for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
+                if (scaleFeatures.at(scaleIndex).count(t) == 0) {
+                    continue;
+                }
+
+                calculateVotes(scaleFeatures.at(scaleIndex).at(t), scaleIndex, votesInfo);
+            }
+            auto inputStart = std::chrono::system_clock::now();
+            inputInVotingSpace(votesInfo);
+
+            auto calcMMStart = std::chrono::system_clock::now();
+            std::vector<std::pair<int, int>> minMaxRanges;
+            getMinMaxVotingT(votesInfo, minMaxRanges);
+
+            auto findStart = std::chrono::system_clock::now();
+            std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
+            auto threshStart = std::chrono::system_clock::now();
+            localMaxima = thresholdLocalMaxima(localMaxima);
+
+            auto combineStart = std::chrono::system_clock::now();
+            for (int classLabel = 0; classLabel < totalLocalMaxima.size(); ++classLabel) {
+                LocalMaxima oneClassLocalMaxima(totalLocalMaxima.at(classLabel));
+                std::copy(std::begin(localMaxima.at(classLabel)),
+                          std::end(localMaxima.at(classLabel)),
+                          std::back_inserter(oneClassLocalMaxima));
+                totalLocalMaxima.at(classLabel) =
+                        finder_.combineNeighborLocalMaxima(oneClassLocalMaxima);
+            }
+
+            for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
+                deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
+            }
+
+            auto end = std::chrono::system_clock::now();
+            std::cout << "one cycle: "
+                      << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+                      << std::endl;
+        }
+    }
+}
+
 void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
                           std::vector<std::vector<DetectionResult>>& detectionResults) {
     std::vector<std::unordered_map<int, std::vector<FeaturePtr>>> scaleFeatures;

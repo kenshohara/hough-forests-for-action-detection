@@ -2,6 +2,7 @@
 #define HOUGH_FORESTS
 
 #include "HoughForestsParameters.h"
+#include "LocalFeatureExtractor.h"
 #include "LocalMaximaFinder.h"
 #include "RandomForests.hpp"
 #include "STIPNode.h"
@@ -11,6 +12,7 @@
 #include "VotingSpace.h"
 
 #include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include <array>
 #include <map>
@@ -59,6 +61,7 @@ class HoughForests {
 
     void HoughForests::train(const std::vector<FeaturePtr>& features);
 
+    void detect(LocalFeatureExtractor& extractor);
     void detect(const std::vector<std::string>& featureFilePaths,
                 std::vector<std::vector<DetectionResult>>& detectionResults);
 
