@@ -21,6 +21,7 @@ class LocalFeatureExtractor {
     using Feature = std::vector<float>;
     using MultiChannelFeature = std::vector<Feature>;
     using Video = std::vector<cv::Mat1b>;
+    using ColorVideo = std::vector<cv::Mat3b>;
 
     cv::VideoCapture videoCapture_;
     Video colorVideo_;
@@ -88,7 +89,7 @@ class LocalFeatureExtractor {
                               std::vector<std::vector<Descriptor>>& scaleDescriptors);
     void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
                               std::vector<std::vector<Descriptor>>& scaleDescriptors,
-                              Video& usedVideo);
+                              ColorVideo& usedVideo);
 
     bool isEnd() const { return isEnd_; }
     int getStoredStartT() const { return storedStartT_; }

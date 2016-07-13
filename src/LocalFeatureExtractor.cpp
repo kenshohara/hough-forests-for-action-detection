@@ -22,12 +22,12 @@ void LocalFeatureExtractor::makeLocalSizeOdd(int& size) const {
 void LocalFeatureExtractor::extractLocalFeatures(
         std::vector<std::vector<cv::Vec3i>>& scalePoints,
         std::vector<std::vector<Descriptor>>& scaleDescriptors) {
-    extractLocalFeatures(scalePoints, scaleDescriptors, Video{});
+    extractLocalFeatures(scalePoints, scaleDescriptors, ColorVideo{});
 }
 
 void LocalFeatureExtractor::extractLocalFeatures(
         std::vector<std::vector<cv::Vec3i>>& scalePoints,
-        std::vector<std::vector<Descriptor>>& scaleDescriptors, Video& usedVideo) {
+        std::vector<std::vector<Descriptor>>& scaleDescriptors, ColorVideo& usedVideo) {
     readOriginalScaleVideo();
     generateScaledVideos();
     for (int scaleIndex = 0; scaleIndex < scales_.size(); ++scaleIndex) {
