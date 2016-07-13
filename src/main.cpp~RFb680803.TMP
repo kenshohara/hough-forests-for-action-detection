@@ -262,7 +262,7 @@ void train() {
     const int N_CLASSES = 7;
 
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    // std::string rootDirectoryPath = "D:/UT-Interaction/";
+    //std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string featureDirectoryPath = rootDirectoryPath + "feature_hf/";
     std::string labelFilePath = rootDirectoryPath + "labels.csv";
     std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests/";
@@ -317,8 +317,7 @@ void train() {
                             features.at(channelIndex) = feature;
                         }
                         cv::Vec3i actionPosition;
-                        actionPosition(0) =
-                                (ranges[labelIndex].second - ranges[labelIndex].first) / 2;
+                        actionPosition(0) = (ranges[labelIndex].second - ranges[labelIndex].first) / 2;
                         actionPosition(1) = boxes[labelIndex].height / 2;
                         actionPosition(2) = boxes[labelIndex].width / 2;
                         cv::Vec3i offset = actionPosition - point;
@@ -410,17 +409,16 @@ void detect() {
     int xStep = 10;
     int yStep = xStep;
     int tStep = 5;
-    // std::vector<double> scales = {1.0, 0.707, 0.5};
-    std::vector<double> scales = {1.0};
+    std::vector<double> scales = {1.0, 0.707, 0.5};
 
-    std::string videoFilePath = rootDirectoryPath + "test.avi";  // "unsegmented/seq5.avi";
+    std::string videoFilePath = rootDirectoryPath + "test.avi";// "unsegmented/seq5.avi";
     LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight, localDuration,
                                     xStep, yStep, tStep);
 
     int nClasses = 7;
-    int nThreads = 6;
-    int width = 300;
-    int height = 200;
+    int nThreads = 1;
+    int width = 720;
+    int height = 480;
     double initialScale = 1.0;
     double scalingRate = 0.707;
     int baseScale = 200;
@@ -428,9 +426,8 @@ void detect() {
     std::vector<int> steps = {20, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
-    // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 2.0);
-    // std::vector<double> scoreThresholds(6, 0.05);
+    //std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    std::vector<double> scoreThresholds(6, 0.05);
     bool hasNegativeClass = true;
     bool isBackprojection = false;
     TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
@@ -449,7 +446,7 @@ void detect() {
 int main() {
     // extractPositiveFeatures();
     // extractNegativeFeatures();
-    // train();
+    //train();
     detect();
 
     // using namespace nuisken;

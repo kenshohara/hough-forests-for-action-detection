@@ -38,9 +38,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
         std::vector<cv::Mat3b> video;
         extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video);
         auto endd = std::chrono::system_clock::now();
-        std::cout << "extract features: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(endd - start).count()
-                  << std::endl;
+        std::cout << "extract features: " << std::chrono::duration_cast<std::chrono::milliseconds>(endd - start).count() << std::endl;
         if (extractor.isEnd()) {
             break;
         }

@@ -37,10 +37,6 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
         std::vector<cv::Mat3b> video;
         extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video);
-        auto endd = std::chrono::system_clock::now();
-        std::cout << "extract features: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(endd - start).count()
-                  << std::endl;
         if (extractor.isEnd()) {
             break;
         }
@@ -90,7 +86,10 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
         // auto findStart = std::chrono::system_clock::now();
         std::cout << "find local maxima" << std::endl;
         std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
-
+        std::cout << "before thresholding" << std::endl;
+        for (const auto& lm : localMaxima) {
+            std::cout << lm.size() << std::endl;
+        }
         // auto threshStart = std::chrono::system_clock::now();
         localMaxima = thresholdLocalMaxima(localMaxima);
 
@@ -232,7 +231,7 @@ std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(
     std::vector<VoteInfo> votesInfo;
     for (const auto& leafData : leavesData) {
         auto featuresInfo = leafData->getFeatureInfo();
-        // std::cout << featuresInfo.size() << std::endl;
+        //std::cout << featuresInfo.size() << std::endl;
         if (featuresInfo.size() > 100) {
             continue;
         }
@@ -269,9 +268,8 @@ void HoughForests::inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& 
     }
 }
 
-void HoughForests::getMinMaxVotingT(
-        const std::vector<std::vector<VoteInfo>>& votesInfo,
-        std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges) const {
+void HoughForests::getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& votesInfo,
+                                    std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges) const {
     minMaxRanges.resize(parameters_.getNumberOfPositiveClasses());
     for (auto& oneClassRange : minMaxRanges) {
         int minT = std::numeric_limits<std::size_t>::max();
@@ -371,6 +369,7 @@ void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t vi
     int videoEndT = videoStartT + video.size();
     std::unordered_map<int, std::vector<std::pair<int, cv::Point>>> visualizeMap;
     for (int classLabel = 0; classLabel < localMaxima.size(); ++classLabel) {
+        std::cout << localMaxima.at(classLabel).size() << std::endl;
         for (const auto& localMaximum : localMaxima.at(classLabel)) {
             cv::Vec4f maximumPoint = localMaximum.getPoint();
             int t = maximumPoint(0);
@@ -389,11 +388,11 @@ void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t vi
     for (int t = 0; t < video.size(); ++t) {
         int visT = t + videoStartT;
         cv::Mat visFrame = video.at(t).clone();
-        if (visualizeMap.count(visT) != 0) {
+        if (visualizeMap.count(t) != 0) {
             for (const auto& vis : visualizeMap.at(visT)) {
-                cv::circle(visFrame, vis.second, 10, cv::Scalar(0, 0, 255), -1);
+                cv::circle(visFrame, vis.second, 5, cv::Scalar(0, 0, 255), -1);
                 cv::putText(visFrame, std::to_string(vis.first), vis.second, cv::FONT_HERSHEY_PLAIN,
-                            2.0, cv::Scalar(0, 0, 255));
+                            1.0, cv::Scalar(0, 0, 255));
             }
         }
         cv::imshow("vis", visFrame);

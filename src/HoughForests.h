@@ -98,13 +98,14 @@ class HoughForests {
                                    const randomforests::STIPLeaf::FeatureInfo& featureInfo) const;
     void inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& votesInfo);
     void getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& votesInfo,
-                          std::vector<std::pair<int, int>>& minMaxRanges) const;
-    std::vector<LocalMaxima> findLocalMaxima(const std::vector<std::pair<int, int>>& minMaxRanges);
-    LocalMaxima findLocalMaxima(VotingSpace& votingSpace, double scoreThreshold, int voteStartT,
-                                int voteEndT);
+                          std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges) const;
+    std::vector<LocalMaxima> findLocalMaxima(
+            const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges);
+    LocalMaxima findLocalMaxima(VotingSpace& votingSpace, double scoreThreshold,
+                                std::size_t voteStartT, std::size_t voteEndT);
     std::vector<LocalMaxima> thresholdLocalMaxima(std::vector<LocalMaxima> localMaxima) const;
-    void deleteOldVotes(int classLabel, int voteMaxT);
-    void visualize(const std::vector<cv::Mat3b>& video, int videoStartT,
+    void deleteOldVotes(int classLabel, std::size_t voteMaxT);
+    void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
                    const std::vector<LocalMaxima>& localMaxima) const;
 };
 }

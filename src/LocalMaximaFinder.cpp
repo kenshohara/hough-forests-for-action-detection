@@ -1,5 +1,6 @@
 #include "LocalMaximaFinder.h"
 
+#include <algorithm>
 #include <chrono>
 
 namespace nuisken {
@@ -8,9 +9,9 @@ namespace houghforests {
 LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
                                                double scoreThreshold, std::size_t voteStartT,
                                                std::size_t voteEndT) const {
-    int bandwidthRange = 3.0 * tau_;
-    int findStartT = voteStartT - bandwidthRange;
-    int findEndT = voteEndT + bandwidthRange;
+    std::size_t bandwidthRange = 3.0 * tau_;
+    std::size_t findStartT = (voteStartT < bandwidthRange) ? 0 : voteStartT - bandwidthRange;
+    std::size_t findEndT = voteEndT + bandwidthRange;
 
     std::vector<Point> gridPoints = getGridPoints(findStartT, findEndT, 0, votingSpace.getHeight(),
                                                   0, votingSpace.getWidth(), 0, scales_.size());
@@ -27,30 +28,33 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
     if (votingPoints.empty()) {
         return {};
     }
-
     std::vector<double> bandwidths = {tau_, sigma_, scaleBandwidth_};
     std::vector<int> bandDimensions = {TEMPORAL_DIMENSION_SIZE_, SPATIAL_DIMENSION_SIZE_,
                                        SCALE_DIMENSION_SIZE_};
+    KDE voteKde(votingPoints, weights, bandwidths, bandDimensions);
+    voteKde.buildTree();
 
-    KDE kde(votingPoints, weights, bandwidths, bandDimensions);
-    kde.buildTree();
-
+    // std::cout << "estimate densities" << std::endl;
     std::vector<double> densities;
     densities.reserve(gridPoints.size());
     for (int i = 0; i < gridPoints.size(); ++i) {
-        densities.push_back(kde.estimateDensity(gridPoints.at(i)));
+        densities.push_back(voteKde.estimateDensity(gridPoints.at(i)));
     }
 
+    KDE gridKde(gridPoints, bandwidths, bandDimensions);
+    gridKde.buildTree();
+
+    // std::cout << "quick shift" << std::endl;
     std::vector<int> links(gridPoints.size());
     std::fill(std::begin(links), std::end(links), -1);
     for (int i = 0; i < gridPoints.size(); ++i) {
-        std::vector<Match> matches = kde.findNeighborPoints(gridPoints.at(i));
+        std::vector<Match> matches = gridKde.findNeighborPoints(gridPoints.at(i));
         std::sort(std::begin(matches), std::end(matches),
                   [](const Match& a, const Match& b) { return a.second < b.second; });
 
         for (int j = 0; j < matches.size(); ++j) {
             double kernel =
-                    kde.calculateKernel(gridPoints.at(i), gridPoints.at(matches.at(j).first));
+                    gridKde.calculateKernel(gridPoints.at(i), gridPoints.at(matches.at(j).first));
             if (kernel < std::numeric_limits<double>::epsilon()) {
                 continue;
             }
@@ -62,12 +66,13 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
         }
     }
 
+    // std::cout << "mean shift" << std::endl;
     LocalMaxima localMaxima;
     std::vector<Point> localMaximumPoints;
     std::vector<double> localMaximumDensities;
     for (int i = 0; i < links.size(); ++i) {
         if (links.at(i) == -1 && densities.at(i) > scoreThreshold) {
-            localMaxima.push_back(refineLocalMaximum(kde, gridPoints.at(i)));
+            localMaxima.push_back(refineLocalMaximum(voteKde, gridPoints.at(i)));
         }
     }
 
@@ -181,7 +186,7 @@ LocalMaxima LocalMaximaFinder::combineNeighborLocalMaxima(const LocalMaxima& loc
 
 bool LocalMaximaFinder::isNeighbor(const cv::Vec4f& a, const cv::Vec4f& b) const {
     double distance = cv::norm(a - b);
-    if (distance < 10.0) {
+    if (distance < 50.0) {
         return true;
     } else {
         return false;

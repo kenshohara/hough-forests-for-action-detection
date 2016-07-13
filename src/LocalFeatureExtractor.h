@@ -36,8 +36,8 @@ class LocalFeatureExtractor {
     int tStep_;
     int width_;
     int height_;
-    int storedColorVideoStartT_;
-    int storedFeatureStartT_;
+    std::size_t storedColorVideoStartT_;
+    std::size_t storedFeatureStartT_;
     int nStoredFeatureFrames_;
     bool isEnd_;
 
@@ -95,8 +95,8 @@ class LocalFeatureExtractor {
                               ColorVideo& usedVideo);
 
     bool isEnd() const { return isEnd_; }
-    int getStoredColorVideoStartT() const { return storedColorVideoStartT_; }
-    int getStoredFeatureStartT() const { return storedFeatureStartT_; }
+    std::size_t getStoredColorVideoStartT() const { return storedColorVideoStartT_; }
+    std::size_t getStoredFeatureStartT() const { return storedFeatureStartT_; }
 
     static std::vector<std::string> getFeatureNames() {
         return std::vector<std::string>{"intensity",    "x_derivative", "y_derivative",
