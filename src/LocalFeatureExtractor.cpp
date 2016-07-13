@@ -115,12 +115,14 @@ void LocalFeatureExtractor::deleteOldData() {
         scaleVideos_ = std::vector<Video>(scales_.size());
         scaleChannelFeatures_ =
                 std::vector<MultiChannelFeature>(scales_.size(), MultiChannelFeature(N_CHANNELS_));
-        storedStartT_ += tStep_;
+        storedColorVideoStartT_ += tStep_;
+        storedFeatureStartT_ += tStep_;
         nStoredFeatureFrames_ = 0;
 
         return;
     }
 
+    storedColorVideoStartT_ += colorVideo_.size();
     colorVideo_.clear();
     for (auto& video : scaleVideos_) {
         video = {video.back()};
@@ -137,7 +139,7 @@ void LocalFeatureExtractor::deleteOldData() {
             features.erase(beginIt, deleteEndIt);
         }
     }
-    storedStartT_ += tStep_;
+    storedFeatureStartT_ += tStep_;
     nStoredFeatureFrames_ -= tStep_;
 }
 
@@ -255,7 +257,7 @@ void LocalFeatureExtractor::denseSampling(int scaleIndex, std::vector<cv::Vec3i>
 
     for (int y = 0; y <= yEnd; y += yStep_) {
         for (int x = 0; x <= xEnd; x += xStep_) {
-            points.emplace_back(storedStartT_ + (localDuration_ / 2), y + (localHeight_ / 2),
+            points.emplace_back(storedFeatureStartT_ + (localDuration_ / 2), y + (localHeight_ / 2),
                                 x + (localWidth_ / 2));
 
             Descriptor neighborhoodFeatures =
@@ -306,7 +308,7 @@ void LocalFeatureExtractor::visualizeDenseFeature(const std::vector<cv::Vec3i>& 
 
     for (int i = 0; i < points.size(); ++i) {
         cv::Vec3i point = points[i];
-        point(T) -= storedStartT_;
+        point(T) -= storedFeatureStartT_;
 
         int featureIndex = 0;
         for (int t = point(T) - tRange; t <= point(T) + tRange; ++t) {

@@ -36,7 +36,8 @@ class LocalFeatureExtractor {
     int tStep_;
     int width_;
     int height_;
-    int storedStartT_;
+    int storedColorVideoStartT_;
+    int storedFeatureStartT_;
     int nStoredFeatureFrames_;
     bool isEnd_;
 
@@ -56,7 +57,8 @@ class LocalFeatureExtractor {
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
-              storedStartT_(0),
+              storedColorVideoStartT_(0),
+              storedFeatureStartT_(0),
               nStoredFeatureFrames_(0),
               isEnd_(false) {
         makeLocalSizeOdd(localWidth_);
@@ -77,7 +79,8 @@ class LocalFeatureExtractor {
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
-              storedStartT_(0),
+              storedColorVideoStartT_(0),
+              storedFeatureStartT_(0),
               nStoredFeatureFrames_(0),
               isEnd_(false) {
         makeLocalSizeOdd(localWidth_);
@@ -92,7 +95,8 @@ class LocalFeatureExtractor {
                               ColorVideo& usedVideo);
 
     bool isEnd() const { return isEnd_; }
-    int getStoredStartT() const { return storedStartT_; }
+    int getStoredColorVideoStartT() const { return storedColorVideoStartT_; }
+    int getStoredFeatureStartT() const { return storedFeatureStartT_; }
 
     static std::vector<std::string> getFeatureNames() {
         return std::vector<std::string>{"intensity",    "x_derivative", "y_derivative",
