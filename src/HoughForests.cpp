@@ -29,96 +29,82 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
     std::cout << "initialize" << std::endl;
     initialize();
 
+    std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
     while (true) {
+        auto start = std::chrono::system_clock::now();
         std::cout << "read" << std::endl;
         std::vector<std::vector<cv::Vec3i>> scalePoints;
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
-        extractor.extractLocalFeatures(scalePoints, scaleDescriptors);
+        std::vector<cv::Mat3b> video;
+        extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video);
         if (extractor.isEnd()) {
             break;
         }
-        std::vector<std::unordered_map<int, std::vector<FeaturePtr>>> scaleFeatures;
+        std::vector<std::vector<FeaturePtr>> scaleFeatures;
         int minT = std::numeric_limits<int>::max();
         int maxT = 0;
         for (int scaleIndex = 0; scaleIndex < scalePoints.size(); ++scaleIndex) {
-            std::unordered_map<int, std::vector<FeaturePtr>> featuresMap(
-                    scalePoints[scaleIndex].size());
+            std::vector<FeaturePtr> features(scalePoints[scaleIndex].size());
             for (int i = 0; i < scalePoints[scaleIndex].size(); ++i) {
                 cv::Vec3i point = scalePoints.at(scaleIndex).at(i);
-                std::vector<Eigen::MatrixXf> features(extractor.N_CHANNELS_);
+                std::vector<Eigen::MatrixXf> channelFeatures(extractor.N_CHANNELS_);
                 int nChannelFeatures =
                         scaleDescriptors.at(scaleIndex).at(i).size() / extractor.N_CHANNELS_;
-                for (int channelIndex = 0; channelIndex < features.size(); ++channelIndex) {
+                for (int channelIndex = 0; channelIndex < channelFeatures.size(); ++channelIndex) {
                     Eigen::MatrixXf feature(1, nChannelFeatures);
                     for (int featureIndex = 0; featureIndex < nChannelFeatures; ++featureIndex) {
                         int index = channelIndex * nChannelFeatures + featureIndex;
                         feature.coeffRef(0, featureIndex) = scaleDescriptors[scaleIndex][i][index];
                     }
-                    features.at(channelIndex) = feature;
+                    channelFeatures.at(channelIndex) = feature;
                 }
                 auto feature = std::make_shared<randomforests::STIPNode::FeatureType>(
-                        features, point, cv::Vec3i(), std::make_pair(0.0, 0.0), 0);
-                if (featuresMap.count(point(T)) == 0) {
-                    featuresMap.insert(std::make_pair(point(T), std::vector<FeaturePtr>{feature}));
-                } else {
-                    featuresMap.at(point(T)).push_back(feature);
-                }
-
-                if (point(T) < minT) {
-                    minT = point(T);
-                }
-                if (point(T) > maxT) {
-                    maxT = point(T);
-                }
+                        channelFeatures, point, cv::Vec3i(), std::make_pair(0.0, 0.0), 0);
+                features.push_back(feature);
             }
-            scaleFeatures.push_back(featuresMap);
+            scaleFeatures.push_back(features);
         }
 
         std::cout << "votes" << std::endl;
-        std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
-        for (int t = minT; t < maxT; ++t) {
-            std::cout << "t: " << t << std::endl;
-            auto start = std::chrono::system_clock::now();
-
-            std::vector<std::vector<VoteInfo>> votesInfo;
-            for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
-                if (scaleFeatures.at(scaleIndex).count(t) == 0) {
-                    continue;
-                }
-
-                calculateVotes(scaleFeatures.at(scaleIndex).at(t), scaleIndex, votesInfo);
-            }
-            auto inputStart = std::chrono::system_clock::now();
-            inputInVotingSpace(votesInfo);
-
-            auto calcMMStart = std::chrono::system_clock::now();
-            std::vector<std::pair<int, int>> minMaxRanges;
-            getMinMaxVotingT(votesInfo, minMaxRanges);
-
-            auto findStart = std::chrono::system_clock::now();
-            std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
-            auto threshStart = std::chrono::system_clock::now();
-            localMaxima = thresholdLocalMaxima(localMaxima);
-
-            auto combineStart = std::chrono::system_clock::now();
-            for (int classLabel = 0; classLabel < totalLocalMaxima.size(); ++classLabel) {
-                LocalMaxima oneClassLocalMaxima(totalLocalMaxima.at(classLabel));
-                std::copy(std::begin(localMaxima.at(classLabel)),
-                          std::end(localMaxima.at(classLabel)),
-                          std::back_inserter(oneClassLocalMaxima));
-                totalLocalMaxima.at(classLabel) =
-                        finder_.combineNeighborLocalMaxima(oneClassLocalMaxima);
+        std::vector<std::vector<VoteInfo>> votesInfo;
+        for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
+            if (scaleFeatures.at(scaleIndex).empty()) {
+                continue;
             }
 
-            for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
-                deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
-            }
-
-            auto end = std::chrono::system_clock::now();
-            std::cout << "one cycle: "
-                      << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
-                      << std::endl;
+            calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo);
         }
+        // auto inputStart = std::chrono::system_clock::now();
+        inputInVotingSpace(votesInfo);
+
+        // auto calcMMStart = std::chrono::system_clock::now();
+        std::vector<std::pair<int, int>> minMaxRanges;
+        getMinMaxVotingT(votesInfo, minMaxRanges);
+
+        // auto findStart = std::chrono::system_clock::now();
+        std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
+        // auto threshStart = std::chrono::system_clock::now();
+        localMaxima = thresholdLocalMaxima(localMaxima);
+
+        // auto combineStart = std::chrono::system_clock::now();
+        for (int classLabel = 0; classLabel < totalLocalMaxima.size(); ++classLabel) {
+            LocalMaxima oneClassLocalMaxima(totalLocalMaxima.at(classLabel));
+            std::copy(std::begin(localMaxima.at(classLabel)), std::end(localMaxima.at(classLabel)),
+                      std::back_inserter(oneClassLocalMaxima));
+            totalLocalMaxima.at(classLabel) =
+                    finder_.combineNeighborLocalMaxima(oneClassLocalMaxima);
+        }
+
+        for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
+            deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
+        }
+
+        auto end = std::chrono::system_clock::now();
+        std::cout << "one cycle: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+                  << std::endl;
+
+        visualize(video, extractor.getStoredColorVideoStartT(), totalLocalMaxima);
     }
 }
 
@@ -365,6 +351,39 @@ void HoughForests::deleteOldVotes(int classLabel, int voteMaxT) {
     votingSpaces_.at(classLabel).deleteOldVotes();
 
     std::cout << "after: " << votingSpaces_.at(classLabel).getVotesCount() << std::endl;
+}
+
+void HoughForests::visualize(const std::vector<cv::Mat3b>& video, int videoStartT,
+                             const std::vector<LocalMaxima>& localMaxima) const {
+    int videoEndT = videoStartT + video.size();
+    std::unordered_map<int, std::vector<std::pair<int, cv::Point>>> visualizeMap;
+    for (int classLabel = 0; classLabel < localMaxima.size(); ++classLabel) {
+        for (const auto& localMaximum : localMaxima.at(classLabel)) {
+            cv::Vec4f maximumPoint = localMaximum.getPoint();
+            int t = maximumPoint(0);
+            cv::Point point(maximumPoint(2), maximumPoint(1));
+
+            for (int visT = t - 60; visT < t + 60; ++visT) {
+                if (visualizeMap.count(visT) == 0) {
+                    visualizeMap[visT] = {std::make_pair(classLabel, point)};
+                } else {
+                    visualizeMap[visT].push_back(std::make_pair(classLabel, point));
+                }
+            }
+        }
+    }
+
+    for (int t = 0; t < video.size(); ++t) {
+        int visT = t + videoStartT;
+        cv::Mat visFrame = video.at(t).clone();
+        for (const auto& vis : visualizeMap.at(visT)) {
+            cv::circle(visFrame, vis.second, 5, cv::Scalar(0, 0, 255), -1);
+            cv::putText(visFrame, std::to_string(vis.first), vis.second, cv::FONT_HERSHEY_PLAIN,
+                        1.0, cv::Scalar(0, 0, 255));
+        }
+        cv::imshow("vis", visFrame);
+        cv::waitKey(5);
+    }
 }
 
 void HoughForests::save(const std::string& directoryPath) const {

@@ -79,13 +79,11 @@ class HoughForests {
         parameters_ = parameters;
     }
 
-    // void train(const std::vector<FeaturePtr>& features);
+    // std::vector<float> getVotingSpace(int classLabel, int spatialStep, int durationStep,
+    //                                  const std::vector<double>& scales) const;
 
-    std::vector<float> getVotingSpace(int classLabel, int spatialStep, int durationStep,
-                                      const std::vector<double>& scales) const;
-
-    std::vector<float> calculateScores(const std::vector<FeaturePtr>& features,
-                                       const cv::Vec4i& calculationPosition);
+    // std::vector<float> calculateScores(const std::vector<FeaturePtr>& features,
+    //                                   const cv::Vec4i& calculationPosition);
 
     void save(const std::string& directoryPath) const;
     void load(const std::string& directoryPath);
@@ -106,6 +104,8 @@ class HoughForests {
                                 int voteEndT);
     std::vector<LocalMaxima> thresholdLocalMaxima(std::vector<LocalMaxima> localMaxima) const;
     void deleteOldVotes(int classLabel, int voteMaxT);
+    void visualize(const std::vector<cv::Mat3b>& video, int videoStartT,
+                   const std::vector<LocalMaxima>& localMaxima) const;
 };
 }
 }
