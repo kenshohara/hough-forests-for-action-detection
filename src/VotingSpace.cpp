@@ -11,7 +11,7 @@ void VotingSpace::inputVote(const cv::Vec3i& point, std::size_t scaleIndex, floa
         point(Y) < 0 || point(Y) >= height_ || scaleIndex < 0 || scaleIndex >= nScales_) {
         return;
     }
-    std::size_t index = computeIndex(point, scaleIndex);
+    std::size_t index = computeIndex(discretizePoint(point), scaleIndex);
     votes_[index] += weight;
 }
 
@@ -41,6 +41,22 @@ void VotingSpace::getVotes(std::vector<std::array<float, 4>>& votingPoints,
             weights.push_back(vote.second);
         }
     }
+}
+
+std::size_t VotingSpace::discretizePoint(std::size_t originalPoint) const {
+    return originalPoint * discretizeRatio_;
+}
+
+std::size_t VotingSpace::calculateOriginalPoint(std::size_t discretizedPoint) const {
+    return discretizedPoint / discretizeRatio_;
+}
+
+cv::Vec3i VotingSpace::discretizePoint(const cv::Vec3i& originalPoint) const {
+    return originalPoint * discretizeRatio_;
+}
+
+cv::Vec3i VotingSpace::calculateOriginalPoint(const cv::Vec3i& discretizedPoint) const {
+    return discretizedPoint / discretizeRatio_;
 }
 
 std::size_t VotingSpace::computeIndex(const cv::Vec3i& point, std::size_t scaleIndex) const {

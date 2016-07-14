@@ -46,8 +46,6 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
         }
         std::cout << "convert type" << std::endl;
         std::vector<std::vector<FeaturePtr>> scaleFeatures(scalePoints.size());
-        int minT = std::numeric_limits<int>::max();
-        int maxT = 0;
         for (int scaleIndex = 0; scaleIndex < scalePoints.size(); ++scaleIndex) {
             scaleFeatures.at(scaleIndex).reserve(scalePoints[scaleIndex].size());
             for (int i = 0; i < scalePoints[scaleIndex].size(); ++i) {
@@ -210,7 +208,8 @@ void HoughForests::initialize() {
     for (int i = 0; i < parameters_.getNumberOfPositiveClasses(); ++i) {
         votingSpaces_.emplace_back(parameters_.getWidth(), parameters_.getHeight(), scales.size(),
                                    scales, parameters_.getVotesDeleteStep(),
-                                   parameters_.getVotesBufferLength());
+                                   parameters_.getVotesBufferLength(),
+                                   parameters_.getVotingSpaceDiscretizeRatio());
     }
 
     std::vector<int> steps = {parameters_.getTemporalStep(), parameters_.getSpatialStep(),

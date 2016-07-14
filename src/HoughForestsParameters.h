@@ -29,6 +29,7 @@ class HoughForestsParameters {
 
     int votesDeleteStep_;
     int votesBufferLength_;
+    double votingSpaceDiscretizeRatio_;
 
     std::vector<double> scoreThresholds_;
 
@@ -44,6 +45,7 @@ class HoughForestsParameters {
                            int baseScale, int nClasses, double sigma, double tau,
                            double scaleBandwidth, int spatialStep, int temporalStep,
                            int votesDeleteStep, int votesBufferLength,
+                           double votingSpaceDiscretizeRatio,
                            const std::vector<double>& scoreThresholds, bool hasNegativeClass,
                            bool isBackprojection,
                            const randomforests::TreeParameters& treeParameters)
@@ -59,6 +61,7 @@ class HoughForestsParameters {
               temporalStep_(temporalStep),
               votesDeleteStep_(votesDeleteStep),
               votesBufferLength_(votesBufferLength),
+              votingSpaceDiscretizeRatio_(votingSpaceDiscretizeRatio),
               scoreThresholds_(scoreThresholds),
               hasNegativeClass_(hasNegativeClass),
               isBackprojection_(isBackprojection),
@@ -87,6 +90,8 @@ class HoughForestsParameters {
     int getVotesDeleteStep() const { return votesDeleteStep_; }
 
     int getVotesBufferLength() const { return votesBufferLength_; }
+
+    double getVotingSpaceDiscretizeRatio() const { return votingSpaceDiscretizeRatio_; }
 
     double getScoreThreshold(int classLabel) const { return scoreThresholds_.at(classLabel); };
 

@@ -428,6 +428,7 @@ void detect() {
     std::vector<int> steps = {20, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
+    double votingSpaceDiscretizeRatio = 1.0;
     // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
     std::vector<double> scoreThresholds(6, 2.0);
     // std::vector<double> scoreThresholds(6, 0.05);
@@ -437,8 +438,9 @@ void detect() {
                                   hasNegativeClass);
     HoughForestsParameters parameters(width, height, scales, baseScale, nClasses, bandwidths.at(0),
                                       bandwidths.at(1), bandwidths.at(2), steps.at(0), steps.at(1),
-                                      votesDeleteStep, votesBufferLength, scoreThresholds,
-                                      hasNegativeClass, isBackprojection, treeParameters);
+                                      votesDeleteStep, votesBufferLength,
+                                      votingSpaceDiscretizeRatio, scoreThresholds, hasNegativeClass,
+                                      isBackprojection, treeParameters);
     HoughForests houghForests(nThreads);
     houghForests.setHoughForestsParameters(parameters);
     houghForests.load(forestsDirectoryPath);
