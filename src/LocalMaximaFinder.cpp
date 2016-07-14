@@ -15,9 +15,14 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
     std::size_t findEndT = voteEndT + bandwidthRange;
     findEndT = votingSpace.discretizePoint(findEndT);
 
-    std::vector<Point> gridPoints = getGridPoints(findStartT, findEndT, 0, votingSpace.getHeight(),
-                                                  0, votingSpace.getWidth(), 0, scales_.size());
-    return findLocalMaxima(votingSpace, scoreThreshold, voteStartT, voteEndT, gridPoints);
+    std::size_t tStep = steps_.at(T) * votingSpace.getDiscretizeRatio();
+    std::size_t yStep = steps_.at(Y) * votingSpace.getDiscretizeRatio();
+    std::size_t xStep = steps_.at(X) * votingSpace.getDiscretizeRatio();
+    std::vector<Point> gridPoints =
+            getGridPoints(findStartT, findEndT, tStep, 0, votingSpace.getHeight(), yStep, 0,
+                          votingSpace.getWidth(), xStep, 0, scales_.size());
+    return findLocalMaxima(votingSpace, scoreThreshold, votingSpace.discretizePoint(voteStartT),
+                           votingSpace.discretizePoint(voteEndT), gridPoints);
 }
 
 LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
@@ -112,13 +117,13 @@ LocalMaximum LocalMaximaFinder::refineLocalMaximum(const KDE& kde,
 }
 
 std::vector<LocalMaximaFinder::Point> LocalMaximaFinder::getGridPoints(
-        std::size_t startT, std::size_t endT, std::size_t startY, std::size_t endY,
-        std::size_t startX, std::size_t endX, std::size_t startSIndex,
-        std::size_t endSIndex) const {
+        std::size_t startT, std::size_t endT, std::size_t stepT, std::size_t startY,
+        std::size_t endY, std::size_t stepY, std::size_t startX, std::size_t endX,
+        std::size_t stepX, std::size_t startSIndex, std::size_t endSIndex) const {
     std::vector<Point> gridPoints;
-    for (std::size_t t = startT; t < endT; t += steps_.at(T)) {
-        for (std::size_t y = startY; y < endY; y += steps_.at(Y)) {
-            for (std::size_t x = startX; x < endX; x += steps_.at(X)) {
+    for (std::size_t t = startT; t < endT; t += stepT) {
+        for (std::size_t y = startY; y < endY; y += stepY) {
+            for (std::size_t x = startX; x < endX; x += stepX) {
                 for (std::size_t s = startSIndex; s < endSIndex; ++s) {
                     gridPoints.emplace_back(Point{static_cast<float>(t), static_cast<float>(y),
                                                   static_cast<float>(x),

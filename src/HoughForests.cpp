@@ -44,7 +44,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
         if (extractor.isEnd()) {
             break;
         }
-        std::cout << "convert type" << std::endl;
+        //std::cout << "convert type" << std::endl;
         std::vector<std::vector<FeaturePtr>> scaleFeatures(scalePoints.size());
         for (int scaleIndex = 0; scaleIndex < scalePoints.size(); ++scaleIndex) {
             scaleFeatures.at(scaleIndex).reserve(scalePoints[scaleIndex].size());
@@ -77,11 +77,11 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
             calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo);
         }
         // auto inputStart = std::chrono::system_clock::now();
-        std::cout << "input in voting space" << std::endl;
+        //std::cout << "input in voting space" << std::endl;
         inputInVotingSpace(votesInfo);
 
         // auto calcMMStart = std::chrono::system_clock::now();
-        std::cout << "calc min max vote t" << std::endl;
+        //std::cout << "calc min max vote t" << std::endl;
         std::vector<std::pair<std::size_t, std::size_t>> minMaxRanges;
         getMinMaxVotingT(votesInfo, minMaxRanges);
 
@@ -353,7 +353,8 @@ std::vector<LocalMaxima> HoughForests::thresholdLocalMaxima(
 }
 
 void HoughForests::deleteOldVotes(int classLabel, std::size_t voteMaxT) {
-    if (voteMaxT < votingSpaces_.at(classLabel).getMaxT()) {
+    if (votingSpaces_.at(classLabel).discretizePoint(voteMaxT) <
+        votingSpaces_.at(classLabel).getMaxT()) {
         return;
     }
 

@@ -418,7 +418,7 @@ void detect() {
                                     xStep, yStep, tStep);
 
     int nClasses = 7;
-    int nThreads = 6;
+    int nThreads = 1;
     int width = 300;
     int height = 200;
     double initialScale = 1.0;
@@ -428,7 +428,7 @@ void detect() {
     std::vector<int> steps = {20, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
-    double votingSpaceDiscretizeRatio = 1.0;
+    double votingSpaceDiscretizeRatio = 0.5;
     // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
     std::vector<double> scoreThresholds(6, 2.0);
     // std::vector<double> scoreThresholds(6, 0.05);

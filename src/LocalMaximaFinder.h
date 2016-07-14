@@ -51,8 +51,9 @@ class LocalMaximaFinder {
     LocalMaxima combineNeighborLocalMaxima(const LocalMaxima& localMaxima) const;
 
    private:
-    std::vector<Point> getGridPoints(std::size_t startT, std::size_t endT, std::size_t startY,
-                                     std::size_t endY, std::size_t startX, std::size_t endX,
+    std::vector<Point> getGridPoints(std::size_t startT, std::size_t endT, std::size_t stepT,
+                                     std::size_t startY, std::size_t endY, std::size_t stepY,
+                                     std::size_t startX, std::size_t endX, std::size_t stepX,
                                      std::size_t startSIndex, std::size_t endSIndex) const;
     LocalMaxima findLocalMaxima(const VotingSpace& votingSpace, double scoreThreshold,
                                 std::size_t voteStartT, std::size_t voteEndT,

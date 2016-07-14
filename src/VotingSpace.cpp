@@ -7,11 +7,13 @@ namespace nuisken {
 namespace houghforests {
 
 void VotingSpace::inputVote(const cv::Vec3i& point, std::size_t scaleIndex, float weight) {
-    if (point(T) < static_cast<long long>(minT_) || point(X) < 0 || point(X) >= width_ ||
-        point(Y) < 0 || point(Y) >= height_ || scaleIndex < 0 || scaleIndex >= nScales_) {
+    cv::Vec3i discretizedPoint = discretizePoint(point);
+    if (discretizedPoint(T) < static_cast<long long>(minT_) || discretizedPoint(X) < 0 ||
+        discretizedPoint(X) >= width_ || discretizedPoint(Y) < 0 ||
+        discretizedPoint(Y) >= height_ || scaleIndex < 0 || scaleIndex >= nScales_) {
         return;
     }
-    std::size_t index = computeIndex(discretizePoint(point), scaleIndex);
+    std::size_t index = computeIndex(discretizedPoint, scaleIndex);
     votes_[index] += weight;
 }
 
