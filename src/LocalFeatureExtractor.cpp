@@ -11,7 +11,7 @@
 namespace nuisken {
 namespace houghforests {
 
-const int LocalFeatureExtractor::N_CHANNELS_ = 6;
+const int LocalFeatureExtractor::N_CHANNELS_ = 4;
 
 void LocalFeatureExtractor::makeLocalSizeOdd(int& size) const {
     if ((size % 2) == 0) {
@@ -106,8 +106,9 @@ void LocalFeatureExtractor::extractFeatures(int scaleIndex, int startFrame, int 
                               endFrame);
     extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, startFrame,
                               endFrame);
-    extractFlowFeature(scaleChannelFeatures_[scaleIndex][4], scaleChannelFeatures_[scaleIndex][5],
-                       scaleIndex, startFrame, endFrame);
+    // extractFlowFeature(scaleChannelFeatures_[scaleIndex][4],
+    // scaleChannelFeatures_[scaleIndex][5],
+    //                   scaleIndex, startFrame, endFrame);
 }
 
 void LocalFeatureExtractor::deleteOldData() {

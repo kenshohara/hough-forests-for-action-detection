@@ -25,7 +25,8 @@ void HoughForests::train(const std::vector<FeaturePtr>& features) {
     randomForests_.train(features, nThreads_);
 }
 
-void HoughForests::detect(LocalFeatureExtractor& extractor) {
+void HoughForests::detect(LocalFeatureExtractor& extractor,
+                          std::vector<std::vector<DetectionResult>>& detectionResults) {
     std::cout << "initialize" << std::endl;
     initialize();
 
@@ -44,7 +45,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
         if (extractor.isEnd()) {
             break;
         }
-        //std::cout << "convert type" << std::endl;
+        // std::cout << "convert type" << std::endl;
         std::vector<std::vector<FeaturePtr>> scaleFeatures(scalePoints.size());
         for (int scaleIndex = 0; scaleIndex < scalePoints.size(); ++scaleIndex) {
             scaleFeatures.at(scaleIndex).reserve(scalePoints[scaleIndex].size());
@@ -77,11 +78,11 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
             calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo);
         }
         // auto inputStart = std::chrono::system_clock::now();
-        //std::cout << "input in voting space" << std::endl;
+        // std::cout << "input in voting space" << std::endl;
         inputInVotingSpace(votesInfo);
 
         // auto calcMMStart = std::chrono::system_clock::now();
-        //std::cout << "calc min max vote t" << std::endl;
+        // std::cout << "calc min max vote t" << std::endl;
         std::vector<std::pair<std::size_t, std::size_t>> minMaxRanges;
         getMinMaxVotingT(votesInfo, minMaxRanges);
 
@@ -111,6 +112,14 @@ void HoughForests::detect(LocalFeatureExtractor& extractor) {
                   << std::endl;
 
         visualize(video, extractor.getStoredColorVideoStartT(), totalLocalMaxima);
+    }
+
+    std::cout << "output process" << std::endl;
+    detectionResults.resize(totalLocalMaxima.size());
+    for (int classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
+        for (const auto& localMaximum : totalLocalMaxima.at(classLabel)) {
+            detectionResults.at(classLabel).emplace_back(localMaximum);
+        }
     }
 }
 
@@ -231,7 +240,7 @@ std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(
     std::vector<VoteInfo> votesInfo;
     for (const auto& leafData : leavesData) {
         auto featuresInfo = leafData->getFeatureInfo();
-        // std::cout << featuresInfo.size() << std::endl;
+        std::cout << featuresInfo.size() << std::endl;
         if (featuresInfo.size() > 100) {
             continue;
         }

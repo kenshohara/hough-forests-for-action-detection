@@ -259,13 +259,14 @@ void train() {
     using namespace nuisken::randomforests;
 
     const int N_CHANNELS = 6;
+    const int N_USED_CHANNELS = 4;
     const int N_CLASSES = 7;
 
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string featureDirectoryPath = rootDirectoryPath + "feature_hf/";
     std::string labelFilePath = rootDirectoryPath + "labels.csv";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests/";
+    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_noflow/";
     std::vector<std::vector<int>> validationCombinations = {{19, 5}, {12, 6}, {4, 7},   {16, 17},
                                                             {9, 13}, {11, 8}, {10, 14}, {18, 15},
                                                             {3, 20}, {2, 1}};
@@ -305,8 +306,8 @@ void train() {
                         int pointIndex = localIndex * 3;
                         cv::Vec3i point(points[pointIndex], points[pointIndex + 1],
                                         points[pointIndex + 2]);
-                        std::vector<Eigen::MatrixXf> features(N_CHANNELS);
-                        for (int channelIndex = 0; channelIndex < N_CHANNELS; ++channelIndex) {
+                        std::vector<Eigen::MatrixXf> features(N_USED_CHANNELS);
+                        for (int channelIndex = 0; channelIndex < N_USED_CHANNELS; ++channelIndex) {
                             Eigen::MatrixXf feature(1, nChannelFeatures);
                             for (int featureIndex = 0; featureIndex < nChannelFeatures;
                                  ++featureIndex) {
@@ -347,8 +348,8 @@ void train() {
                     int pointIndex = localIndex * 3;
                     cv::Vec3i point(points[pointIndex], points[pointIndex + 1],
                                     points[pointIndex + 2]);
-                    std::vector<Eigen::MatrixXf> features(N_CHANNELS);
-                    for (int channelIndex = 0; channelIndex < N_CHANNELS; ++channelIndex) {
+                    std::vector<Eigen::MatrixXf> features(N_USED_CHANNELS);
+                    for (int channelIndex = 0; channelIndex < N_USED_CHANNELS; ++channelIndex) {
                         Eigen::MatrixXf feature(1, nChannelFeatures);
                         for (int featureIndex = 0; featureIndex < nChannelFeatures;
                              ++featureIndex) {
@@ -375,11 +376,11 @@ void train() {
         bool hasNegatieClass = true;
         TreeParameters treeParameters(N_CLASSES, nTrees, bootstrapRatio, maxDepth, minData, nSplits,
                                       nThresholds, type, hasNegatieClass);
-        std::vector<int> numberOfFeatureDimensions(N_CHANNELS);
-        for (auto i = 0; i < N_CHANNELS; ++i) {
+        std::vector<int> numberOfFeatureDimensions(N_USED_CHANNELS);
+        for (auto i = 0; i < N_USED_CHANNELS; ++i) {
             numberOfFeatureDimensions.at(i) = trainingData.front()->getNumberOfFeatureDimensions(i);
         }
-        STIPNode stipNode(N_CLASSES, N_CHANNELS, numberOfFeatureDimensions);
+        STIPNode stipNode(N_CLASSES, N_USED_CHANNELS, numberOfFeatureDimensions);
         HoughForestsParameters houghParameters;
         houghParameters.setTreeParameters(treeParameters);
         int nThreads = 6;
@@ -398,11 +399,14 @@ void train() {
 }
 
 void detect() {
+    using namespace nuisken;
     using namespace nuisken::houghforests;
     using namespace nuisken::randomforests;
+    using namespace nuisken::storage;
 
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests/0/";
+    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_noflow/0/";
+    std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting/";
 
     int localWidth = 21;
     int localHeight = localWidth;
@@ -445,7 +449,32 @@ void detect() {
     houghForests.setHoughForestsParameters(parameters);
     houghForests.load(forestsDirectoryPath);
 
-    houghForests.detect(extractor);
+    std::vector<std::vector<DetectionResult<4>>> detectionResults;
+    houghForests.detect(extractor, detectionResults);
+
+    std::cout << "output" << std::endl;
+    for (auto classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
+        std::string outputFilePath =
+                outputDirectoryPath + std::to_string(classLabel) + "_detection.txt";
+
+        std::ofstream outputStream(outputFilePath);
+        for (const auto& detectionResult : detectionResults.at(classLabel)) {
+            LocalMaximum localMaximum = detectionResult.getLocalMaximum();
+            outputStream << "LocalMaximum," << localMaximum.getPoint()(T) << ","
+                         << localMaximum.getPoint()(Y) << "," << localMaximum.getPoint()(X) << ","
+                         << localMaximum.getValue() << "," << localMaximum.getPoint()(3)
+                         << std::endl;
+
+            auto contributionPoints = detectionResult.getContributionPoints();
+            for (const auto& contributionPoint : contributionPoints) {
+                outputStream << contributionPoint.getPoint()(T) << ","
+                             << contributionPoint.getPoint()(Y) << ","
+                             << contributionPoint.getPoint()(X) << ","
+                             << contributionPoint.getValue() << std::endl;
+            }
+            outputStream << std::endl;
+        }
+    }
 }
 
 int main() {

@@ -61,7 +61,8 @@ class HoughForests {
 
     void HoughForests::train(const std::vector<FeaturePtr>& features);
 
-    void detect(LocalFeatureExtractor& extractor);
+    void detect(LocalFeatureExtractor& extractor,
+                std::vector<std::vector<DetectionResult>>& detectionResults);
     void detect(const std::vector<std::string>& featureFilePaths,
                 std::vector<std::vector<DetectionResult>>& detectionResults);
 
