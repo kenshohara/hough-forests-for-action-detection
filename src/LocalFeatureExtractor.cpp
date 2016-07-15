@@ -307,12 +307,32 @@ void LocalFeatureExtractor::visualizeDenseFeature(const std::vector<cv::Vec3i>& 
     int yRange = localHeight_ / 2;
     int tRange = localDuration_ / 2;
 
+    // for (int i = 0; i < points.size(); ++i) {
+    //    int index = 0;
+    //    for (int j = 0; j < localDuration_; ++j) {
+    //        std::cout << localHeight_ * localWidth_ * localDuration_ << ", " <<
+    //        features.at(i).size() << std::endl;
+    //        cv::Mat1f local(localHeight_, localWidth_);
+    //        for (int y = 0; y < localHeight_; ++y) {
+    //            for (int x = 0; x < localWidth_; ++x) {
+    //                local(y, x) = features.at(i).at(index++);
+    //            }
+    //        }
+    //        cv::normalize(local, local, 0.0, 1.0, cv::NORM_MINMAX);
+    //        cv::imshow("local", local);
+    //        cv::waitKey(0);
+    //    }
+    //}
+
     for (int i = 0; i < points.size(); ++i) {
         cv::Vec3i point = points[i];
         point(T) -= storedFeatureStartT_;
 
         int featureIndex = 0;
         for (int t = point(T) - tRange; t <= point(T) + tRange; ++t) {
+            if (t >= 76) {
+                std::cout << point << std::endl;
+            }
             for (int y = point(Y) - yRange; y <= point(Y) + yRange; ++y) {
                 for (int x = point(X) - xRange; x <= point(X) + xRange; ++x) {
                     video[t](y, x) = features[i][featureIndex];

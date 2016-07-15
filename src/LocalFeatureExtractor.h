@@ -102,6 +102,9 @@ class LocalFeatureExtractor {
         return std::vector<std::string>{"intensity",    "x_derivative", "y_derivative",
                                         "t_derivative", "x_flow",       "y_flow"};
     }
+    void visualizeDenseFeature(const std::vector<cv::Vec3i>& points,
+                               const std::vector<Descriptor>& features, int width, int height,
+                               int duration) const;
 
    private:
     void makeLocalSizeOdd(int& size) const;
@@ -128,10 +131,6 @@ class LocalFeatureExtractor {
     Descriptor getLocalFeature(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
                                int height) const;
     int calculateFeatureIndex(int x, int y, int t, int width, int height) const;
-
-    void visualizeDenseFeature(const std::vector<cv::Vec3i>& points,
-                               const std::vector<Descriptor>& features, int width, int height,
-                               int duration) const;
 };
 }
 }

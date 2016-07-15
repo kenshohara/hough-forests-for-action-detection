@@ -25,6 +25,85 @@ void HoughForests::train(const std::vector<FeaturePtr>& features) {
     randomForests_.train(features, nThreads_);
 }
 
+void HoughForests::classify(LocalFeatureExtractor& extractor) {
+    std::cout << "initialize" << std::endl;
+    initialize();
+
+    std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
+    while (true) {
+        auto start = std::chrono::system_clock::now();
+        std::cout << "read" << std::endl;
+        std::vector<std::vector<cv::Vec3i>> scalePoints;
+        std::vector<std::vector<std::vector<float>>> scaleDescriptors;
+        std::vector<cv::Mat3b> video;
+        extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video);
+        auto endd = std::chrono::system_clock::now();
+        std::cout << "extract features: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(endd - start).count()
+                  << std::endl;
+        if (extractor.isEnd()) {
+            break;
+        }
+        // std::cout << "convert type" << std::endl;
+        std::vector<std::vector<FeaturePtr>> scaleFeatures(scalePoints.size());
+        for (int scaleIndex = 0; scaleIndex < scalePoints.size(); ++scaleIndex) {
+            scaleFeatures.at(scaleIndex).reserve(scalePoints[scaleIndex].size());
+            for (int i = 0; i < scalePoints[scaleIndex].size(); ++i) {
+                cv::Vec3i point = scalePoints.at(scaleIndex).at(i);
+                std::vector<Eigen::MatrixXf> channelFeatures(extractor.N_CHANNELS_);
+                int nChannelFeatures =
+                        scaleDescriptors.at(scaleIndex).at(i).size() / extractor.N_CHANNELS_;
+                for (int channelIndex = 0; channelIndex < channelFeatures.size(); ++channelIndex) {
+                    Eigen::MatrixXf feature(1, nChannelFeatures);
+                    for (int featureIndex = 0; featureIndex < nChannelFeatures; ++featureIndex) {
+                        int index = channelIndex * nChannelFeatures + featureIndex;
+                        feature.coeffRef(0, featureIndex) = scaleDescriptors[scaleIndex][i][index];
+                    }
+                    channelFeatures.at(channelIndex) = feature;
+                }
+                auto feature = std::make_shared<randomforests::STIPNode::FeatureType>(
+                        channelFeatures, point, cv::Vec3i(), std::make_pair(0.0, 0.0), 0);
+                scaleFeatures.at(scaleIndex).push_back(feature);
+            }
+        }
+
+        std::cout << "calculate votes" << std::endl;
+        std::vector<std::vector<VoteInfo>> votesInfo;
+        for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
+            if (scaleFeatures.at(scaleIndex).empty()) {
+                continue;
+            }
+
+            calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo);
+        }
+
+        std::vector<int> overClassCounts(parameters_.getNumberOfPositiveClasses());
+        for (const auto& featureVotesInfo : votesInfo) {
+            std::vector<int> classCounts(parameters_.getNumberOfPositiveClasses());
+            for (const auto& voteInfo : featureVotesInfo) {
+                ++classCounts.at(voteInfo.getClassLabel());
+                ++overClassCounts.at(voteInfo.getClassLabel());
+            }
+            auto it = std::max_element(std::begin(classCounts), std::end(classCounts));
+            int maxLabel = it - std::begin(classCounts);
+
+            // for (double x : classCounts) {
+            //    std::cout << x << ", ";
+            //}
+            // std::cout << std::endl;
+        }
+        std::cout << std::endl;
+        std::vector<double> prob(parameters_.getNumberOfPositiveClasses());
+        int sum = std::accumulate(std::begin(overClassCounts), std::end(overClassCounts), 0);
+        std::transform(std::begin(overClassCounts), std::end(overClassCounts), std::begin(prob),
+                       [sum](int x) { return static_cast<double>(x) / sum; });
+        for (double p : prob) {
+            std::cout << p << ", ";
+        }
+        std::cout << std::endl << std::endl;
+    }
+}
+
 void HoughForests::detect(LocalFeatureExtractor& extractor,
                           std::vector<std::vector<DetectionResult>>& detectionResults) {
     std::cout << "initialize" << std::endl;
@@ -240,10 +319,10 @@ std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(
     std::vector<VoteInfo> votesInfo;
     for (const auto& leafData : leavesData) {
         auto featuresInfo = leafData->getFeatureInfo();
-        std::cout << featuresInfo.size() << std::endl;
-        if (featuresInfo.size() > 100) {
-            continue;
-        }
+        // std::cout << featuresInfo.size() << std::endl;
+        // if (featuresInfo.size() > 100) {
+        //    continue;
+        //}
         double weight = 1.0 / (featuresInfo.size() * leavesData.size());
         for (const auto& featureInfo : featuresInfo) {
             int classLabel = featureInfo.getClassLabel();
