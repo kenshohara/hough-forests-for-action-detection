@@ -1,6 +1,8 @@
 #ifndef LOCAL_FEATURE_EXTRACTOR
 #define LOCAL_FEATURE_EXTRACTOR
 
+#include "hog.h"
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui.hpp>
 
@@ -15,6 +17,7 @@ class LocalFeatureExtractor {
 
     enum FeatureType { INTENSITY, X_DERIVATIVE, Y_DERIVATIVE, T_DERIVATIVE, FLOW };
     static const int N_CHANNELS_;
+    static const int N_HOG_BINS_;
 
    private:
     using Descriptor = std::vector<float>;
@@ -43,6 +46,8 @@ class LocalFeatureExtractor {
     std::size_t storedFeatureStartT_;
     int nStoredFeatureFrames_;
     bool isEnd_;
+
+    HoG hog_;
 
    public:
     LocalFeatureExtractor(){};
@@ -123,6 +128,8 @@ class LocalFeatureExtractor {
     void generateScaledVideos();
     void denseSampling(int scaleIndex, std::vector<cv::Vec3i>& points,
                        std::vector<Descriptor>& descriptors) const;
+    void denseSamplingHOG(int scaleIndex, std::vector<cv::Vec3i>& points,
+                          std::vector<Descriptor>& descriptors) const;
     void deleteOldData();
 
     void extractFeatures(int scaleIndex, int beginFrame, int endFrame);
@@ -132,17 +139,25 @@ class LocalFeatureExtractor {
     void extractTDerivativeFeature(Feature& features, int scaleIndex, int beginFrame, int endFrame);
     void extractFlowFeature(Feature& xFeatures, Feature& yFeatures, int scaleIndex, int beginFrame,
                             int endFrame);
+    void extractHOGFeature(std::vector<Feature>& features, int scaleIndex, int beginFrame,
+                           int endFrame);
 
     Feature extractIntensityFeature(const cv::Mat1b& frame) const;
     Feature extractXDerivativeFeature(const cv::Mat1b& frame) const;
     Feature extractYDerivativeFeature(const cv::Mat1b& frame) const;
     Feature extractTDerivativeFeature(const cv::Mat1b& prev, const cv::Mat1b& next) const;
     std::vector<Feature> extractFlowFeature(const cv::Mat1b& prev, const cv::Mat1b& next) const;
+    std::vector<Feature> extractHOGFeature(const cv::Mat1b& frame) const;
 
     Descriptor getDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
                              int height) const;
+    Descriptor getHOGDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
+                                int height) const;
     int calculateFeatureIndex(int x, int y, int t, int width, int height) const;
 
+    Descriptor calculateHistogram(const std::vector<Descriptor>& binValues) const;
+    Descriptor calculateBlockHistogram(const std::vector<Descriptor>& binValues, int beginX,
+                                       int beginY, int beginT) const;
     Descriptor pooling(const Descriptor& descriptor) const;
     float pooling(const Descriptor& descriptor, int beginX, int beginY, int beginT) const;
 };
