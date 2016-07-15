@@ -57,7 +57,7 @@ class LocalFeatureExtractor {
                           int yBlockSize, int tBlockSize, int xStep, int yStep, int tStep)
             : videoCapture_(videoFilePath),
               scaleVideos_(scales.size()),
-              scaleChannelFeatures_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
+              scaleChannelFeatures_(scales.size(), MultiChannelFeature(N_HOG_BINS_)),
               scales_(scales),
               localWidth_(localWidth),
               localHeight_(localHeight),
@@ -106,6 +106,9 @@ class LocalFeatureExtractor {
                               std::vector<std::vector<Descriptor>>& scaleDescriptors);
     void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
                               std::vector<std::vector<Descriptor>>& scaleDescriptors,
+                              const std::vector<std::vector<cv::Vec3i>>& points);
+    void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
+                              std::vector<std::vector<Descriptor>>& scaleDescriptors,
                               ColorVideo& usedVideo);
 
     bool isEnd() const { return isEnd_; }
@@ -130,6 +133,8 @@ class LocalFeatureExtractor {
                        std::vector<Descriptor>& descriptors) const;
     void denseSamplingHOG(int scaleIndex, std::vector<cv::Vec3i>& points,
                           std::vector<Descriptor>& descriptors) const;
+    // void denseSamplingHOGSparse(int scaleIndex, const std::vector<cv::Vec3i>& points,
+    //                            std::vector<Descriptor>& descriptors) const;
     void deleteOldData();
 
     void extractFeatures(int scaleIndex, int beginFrame, int endFrame);

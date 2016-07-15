@@ -16,11 +16,11 @@
 void extractPositiveFeatures() {
     using namespace nuisken::houghforests;
 
-    int localWidth = 25;
+    int localWidth = 21;
     int localHeight = localWidth;
-    int localDuration = 12;
-    int xBlockSize = 5;
-    int yBlockSize = 5;
+    int localDuration = 9;
+    int xBlockSize = 7;
+    int yBlockSize = 7;
     int tBlockSize = 3;
     int xStep = 10;
     int yStep = xStep;
@@ -34,7 +34,7 @@ void extractPositiveFeatures() {
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string videoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale/";
-    std::string outputDirectoryPath = rootDirectoryPath + "feature_hf_pooling2_all/";
+    std::string outputDirectoryPath = rootDirectoryPath + "feature_hog/";
     std::tr2::sys::path directory(videoDirectoryPath);
     std::tr2::sys::directory_iterator end;
     for (std::tr2::sys::directory_iterator itr(directory); itr != end; ++itr) {
@@ -56,13 +56,13 @@ void extractPositiveFeatures() {
 
             std::vector<size_t> indices(points[0].size());
             std::iota(std::begin(indices), std::end(indices), 0);
-            // std::shuffle(std::begin(indices), std::end(indices), randomEngine);
+            std::shuffle(std::begin(indices), std::end(indices), randomEngine);
 
             int n = 0;
             for (auto index : indices) {
-                // if (n++ >= nSamplesPerStep) {
-                //    break;
-                //}
+                if (n++ >= nSamplesPerStep) {
+                    break;
+                }
 
                 selectedPoints.push_back(points[0][index]);
                 selectedDescriptors.push_back(descriptors[0][index]);

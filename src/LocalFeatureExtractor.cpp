@@ -45,13 +45,41 @@ void LocalFeatureExtractor::extractLocalFeatures(
 
         std::vector<cv::Vec3i> points;
         std::vector<std::vector<float>> descriptors;
-        denseSampling(scaleIndex, points, descriptors);
+        denseSamplingHOG(scaleIndex, points, descriptors);
         scalePoints.push_back(points);
         scaleDescriptors.push_back(descriptors);
     }
 
     for (const auto& frame : colorVideo_) {
         usedVideo.push_back(frame.clone());
+    }
+
+    deleteOldData();
+}
+
+void LocalFeatureExtractor::extractLocalFeatures(
+        std::vector<std::vector<cv::Vec3i>>& scalePoints,
+        std::vector<std::vector<Descriptor>>& scaleDescriptors,
+        const std::vector<std::vector<cv::Vec3i>>& points) {
+    readOriginalScaleVideo();
+    generateScaledVideos();
+    for (int scaleIndex = 0; scaleIndex < scales_.size(); ++scaleIndex) {
+        int beginFrame = 1;
+        int endFrame = scaleVideos_[scaleIndex].size();
+        extractFeatures(scaleIndex, beginFrame, endFrame);
+        if (scaleIndex == 0) {
+            nStoredFeatureFrames_ += endFrame - beginFrame;
+        }
+        if (nStoredFeatureFrames_ < localDuration_) {
+            isEnd_ = true;
+            return;
+        }
+
+        std::vector<cv::Vec3i> points;
+        std::vector<std::vector<float>> descriptors;
+        // denseSamplingHOGSparse(scaleIndex, points, descriptors);
+        scalePoints.push_back(points);
+        scaleDescriptors.push_back(descriptors);
     }
 
     deleteOldData();
@@ -266,7 +294,10 @@ std::vector<LocalFeatureExtractor::Feature> LocalFeatureExtractor::extractFlowFe
 
 std::vector<LocalFeatureExtractor::Feature> LocalFeatureExtractor::extractHOGFeature(
         const cv::Mat1b& frame) const {
-    std::vector<cv::Mat> channels(N_HOG_BINS_, cv::Mat(frame.rows, frame.cols, CV_8U));
+    std::vector<cv::Mat> channels(N_HOG_BINS_);
+    for (auto& channel : channels) {
+        channel.create(frame.rows, frame.cols, CV_8U);
+    }
     cv::Mat I_x;
     cv::Mat I_y;
 
