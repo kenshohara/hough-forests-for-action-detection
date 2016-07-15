@@ -367,13 +367,9 @@ void LocalFeatureExtractor::visualizeDenseFeature(const std::vector<cv::Vec3i>& 
 
     for (int i = 0; i < points.size(); ++i) {
         cv::Vec3i point = points[i];
-        point(T) -= storedFeatureStartT_;
 
         int featureIndex = 0;
         for (int t = point(T) - tRange; t <= point(T) + tRange; ++t) {
-            if (t >= 76) {
-                std::cout << point << std::endl;
-            }
             for (int y = point(Y) - yRange; y <= point(Y) + yRange; ++y) {
                 for (int x = point(X) - xRange; x <= point(X) + xRange; ++x) {
                     video[t](y, x) = features[i][featureIndex];
@@ -388,6 +384,51 @@ void LocalFeatureExtractor::visualizeDenseFeature(const std::vector<cv::Vec3i>& 
 
         cv::Mat frame = video[i];
         frame = frame.reshape(0, height);
+        cv::normalize(frame, frame, 1.0, 0.0, cv::NORM_MINMAX);
+
+        cv::imshow("", frame);
+        cv::waitKey(0);
+    }
+}
+
+void LocalFeatureExtractor::visualizePooledDenseFeature(
+        const std::vector<cv::Vec3i>& points, const std::vector<Descriptor>& features) const {
+    int duration = 200;
+    std::vector<cv::Mat1f> video(duration);
+    for (auto& frame : video) {
+        frame.create(height_, width_);
+        frame = 0.0;
+    }
+
+    int xRange = localWidth_ / 2;
+    int yRange = localHeight_ / 2;
+    int tRange = localDuration_ / 2;
+
+    for (int i = 0; i < points.size(); ++i) {
+        cv::Vec3i point = points[i];
+
+        int featureIndex = 0;
+        for (int t = point(T) - tRange; t <= point(T) + tRange; t += tBlockSize_) {
+            for (int y = point(Y) - yRange; y <= point(Y) + yRange; y += yBlockSize_) {
+                for (int x = point(X) - xRange; x <= point(X) + xRange; x += xBlockSize_) {
+                    for (int tt = 0; tt < tBlockSize_; ++tt) {
+                        for (int yy = 0; yy < xBlockSize_; ++yy) {
+                            for (int xx = 0; xx < xBlockSize_; ++xx) {
+                                video[t + tt](y + yy, x + xx) = features[i][featureIndex];
+                            }
+                        }
+                    }
+                    ++featureIndex;
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < video.size(); ++i) {
+        std::cout << i << std::endl;
+
+        cv::Mat frame = video[i];
+        frame = frame.reshape(0, height_);
         cv::normalize(frame, frame, 1.0, 0.0, cv::NORM_MINMAX);
 
         cv::imshow("", frame);

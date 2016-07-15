@@ -114,6 +114,8 @@ class LocalFeatureExtractor {
     void visualizeDenseFeature(const std::vector<cv::Vec3i>& points,
                                const std::vector<Descriptor>& features, int width, int height,
                                int duration) const;
+    void visualizePooledDenseFeature(const std::vector<cv::Vec3i>& points,
+                                     const std::vector<Descriptor>& features) const;
 
    private:
     void makeLocalSizeOdd(int& size) const;
