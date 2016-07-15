@@ -31,6 +31,9 @@ class LocalFeatureExtractor {
     int localWidth_;
     int localHeight_;
     int localDuration_;
+    int xBlockSize_;
+    int yBlockSize_;
+    int tBlockSize_;
     int xStep_;
     int yStep_;
     int tStep_;
@@ -45,8 +48,8 @@ class LocalFeatureExtractor {
     LocalFeatureExtractor(){};
 
     LocalFeatureExtractor(const std::string& videoFilePath, std::vector<double> scales,
-                          int localWidth, int localHeight, int localDuration, int xStep, int yStep,
-                          int tStep)
+                          int localWidth, int localHeight, int localDuration, int xBlockSize,
+                          int yBlockSize, int tBlockSize, int xStep, int yStep, int tStep)
             : videoCapture_(videoFilePath),
               scaleVideos_(scales.size()),
               scaleChannelFeatures_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
@@ -54,6 +57,9 @@ class LocalFeatureExtractor {
               localWidth_(localWidth),
               localHeight_(localHeight),
               localDuration_(localDuration),
+              xBlockSize_(xBlockSize),
+              yBlockSize_(yBlockSize),
+              tBlockSize_(tBlockSize),
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
@@ -67,8 +73,8 @@ class LocalFeatureExtractor {
     }
 
     LocalFeatureExtractor(const cv::VideoCapture& videoCapture, std::vector<double> scales,
-                          int localWidth, int localHeight, int localDuration, int xStep, int yStep,
-                          int tStep)
+                          int localWidth, int localHeight, int localDuration, int xBlockSize,
+                          int yBlockSize, int tBlockSize, int xStep, int yStep, int tStep)
             : videoCapture_(videoCapture),
               scaleVideos_(scales.size()),
               scaleChannelFeatures_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
@@ -76,6 +82,9 @@ class LocalFeatureExtractor {
               localWidth_(localWidth),
               localHeight_(localHeight),
               localDuration_(localDuration),
+              xBlockSize_(xBlockSize),
+              yBlockSize_(yBlockSize),
+              tBlockSize_(tBlockSize),
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
@@ -114,12 +123,12 @@ class LocalFeatureExtractor {
                        std::vector<Descriptor>& descriptors) const;
     void deleteOldData();
 
-    void extractFeatures(int scaleIndex, int startFrame, int endFrame);
-    void extractIntensityFeature(Feature& features, int scaleIndex, int startFrame, int endFrame);
-    void extractXDerivativeFeature(Feature& features, int scaleIndex, int startFrame, int endFrame);
-    void extractYDerivativeFeature(Feature& features, int scaleIndex, int startFrame, int endFrame);
-    void extractTDerivativeFeature(Feature& features, int scaleIndex, int startFrame, int endFrame);
-    void extractFlowFeature(Feature& xFeatures, Feature& yFeatures, int scaleIndex, int startFrame,
+    void extractFeatures(int scaleIndex, int beginFrame, int endFrame);
+    void extractIntensityFeature(Feature& features, int scaleIndex, int beginFrame, int endFrame);
+    void extractXDerivativeFeature(Feature& features, int scaleIndex, int beginFrame, int endFrame);
+    void extractYDerivativeFeature(Feature& features, int scaleIndex, int beginFrame, int endFrame);
+    void extractTDerivativeFeature(Feature& features, int scaleIndex, int beginFrame, int endFrame);
+    void extractFlowFeature(Feature& xFeatures, Feature& yFeatures, int scaleIndex, int beginFrame,
                             int endFrame);
 
     Feature extractIntensityFeature(const cv::Mat1b& frame) const;
@@ -128,9 +137,12 @@ class LocalFeatureExtractor {
     Feature extractTDerivativeFeature(const cv::Mat1b& prev, const cv::Mat1b& next) const;
     std::vector<Feature> extractFlowFeature(const cv::Mat1b& prev, const cv::Mat1b& next) const;
 
-    Descriptor getLocalFeature(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
-                               int height) const;
+    Descriptor getDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
+                             int height) const;
     int calculateFeatureIndex(int x, int y, int t, int width, int height) const;
+
+    Descriptor pooling(const Descriptor& descriptor) const;
+    float pooling(const Descriptor& descriptor, int beginX, int beginY, int beginT) const;
 };
 }
 }

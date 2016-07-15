@@ -28,10 +28,10 @@ void RandomForests<Type>::trainOneTree(const std::vector<FeaturePtr>& features, 
     std::vector<FeatureRawPtr> bootstrapData;
     selectBootstrapData(features, bootstrapData);
 
-    auto start = std::chrono::system_clock::now();
+    auto begin = std::chrono::system_clock::now();
     forests.at(index).grow(bootstrapData);
     auto end = std::chrono::system_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << std::endl;
+    std::cout << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << std::endl;
 }
 
 template <class Type>
@@ -40,10 +40,10 @@ void RandomForests<Type>::trainOneTree(const std::vector<FeaturePtr>& features,
     std::cout << "tree : " << index << std::endl;
     selectBootstrapData(features, bootstrapData);
 
-    auto start = std::chrono::system_clock::now();
+    auto begin = std::chrono::system_clock::now();
     forests.at(index).grow(bootstrapData);
     auto end = std::chrono::system_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << std::endl;
+    std::cout << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << std::endl;
 }
 
 template <class Type>

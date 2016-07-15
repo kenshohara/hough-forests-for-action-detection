@@ -19,6 +19,9 @@ void extractPositiveFeatures() {
     int localWidth = 21;
     int localHeight = localWidth;
     int localDuration = 9;
+    int xBlockSize = 7;
+    int yBlockSize = 7;
+    int tBlockSize = 3;
     int xStep = 10;
     int yStep = xStep;
     int tStep = 5;
@@ -38,7 +41,7 @@ void extractPositiveFeatures() {
 
         std::cout << "extract" << std::endl;
         LocalFeatureExtractor extractor(filePath, scales, localWidth, localHeight, localDuration,
-                                        xStep, yStep, tStep);
+                                        xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
         std::vector<cv::Vec3i> selectedPoints;
         std::vector<std::vector<float>> selectedDescriptors;
         while (true) {
@@ -104,7 +107,7 @@ void readLabelsInfo(const std::string& labelFilePath, int sequenceIndex,
             auto label = std::stoi(tokens.at(1));
             classLabels.push_back(label);
 
-            auto startFrame = std::stoi(tokens.at(2));
+            auto beginFrame = std::stoi(tokens.at(2));
             auto endFrame = std::stoi(tokens.at(3));
             auto topLeftX = std::stoi(tokens.at(4));
             auto topLeftY = std::stoi(tokens.at(5));
@@ -112,7 +115,7 @@ void readLabelsInfo(const std::string& labelFilePath, int sequenceIndex,
             auto bottomRightY = std::stoi(tokens.at(7));
             boxes.emplace_back(cv::Point(topLeftX, topLeftY),
                                cv::Point(bottomRightX, bottomRightY));
-            temporalRanges.emplace_back(startFrame, endFrame);
+            temporalRanges.emplace_back(beginFrame, endFrame);
         }
     }
 }
@@ -129,7 +132,7 @@ void readLabelsInfo(const std::string& labelFilePath, int sequenceIndex,
         std::copy(std::begin(commaTokenizer), std::end(commaTokenizer), std::back_inserter(tokens));
 
         if (tokens.at(0) == "seq" + std::to_string(sequenceIndex)) {
-            auto startFrame = std::stoi(tokens.at(2));
+            auto beginFrame = std::stoi(tokens.at(2));
             auto endFrame = std::stoi(tokens.at(3));
             auto topLeftX = std::stoi(tokens.at(4));
             auto topLeftY = std::stoi(tokens.at(5));
@@ -138,7 +141,7 @@ void readLabelsInfo(const std::string& labelFilePath, int sequenceIndex,
 
             boxes.emplace_back(cv::Point(topLeftX, topLeftY),
                                cv::Point(bottomRightX, bottomRightY));
-            temporalRanges.emplace_back(startFrame, endFrame);
+            temporalRanges.emplace_back(beginFrame, endFrame);
         }
     }
 }
@@ -166,6 +169,9 @@ void extractNegativeFeatures() {
     int localWidth = 21;
     int localHeight = localWidth;
     int localDuration = 9;
+    int xBlockSize = 7;
+    int yBlockSize = 7;
+    int tBlockSize = 3;
     int xStep = 10;
     int yStep = xStep;
     int tStep = 5;
@@ -189,7 +195,7 @@ void extractNegativeFeatures() {
 
         std::cout << "extract" << std::endl;
         LocalFeatureExtractor extractor(filePath, scales, localWidth, localHeight, localDuration,
-                                        xStep, yStep, tStep);
+                                        xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
         std::vector<cv::Vec3i> selectedPoints;
         std::vector<std::vector<float>> selectedDescriptors;
         while (true) {
@@ -525,6 +531,9 @@ void detect() {
     int localWidth = 21;
     int localHeight = localWidth;
     int localDuration = 9;
+    int xBlockSize = 7;
+    int yBlockSize = 7;
+    int tBlockSize = 3;
     int xStep = 10;
     int yStep = xStep;
     int tStep = 5;
@@ -533,7 +542,7 @@ void detect() {
 
     std::string videoFilePath = rootDirectoryPath + "test.avi";  // "unsegmented/seq5.avi";
     LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight, localDuration,
-                                    xStep, yStep, tStep);
+                                    xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
 
     int nClasses = 7;
     int nThreads = 1;
@@ -604,6 +613,9 @@ void classify() {
     int localWidth = 21;
     int localHeight = localWidth;
     int localDuration = 9;
+    int xBlockSize = 7;
+    int yBlockSize = 7;
+    int tBlockSize = 3;
     int xStep = 10;
     int yStep = xStep;
     int tStep = 5;
@@ -613,7 +625,7 @@ void classify() {
     // std::string videoFilePath = rootDirectoryPath + "test.avi";  // "unsegmented/seq5.avi";
     std::string videoFilePath = rootDirectoryPath + "segmented_fixed_scale/seq5_0_0.avi";
     LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight, localDuration,
-                                    xStep, yStep, tStep);
+                                    xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
 
     int nClasses = 7;
     int nThreads = 1;

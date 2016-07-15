@@ -39,7 +39,7 @@ class VotingSpace {
     void inputVote(const cv::Vec3i& point, std::size_t scaleIndex, float weight);
     void deleteOldVotes();
     void getVotes(std::vector<std::array<float, 4>>& votingPoints, std::vector<float>& weights,
-                  int startT, int endT) const;
+                  int beginT, int endT) const;
 
     void computePointAndScale(std::size_t index, cv::Vec3i& point, std::size_t& scaleIndex) const;
     std::array<float, 4> computePoint(std::size_t index) const;

@@ -31,7 +31,7 @@ void HoughForests::classify(LocalFeatureExtractor& extractor) {
 
     std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
     while (true) {
-        auto start = std::chrono::system_clock::now();
+        auto begin = std::chrono::system_clock::now();
         std::cout << "read" << std::endl;
         std::vector<std::vector<cv::Vec3i>> scalePoints;
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
@@ -39,7 +39,7 @@ void HoughForests::classify(LocalFeatureExtractor& extractor) {
         extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video);
         auto endd = std::chrono::system_clock::now();
         std::cout << "extract features: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(endd - start).count()
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(endd - begin).count()
                   << std::endl;
         if (extractor.isEnd()) {
             break;
@@ -111,7 +111,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
 
     std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
     while (true) {
-        auto start = std::chrono::system_clock::now();
+        auto begin = std::chrono::system_clock::now();
         std::cout << "read" << std::endl;
         std::vector<std::vector<cv::Vec3i>> scalePoints;
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
@@ -119,7 +119,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video);
         auto endd = std::chrono::system_clock::now();
         std::cout << "extract features: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(endd - start).count()
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(endd - begin).count()
                   << std::endl;
         if (extractor.isEnd()) {
             break;
@@ -187,7 +187,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
 
         auto end = std::chrono::system_clock::now();
         std::cout << "one cycle: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
                   << std::endl;
 
         visualize(video, extractor.getStoredColorVideoStartT(), totalLocalMaxima);
@@ -240,7 +240,7 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
     std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
     for (int t = minT; t < maxT; ++t) {
         std::cout << "t: " << t << std::endl;
-        auto start = std::chrono::system_clock::now();
+        auto begin = std::chrono::system_clock::now();
 
         std::vector<std::vector<VoteInfo>> votesInfo;
         for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
@@ -277,7 +277,7 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
 
         auto end = std::chrono::system_clock::now();
         std::cout << "one cycle: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
                   << std::endl;
     }
 

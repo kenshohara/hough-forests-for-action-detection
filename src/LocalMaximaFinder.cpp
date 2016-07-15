@@ -117,14 +117,14 @@ LocalMaximum LocalMaximaFinder::refineLocalMaximum(const KDE& kde,
 }
 
 std::vector<LocalMaximaFinder::Point> LocalMaximaFinder::getGridPoints(
-        std::size_t startT, std::size_t endT, std::size_t stepT, std::size_t startY,
-        std::size_t endY, std::size_t stepY, std::size_t startX, std::size_t endX,
-        std::size_t stepX, std::size_t startSIndex, std::size_t endSIndex) const {
+        std::size_t beginT, std::size_t endT, std::size_t stepT, std::size_t beginY,
+        std::size_t endY, std::size_t stepY, std::size_t beginX, std::size_t endX,
+        std::size_t stepX, std::size_t beginSIndex, std::size_t endSIndex) const {
     std::vector<Point> gridPoints;
-    for (std::size_t t = startT; t < endT; t += stepT) {
-        for (std::size_t y = startY; y < endY; y += stepY) {
-            for (std::size_t x = startX; x < endX; x += stepX) {
-                for (std::size_t s = startSIndex; s < endSIndex; ++s) {
+    for (std::size_t t = beginT; t < endT; t += stepT) {
+        for (std::size_t y = beginY; y < endY; y += stepY) {
+            for (std::size_t x = beginX; x < endX; x += stepX) {
+                for (std::size_t s = beginSIndex; s < endSIndex; ++s) {
                     gridPoints.emplace_back(Point{static_cast<float>(t), static_cast<float>(y),
                                                   static_cast<float>(x),
                                                   static_cast<float>(scales_.at(s))});

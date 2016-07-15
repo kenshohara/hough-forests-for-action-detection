@@ -12,27 +12,27 @@ namespace storage {
 class SpatioTemporalVolume {
    private:
     cv::Rect rect_;
-    int startFrame_;
+    int beginFrame_;
     int endFrame_;
 
    public:
-    SpatioTemporalVolume(const cv::Rect& rect, int startFrame, int endFrame)
-            : rect_(rect), startFrame_(startFrame), endFrame_(endFrame){};
+    SpatioTemporalVolume(const cv::Rect& rect, int beginFrame, int endFrame)
+            : rect_(rect), beginFrame_(beginFrame), endFrame_(endFrame){};
 
-    SpatioTemporalVolume(const cv::Point& topLeft, const cv::Point& bottomRight, int startFrame,
+    SpatioTemporalVolume(const cv::Point& topLeft, const cv::Point& bottomRight, int beginFrame,
                          int endFrame)
-            : rect_(topLeft, bottomRight), startFrame_(startFrame), endFrame_(endFrame){};
+            : rect_(topLeft, bottomRight), beginFrame_(beginFrame), endFrame_(endFrame){};
 
     SpatioTemporalVolume(int xCenter, int yCenter, int tCenter, int width, int height, int duration)
             : rect_(xCenter - width / 2, yCenter - height / 2, width, height),
-              startFrame_(tCenter - duration / 2),
+              beginFrame_(tCenter - duration / 2),
               endFrame_(tCenter + duration / 2) {}
 
-    double computeVolume() const { return rect_.area() * (endFrame_ - startFrame_); }
+    double computeVolume() const { return rect_.area() * (endFrame_ - beginFrame_); }
 
     double computeOverlapRatio(const SpatioTemporalVolume& other) const {
         cv::Rect intersectRect = rect_ & other.rect_;
-        int intersectStartFrame = std::max(startFrame_, other.startFrame_);
+        int intersectStartFrame = std::max(beginFrame_, other.beginFrame_);
         int intersectEndFrame = std::min(endFrame_, other.endFrame_);
         SpatioTemporalVolume intersectVolume(intersectRect, intersectStartFrame, intersectEndFrame);
         return intersectVolume.computeVolume() /
