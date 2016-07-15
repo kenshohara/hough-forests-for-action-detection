@@ -33,7 +33,7 @@ void extractPositiveFeatures() {
 
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string videoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale/";
-    std::string outputDirectoryPath = rootDirectoryPath + "feature_hf3/";
+    std::string outputDirectoryPath = rootDirectoryPath + "feature_hf_pooling/";
     std::tr2::sys::path directory(videoDirectoryPath);
     std::tr2::sys::directory_iterator end;
     for (std::tr2::sys::directory_iterator itr(directory); itr != end; ++itr) {
@@ -77,8 +77,8 @@ void extractPositiveFeatures() {
                 outputPoints.push_back(point(i));
             }
         }
-        aoba::SaveArrayAsNumpy<int>(outputPointsFilePath, selectedPoints.front().rows,
-                                    selectedPoints.size(), outputPoints.data());
+        aoba::SaveArrayAsNumpy<int>(outputPointsFilePath, selectedPoints.size(),
+                                    selectedPoints.front().rows, outputPoints.data());
 
         std::string outputDescriptorsFilePath = outputDirectoryPath + outputFileName + "_desc.npy";
         std::vector<float> outputDescriptors;
@@ -87,8 +87,8 @@ void extractPositiveFeatures() {
                 outputDescriptors.push_back(desc[i]);
             }
         }
-        aoba::SaveArrayAsNumpy<float>(outputDescriptorsFilePath, selectedDescriptors.front().size(),
-                                      selectedDescriptors.size(), outputDescriptors.data());
+        aoba::SaveArrayAsNumpy<float>(outputDescriptorsFilePath, selectedDescriptors.size(),
+                                      selectedDescriptors.front().size(), outputDescriptors.data());
     }
 }
 
@@ -244,8 +244,8 @@ void extractNegativeFeatures() {
                 outputPoints.push_back(point(i));
             }
         }
-        aoba::SaveArrayAsNumpy<int>(outputPointsFilePath, selectedPoints.front().rows,
-                                    selectedPoints.size(), outputPoints.data());
+        aoba::SaveArrayAsNumpy<int>(outputPointsFilePath, selectedPoints.size(),
+                                    selectedPoints.front().rows, outputPoints.data());
 
         std::string outputDescriptorsFilePath = outputDirectoryPath + outputFileName + "_desc.npy";
         std::vector<float> outputDescriptors;
@@ -254,8 +254,8 @@ void extractNegativeFeatures() {
                 outputDescriptors.push_back(desc[i]);
             }
         }
-        aoba::SaveArrayAsNumpy<float>(outputDescriptorsFilePath, selectedDescriptors.front().size(),
-                                      selectedDescriptors.size(), outputDescriptors.data());
+        aoba::SaveArrayAsNumpy<float>(outputDescriptorsFilePath, selectedDescriptors.size(),
+                                      selectedDescriptors.front().size(), outputDescriptors.data());
     }
 }
 
@@ -659,12 +659,12 @@ void classify() {
 }
 
 int main() {
-    // extractPositiveFeatures();
+    extractPositiveFeatures();
     // extractNegativeFeatures();
     // train();
     // detect();
-    train1data();
-    classify();
+    // train1data();
+    // classify();
 
     // using namespace nuisken;
     // using namespace nuisken::houghforests;

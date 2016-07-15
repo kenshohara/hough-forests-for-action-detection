@@ -302,11 +302,14 @@ int LocalFeatureExtractor::calculateFeatureIndex(int x, int y, int t, int width,
 
 LocalFeatureExtractor::Descriptor LocalFeatureExtractor::pooling(
         const Descriptor& descriptor) const {
-    Descriptor pooledDescriptor(xBlockSize_ * yBlockSize_ * tBlockSize_);
-    int index = 0;
-    for (int tBlockIndex = 0; tBlockIndex < localDuration_ / tBlockSize_; ++tBlockIndex) {
-        for (int yBlockIndex = 0; yBlockIndex < localHeight_ / yBlockSize_; ++yBlockIndex) {
-            for (int xBlockIndex = 0; xBlockIndex < localWidth_ / xBlockSize_; ++xBlockIndex) {
+    Descriptor pooledDescriptor;
+    int xSize = localWidth_ / xBlockSize_;
+    int ySize = localHeight_ / yBlockSize_;
+    int tSize = localDuration_ / tBlockSize_;
+    pooledDescriptor.reserve(xSize * ySize * tSize);
+    for (int tBlockIndex = 0; tBlockIndex < tSize; ++tBlockIndex) {
+        for (int yBlockIndex = 0; yBlockIndex < ySize; ++yBlockIndex) {
+            for (int xBlockIndex = 0; xBlockIndex < xSize; ++xBlockIndex) {
                 int beginX = xBlockIndex * xBlockSize_;
                 int beginY = yBlockIndex * yBlockSize_;
                 int beginT = tBlockIndex * tBlockSize_;
@@ -314,7 +317,6 @@ LocalFeatureExtractor::Descriptor LocalFeatureExtractor::pooling(
             }
         }
     }
-
     return pooledDescriptor;
 }
 
