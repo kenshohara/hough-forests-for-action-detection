@@ -107,7 +107,8 @@ void LocalFeatureExtractor::extractFeatures(int scaleIndex, int beginFrame, int 
                               endFrame);
     extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, beginFrame,
                               endFrame);
-    //extractFlowFeature(scaleChannelFeatures_[scaleIndex][4], scaleChannelFeatures_[scaleIndex][5],
+    // extractFlowFeature(scaleChannelFeatures_[scaleIndex][4],
+    // scaleChannelFeatures_[scaleIndex][5],
     //                   scaleIndex, beginFrame, endFrame);
     // extractHOGFeature(scaleChannelFeatures_[scaleIndex], scaleIndex, beginFrame, endFrame);
 }
@@ -361,8 +362,11 @@ LocalFeatureExtractor::Descriptor LocalFeatureExtractor::getDescriptor(
                 }
             }
         }
-        Descriptor pooledChannelDescriptor = pooling(channelDescriptor);
-        std::copy(std::begin(pooledChannelDescriptor), std::end(pooledChannelDescriptor),
+        Descriptor averagePooledChannelDescriptor = pooling(channelDescriptor, AVERAGE);
+        Descriptor maxPooledChannelDescriptor = pooling(channelDescriptor, MAX);
+        std::copy(std::begin(averagePooledChannelDescriptor),
+                  std::end(averagePooledChannelDescriptor), std::back_inserter(descriptor));
+        std::copy(std::begin(maxPooledChannelDescriptor), std::end(maxPooledChannelDescriptor),
                   std::back_inserter(descriptor));
     }
 
@@ -458,8 +462,8 @@ LocalFeatureExtractor::Descriptor LocalFeatureExtractor::calculateBlockHistogram
     return blockHistogram;
 }
 
-LocalFeatureExtractor::Descriptor LocalFeatureExtractor::pooling(
-        const Descriptor& descriptor) const {
+LocalFeatureExtractor::Descriptor LocalFeatureExtractor::pooling(const Descriptor& descriptor,
+                                                                 PoolingType type) const {
     Descriptor pooledDescriptor;
     int xSize = localWidth_ / xBlockSize_;
     int ySize = localHeight_ / yBlockSize_;
@@ -471,15 +475,34 @@ LocalFeatureExtractor::Descriptor LocalFeatureExtractor::pooling(
                 int beginX = xBlockIndex * xBlockSize_;
                 int beginY = yBlockIndex * yBlockSize_;
                 int beginT = tBlockIndex * tBlockSize_;
-                pooledDescriptor.push_back(pooling(descriptor, beginX, beginY, beginT));
+                if (type == AVERAGE) {
+                    pooledDescriptor.push_back(averagePooling(descriptor, beginX, beginY, beginT));
+                } else {
+                    pooledDescriptor.push_back(maxPooling(descriptor, beginX, beginY, beginT));
+                }
             }
         }
     }
     return pooledDescriptor;
 }
 
-float LocalFeatureExtractor::pooling(const Descriptor& descriptor, int beginX, int beginY,
-                                     int beginT) const {
+float LocalFeatureExtractor::averagePooling(const Descriptor& descriptor, int beginX, int beginY,
+                                            int beginT) const {
+    float sum = 0.0;
+    for (int t = 0; t < tBlockSize_; ++t) {
+        for (int y = 0; y < yBlockSize_; ++y) {
+            int featureIndex = calculateFeatureIndex(beginX, beginY + y, beginT + t, localWidth_,
+                                                     localHeight_);
+            for (int x = 0; x < xBlockSize_; ++x) {
+                sum += descriptor[featureIndex++];
+            }
+        }
+    }
+    return sum / (xBlockSize_ * yBlockSize_ * tBlockSize_);
+}
+
+float LocalFeatureExtractor::maxPooling(const Descriptor& descriptor, int beginX, int beginY,
+                                        int beginT) const {
     float max = 0.0;
     for (int t = 0; t < tBlockSize_; ++t) {
         for (int y = 0; y < yBlockSize_; ++y) {
@@ -488,7 +511,7 @@ float LocalFeatureExtractor::pooling(const Descriptor& descriptor, int beginX, i
             for (int x = 0; x < xBlockSize_; ++x, ++featureIndex) {
                 if (descriptor[featureIndex] > max) {
                     max = descriptor[featureIndex];
-                }                
+                }
             }
         }
     }

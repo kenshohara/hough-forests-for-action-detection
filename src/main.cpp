@@ -34,7 +34,7 @@ void extractPositiveFeatures() {
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string videoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale/";
-    std::string outputDirectoryPath = rootDirectoryPath + "feature_hog/";
+    std::string outputDirectoryPath = rootDirectoryPath + "feature_hf_pooling_max/";
     std::tr2::sys::path directory(videoDirectoryPath);
     std::tr2::sys::directory_iterator end;
     for (std::tr2::sys::directory_iterator itr(directory); itr != end; ++itr) {

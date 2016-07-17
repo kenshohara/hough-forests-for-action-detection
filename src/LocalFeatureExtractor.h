@@ -13,9 +13,8 @@ namespace houghforests {
 
 class LocalFeatureExtractor {
    public:
-    enum AXIS { X = 2, Y = 1, T = 0 };
-
-    enum FeatureType { INTENSITY, X_DERIVATIVE, Y_DERIVATIVE, T_DERIVATIVE, FLOW };
+    enum Axis { X = 2, Y = 1, T = 0 };
+    enum PoolingType { AVERAGE, MAX };
     static const int N_CHANNELS_;
     static const int N_HOG_BINS_;
 
@@ -158,8 +157,9 @@ class LocalFeatureExtractor {
     Descriptor calculateHistogram(const std::vector<Descriptor>& binValues) const;
     Descriptor calculateBlockHistogram(const std::vector<Descriptor>& binValues, int beginX,
                                        int beginY, int beginT) const;
-    Descriptor pooling(const Descriptor& descriptor) const;
-    float pooling(const Descriptor& descriptor, int beginX, int beginY, int beginT) const;
+    Descriptor pooling(const Descriptor& descriptor, PoolingType type) const;
+    float averagePooling(const Descriptor& descriptor, int beginX, int beginY, int beginT) const;
+    float maxPooling(const Descriptor& descriptor, int beginX, int beginY, int beginT) const;
 };
 }
 }
