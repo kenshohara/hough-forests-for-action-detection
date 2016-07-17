@@ -363,11 +363,8 @@ LocalFeatureExtractor::Descriptor LocalFeatureExtractor::getDescriptor(
             }
         }
         Descriptor averagePooledChannelDescriptor = pooling(channelDescriptor, AVERAGE);
-        Descriptor maxPooledChannelDescriptor = pooling(channelDescriptor, MAX);
         std::copy(std::begin(averagePooledChannelDescriptor),
                   std::end(averagePooledChannelDescriptor), std::back_inserter(descriptor));
-        std::copy(std::begin(maxPooledChannelDescriptor), std::end(maxPooledChannelDescriptor),
-                  std::back_inserter(descriptor));
     }
 
     return descriptor;
