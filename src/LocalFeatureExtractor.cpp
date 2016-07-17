@@ -480,17 +480,19 @@ LocalFeatureExtractor::Descriptor LocalFeatureExtractor::pooling(
 
 float LocalFeatureExtractor::pooling(const Descriptor& descriptor, int beginX, int beginY,
                                      int beginT) const {
-    float sum = 0.0;
+    float max = 0.0;
     for (int t = 0; t < tBlockSize_; ++t) {
         for (int y = 0; y < yBlockSize_; ++y) {
             int featureIndex = calculateFeatureIndex(beginX, beginY + y, beginT + t, localWidth_,
                                                      localHeight_);
-            for (int x = 0; x < xBlockSize_; ++x) {
-                sum += descriptor[featureIndex++];
+            for (int x = 0; x < xBlockSize_; ++x, ++featureIndex) {
+                if (descriptor[featureIndex] > max) {
+                    max = descriptor[featureIndex];
+                }                
             }
         }
     }
-    return sum / (xBlockSize_ * yBlockSize_ * tBlockSize_);
+    return max;
 }
 
 void LocalFeatureExtractor::visualizeDenseFeature(const std::vector<cv::Vec3i>& points,
