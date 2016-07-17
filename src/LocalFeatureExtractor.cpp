@@ -11,7 +11,7 @@
 namespace nuisken {
 namespace houghforests {
 
-const int LocalFeatureExtractor::N_CHANNELS_ = 1;
+const int LocalFeatureExtractor::N_CHANNELS_ = 4;
 const int LocalFeatureExtractor::N_HOG_BINS_ = 9;
 
 void LocalFeatureExtractor::makeLocalSizeOdd(int& size) const {
@@ -45,41 +45,13 @@ void LocalFeatureExtractor::extractLocalFeatures(
 
         std::vector<cv::Vec3i> points;
         std::vector<std::vector<float>> descriptors;
-        denseSamplingHOG(scaleIndex, points, descriptors);
+        denseSampling(scaleIndex, points, descriptors);
         scalePoints.push_back(points);
         scaleDescriptors.push_back(descriptors);
     }
 
     for (const auto& frame : colorVideo_) {
         usedVideo.push_back(frame.clone());
-    }
-
-    deleteOldData();
-}
-
-void LocalFeatureExtractor::extractLocalFeatures(
-        std::vector<std::vector<cv::Vec3i>>& scalePoints,
-        std::vector<std::vector<Descriptor>>& scaleDescriptors,
-        const std::vector<std::vector<cv::Vec3i>>& points) {
-    readOriginalScaleVideo();
-    generateScaledVideos();
-    for (int scaleIndex = 0; scaleIndex < scales_.size(); ++scaleIndex) {
-        int beginFrame = 1;
-        int endFrame = scaleVideos_[scaleIndex].size();
-        extractFeatures(scaleIndex, beginFrame, endFrame);
-        if (scaleIndex == 0) {
-            nStoredFeatureFrames_ += endFrame - beginFrame;
-        }
-        if (nStoredFeatureFrames_ < localDuration_) {
-            isEnd_ = true;
-            return;
-        }
-
-        std::vector<cv::Vec3i> points;
-        std::vector<std::vector<float>> descriptors;
-        // denseSamplingHOGSparse(scaleIndex, points, descriptors);
-        scalePoints.push_back(points);
-        scaleDescriptors.push_back(descriptors);
     }
 
     deleteOldData();
@@ -128,18 +100,16 @@ void LocalFeatureExtractor::generateScaledVideos() {
 }
 
 void LocalFeatureExtractor::extractFeatures(int scaleIndex, int beginFrame, int endFrame) {
-    // extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0], scaleIndex, beginFrame,
-    // endFrame);
-    // extractXDerivativeFeature(scaleChannelFeatures_[scaleIndex][1], scaleIndex, beginFrame,
-    //                          endFrame);
-    // extractYDerivativeFeature(scaleChannelFeatures_[scaleIndex][2], scaleIndex, beginFrame,
-    //                          endFrame);
-    // extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, beginFrame,
-    //                          endFrame);
-    // extractFlowFeature(scaleChannelFeatures_[scaleIndex][4],
-    // scaleChannelFeatures_[scaleIndex][5],
+    extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0], scaleIndex, beginFrame, endFrame);
+    extractXDerivativeFeature(scaleChannelFeatures_[scaleIndex][1], scaleIndex, beginFrame,
+                              endFrame);
+    extractYDerivativeFeature(scaleChannelFeatures_[scaleIndex][2], scaleIndex, beginFrame,
+                              endFrame);
+    extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, beginFrame,
+                              endFrame);
+    //extractFlowFeature(scaleChannelFeatures_[scaleIndex][4], scaleChannelFeatures_[scaleIndex][5],
     //                   scaleIndex, beginFrame, endFrame);
-    extractHOGFeature(scaleChannelFeatures_[scaleIndex], scaleIndex, beginFrame, endFrame);
+    // extractHOGFeature(scaleChannelFeatures_[scaleIndex], scaleIndex, beginFrame, endFrame);
 }
 
 void LocalFeatureExtractor::deleteOldData() {
