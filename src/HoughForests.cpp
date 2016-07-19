@@ -501,6 +501,8 @@ std::vector<HoughForests::Cuboid> HoughForests::performNonMaximumSuppression(
                 });
         indices.erase(removeIt, std::end(indices));
     }
+
+	return afterCuboids;
 }
 
 void HoughForests::deleteOldVotes(int classLabel, std::size_t voteMaxT) {
