@@ -14,15 +14,15 @@ namespace randomforests {
 
 class STIPNode {
    private:
-    typedef storage::STIPFeature* FeatureRawPtr;
-    typedef std::shared_ptr<STIPLeaf> LeafPtr;
+    using FeatureRawPtr = storage::STIPFeature*;
+    using LeafPtr = std::shared_ptr<STIPLeaf>;
 
     enum MeasureType { CLASS, VECTOR };
 
    public:
-    typedef storage::STIPFeature FeatureType;
-    typedef STIPSplitParameters SplitParametersType;
-    typedef STIPLeaf LeafType;
+    using FeatureType = storage::STIPFeature;
+    using SplitParametersType = STIPSplitParameters;
+    using LeafType = STIPLeaf;
 
    private:
     MeasureType type;

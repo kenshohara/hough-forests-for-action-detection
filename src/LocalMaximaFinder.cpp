@@ -135,6 +135,5 @@ std::vector<LocalMaximaFinder::Point> LocalMaximaFinder::getGridPoints(
 
     return gridPoints;
 }
-
 }
 }

@@ -25,12 +25,13 @@ namespace houghforests {
 
 class HoughForests {
    private:
-    typedef std::shared_ptr<randomforests::STIPNode::FeatureType> FeaturePtr;
-    typedef std::shared_ptr<randomforests::STIPNode::LeafType> LeafPtr;
-    typedef storage::VoteInfo<3> VoteInfo;
-    typedef storage::VotesInfoMap<3> VotesInfoMap;
-    typedef storage::DetectionResult<4> DetectionResult;
-    typedef storage::FeatureVoteInfo<3> FeatureVoteInfo;
+    using FeaturePtr = std::shared_ptr<randomforests::STIPNode::FeatureType>;
+    using LeafPtr = std::shared_ptr<randomforests::STIPNode::LeafType>;
+    using VoteInfo = storage::VoteInfo<3>;
+    using FeatureVoteInfo = storage::FeatureVoteInfo<3>;
+    using VotesInfoMap = storage::VotesInfoMap<3>;
+    using DetectionResult = storage::DetectionResult<4>;
+    using Cuboid = storage::SpaceTimeCuboid;
 
     const int S = 3;
 
@@ -104,8 +105,13 @@ class HoughForests {
     LocalMaxima findLocalMaxima(VotingSpace& votingSpace, double scoreThreshold,
                                 std::size_t voteStartT, std::size_t voteEndT);
     std::vector<LocalMaxima> thresholdLocalMaxima(std::vector<LocalMaxima> localMaxima) const;
+    std::vector<Cuboid> calculateCuboids(const LocalMaxima& localMaxima, double averageAspectRatio,
+                                         int averageDuration) const;
+    std::vector<Cuboid> performNonMaximumSuppression(const std::vector<Cuboid>& cuboids) const;
     void deleteOldVotes(int classLabel, std::size_t voteMaxT);
     std::vector<float> getVotingSpace(int classLabel) const;
+    void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
+                   const std::vector<std::vector<Cuboid>>& detectionCuboids) const;
     void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
                    const std::vector<LocalMaxima>& localMaxima) const;
     void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,

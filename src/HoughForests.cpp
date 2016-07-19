@@ -111,7 +111,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
     std::cout << "initialize" << std::endl;
     initialize();
 
-    std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
+    std::vector<std::vector<Cuboid>> detectionCuboids(parameters_.getNumberOfPositiveClasses());
     while (true) {
         auto begin = std::chrono::system_clock::now();
         std::cout << "read" << std::endl;
@@ -183,12 +183,14 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         localMaxima = thresholdLocalMaxima(localMaxima);
 
         // auto combineStart = std::chrono::system_clock::now();
-        for (int classLabel = 0; classLabel < totalLocalMaxima.size(); ++classLabel) {
-            LocalMaxima oneClassLocalMaxima(totalLocalMaxima.at(classLabel));
-            std::copy(std::begin(localMaxima.at(classLabel)), std::end(localMaxima.at(classLabel)),
-                      std::back_inserter(oneClassLocalMaxima));
-            totalLocalMaxima.at(classLabel) =
-                    finder_.combineNeighborLocalMaxima(oneClassLocalMaxima);
+        for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
+            std::vector<Cuboid> cuboids = calculateCuboids(
+                    localMaxima.at(classLabel), parameters_.getAverageAspectRatio(classLabel),
+                    parameters_.getAverageDuration(classLabel));
+            std::copy(std::begin(cuboids), std::end(cuboids),
+                      std::back_inserter(detectionCuboids.at(classLabel)));
+            detectionCuboids.at(classLabel) =
+                    performNonMaximumSuppression(detectionCuboids.at(classLabel));
         }
 
         for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
@@ -200,7 +202,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                   << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
                   << std::endl;
 
-        visualize(video, videoStartT, totalLocalMaxima);
+        visualize(video, videoStartT, detectionCuboids);
         // std::vector<std::vector<float>> sps(parameters_.getNumberOfPositiveClasses());
         // for (int classLabel = 0; classLabel < sps.size(); ++classLabel) {
         //    sps.at(classLabel) = getVotingSpace(classLabel);
@@ -210,10 +212,10 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
     }
 
     std::cout << "output process" << std::endl;
-    detectionResults.resize(totalLocalMaxima.size());
+    detectionResults.resize(detectionCuboids.size());
     for (int classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
-        for (const auto& localMaximum : totalLocalMaxima.at(classLabel)) {
-            detectionResults.at(classLabel).emplace_back(localMaximum);
+        for (const auto& cuboid : detectionCuboids.at(classLabel)) {
+            detectionResults.at(classLabel).emplace_back(cuboid.getLocalMaximum());
         }
     }
 }
@@ -411,7 +413,7 @@ std::vector<LocalMaxima> HoughForests::findLocalMaxima(
         const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges) {
     std::vector<LocalMaxima> localMaxima(parameters_.getNumberOfPositiveClasses());
 
-    typedef std::function<void()> FindingTask;
+    using FindingTask = std::function<void()>;
     std::queue<FindingTask> tasks;
     for (int classLabel = 0; classLabel < localMaxima.size(); ++classLabel) {
         if (minMaxRanges.at(classLabel).first > minMaxRanges.at(classLabel).second) {
@@ -467,6 +469,40 @@ std::vector<LocalMaxima> HoughForests::thresholdLocalMaxima(
     return thresholdedLocalMaxima;
 }
 
+std::vector<HoughForests::Cuboid> HoughForests::calculateCuboids(const LocalMaxima& localMaxima,
+                                                                 double averageAspectRatio,
+                                                                 int averageDuration) const {
+    std::vector<Cuboid> cuboids;
+    cuboids.reserve(localMaxima.size());
+    int baseScale = parameters_.getBaseScale();
+    std::transform(
+            std::begin(localMaxima), std::end(localMaxima), std::back_inserter(cuboids),
+            [averageAspectRatio, averageDuration, baseScale](const LocalMaximum& localMaximum) {
+                return Cuboid(localMaximum, baseScale, averageAspectRatio, averageDuration);
+            });
+    return cuboids;
+}
+
+std::vector<HoughForests::Cuboid> HoughForests::performNonMaximumSuppression(
+        const std::vector<Cuboid>& cuboids) const {
+    std::vector<int> indices(cuboids.size());
+    std::iota(std::begin(indices), std::end(indices), 0);
+    double threshold = parameters_.getIoUThreshold();
+    std::vector<Cuboid> afterCuboids;
+    while (!indices.empty()) {
+        int index = indices.back();
+        afterCuboids.push_back(cuboids.at(index));
+
+        auto removeIt = std::remove_if(
+                std::begin(indices), std::end(indices),
+                [&cuboids, index, threshold](int candidateIndex) {
+                    double iou = cuboids.at(index).computeIoU(cuboids.at(candidateIndex));
+                    return iou > threshold;
+                });
+        indices.erase(removeIt, std::end(indices));
+    }
+}
+
 void HoughForests::deleteOldVotes(int classLabel, std::size_t voteMaxT) {
     if (votingSpaces_.at(classLabel).discretizePoint(voteMaxT) <
         votingSpaces_.at(classLabel).getMaxT()) {
@@ -479,6 +515,35 @@ void HoughForests::deleteOldVotes(int classLabel, std::size_t voteMaxT) {
     votingSpaces_.at(classLabel).deleteOldVotes();
 
     std::cout << "after: " << votingSpaces_.at(classLabel).getVotesCount() << std::endl;
+}
+
+void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
+                             const std::vector<std::vector<Cuboid>>& detectionCuboids) const {
+    int videoEndT = videoStartT + video.size();
+    std::unordered_map<int, std::vector<std::pair<int, cv::Rect>>> visualizeMap;
+    for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
+        for (const auto& cuboid : detectionCuboids.at(classLabel)) {
+            cv::Rect rect = cuboid.getRect();
+            std::pair<int, int> range = cuboid.getRange();
+            for (int visT = range.first; visT < range.second; ++visT) {
+                visualizeMap[visT].push_back(std::make_pair(classLabel, rect));
+            }
+        }
+    }
+
+    for (int t = 0; t < video.size(); ++t) {
+        int visT = t + videoStartT;
+        cv::Mat visFrame = video.at(t).clone();
+        if (visualizeMap.count(visT) != 0) {
+            for (const auto& vis : visualizeMap.at(visT)) {
+                cv::rectangle(visFrame, vis.second, cv::Scalar(0, 0, 255), 5);
+                cv::putText(visFrame, std::to_string(vis.first), vis.second.tl(),
+                            cv::FONT_HERSHEY_PLAIN, 2.0, cv::Scalar(0, 0, 255));
+            }
+        }
+        cv::imshow("vis", visFrame);
+        cv::waitKey(5);
+    }
 }
 
 void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
@@ -546,7 +611,7 @@ std::vector<float> HoughForests::getVotingSpace(int classLabel) const {
     double sigma = parameters_.getSigma() * votingSpaces_.at(classLabel).getDiscretizeRatio();
     std::vector<double> bandwidths = {tau, sigma, parameters_.getScaleBandwidth()};
     std::vector<int> bandDimensions = {2, 1, 1};
-    typedef KernelDensityEstimation<float, 4> KDE;
+    using KDE = KernelDensityEstimation<float, 4>;
     KDE voteKde(votingPoints, weights, bandwidths, bandDimensions);
     voteKde.buildTree();
 

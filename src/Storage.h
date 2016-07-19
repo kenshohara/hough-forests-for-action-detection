@@ -9,45 +9,6 @@
 namespace nuisken {
 namespace storage {
 
-class SpaceTimeCuboid {
-   private:
-    cv::Rect rect_;
-    int beginT_;
-    int endT_;
-
-   public:
-    SpaceTimeCuboid(const cv::Rect& rect, int beginFrame, int endFrame)
-            : rect_(rect), beginT_(beginFrame), endT_(endFrame){};
-
-    SpaceTimeCuboid(const cv::Point& topLeft, const cv::Point& bottomRight, int beginFrame,
-                    int endFrame)
-            : rect_(topLeft, bottomRight), beginT_(beginFrame), endT_(endFrame){};
-
-    SpaceTimeCuboid(int xCenter, int yCenter, int tCenter, int width, int height, int duration)
-            : rect_(xCenter - width / 2, yCenter - height / 2, width, height),
-              beginT_(tCenter - duration / 2),
-              endT_(tCenter + duration / 2) {}
-
-    SpaceTimeCuboid(int xCenter, int yCenter, int tCenter, double aspectRatio, int height,
-                    int duration)
-            : rect_(xCenter - (height * aspectRatio) / 2, yCenter - height / 2,
-                    (height * aspectRatio), height),
-              beginT_(tCenter - duration / 2),
-              endT_(tCenter + duration / 2) {}
-
-    double computeVolume() const { return rect_.area() * (endT_ - beginT_); }
-
-    double computeIoU(const SpaceTimeCuboid& other) const {
-        cv::Rect intersectRect = rect_ & other.rect_;
-        int intersectStartFrame = std::max(beginT_, other.beginT_);
-        int intersectEndFrame = std::min(endT_, other.endT_);
-        SpaceTimeCuboid intersection(intersectRect, intersectStartFrame, intersectEndFrame);
-        double intersectionVolume = intersection.computeVolume();
-        return intersectionVolume /
-               (computeVolume() + other.computeVolume() - intersectionVolume);
-    }
-};
-
 template <typename T>
 class CoordinateValue {
    private:
@@ -102,7 +63,7 @@ class VoteInfo {
 template <std::size_t DIM>
 class FeatureVoteInfo {
    private:
-    typedef VoteInfo<DIM> VoteInfo;
+    using VoteInfo = VoteInfo<DIM>;
 
    private:
     cv::Vec3f featurePoint_;
@@ -139,9 +100,9 @@ class FeatureVoteInfo {
 template <std::size_t DIM>
 class VotesInfoMap {
    private:
-    typedef FeatureVoteInfo<DIM> FeatureVoteInfo;
-    typedef typename std::map<int, std::vector<FeatureVoteInfo>>::iterator Iterator;
-    typedef typename std::map<int, std::vector<FeatureVoteInfo>>::const_iterator ConstIterator;
+    using FeatureVoteInfo = FeatureVoteInfo<DIM>;
+    using Iterator = typename std::map<int, std::vector<FeatureVoteInfo>>::iterator;
+    using ConstIterator = typename std::map<int, std::vector<FeatureVoteInfo>>::const_iterator;
 
     std::map<int, std::vector<FeatureVoteInfo>> votesInfoMap_;
 
@@ -170,8 +131,8 @@ class VotesInfoMap {
 template <std::size_t DIM>
 class DetectionResult {
    private:
-    typedef CoordinateValue<cv::Vec<float, DIM>> LocalMaximum;
-    typedef CoordinateValue<cv::Vec3f> ContributionPoint;
+    using LocalMaximum = CoordinateValue<cv::Vec<float, DIM>>;
+    using ContributionPoint = CoordinateValue<cv::Vec3f>;
 
     LocalMaximum localMaximum_;
     std::vector<ContributionPoint> contributionPoints_;
@@ -225,6 +186,63 @@ class FeatureInfo {
     double getTemporalScale() const { return temporalScale_; }
 
     cv::Vec3i getDisplacementVector() const { return displacementVector_; }
+};
+
+class SpaceTimeCuboid {
+   private:
+    using LocalMaximum = CoordinateValue<cv::Vec4f>;
+
+    LocalMaximum localMaximum_;
+    cv::Rect rect_;
+    int beginT_;
+    int endT_;
+
+   public:
+    SpaceTimeCuboid(const LocalMaximum& localMaximum, int baseScale, double aspectRatio,
+                    int duration)
+            : localMaximum_(localMaximum) {
+        cv::Vec4f point = localMaximum.getPoint();
+        int height = baseScale / point(3);
+        int width = height * aspectRatio;
+        rect_ = cv::Rect(point(2) - width / 2, point(1) - height / 2, width, height);
+        beginT_ = point(0) - duration / 2;
+        endT_ = point(0) + duration / 2;
+    }
+    SpaceTimeCuboid(const const cv::Rect& rect, int beginFrame, int endFrame)
+            : rect_(rect), beginT_(beginFrame), endT_(endFrame){};
+
+    SpaceTimeCuboid(const cv::Point& topLeft, const cv::Point& bottomRight, int beginFrame,
+                    int endFrame)
+            : rect_(topLeft, bottomRight), beginT_(beginFrame), endT_(endFrame){};
+
+    SpaceTimeCuboid(int xCenter, int yCenter, int tCenter, int width, int height, int duration)
+            : rect_(xCenter - width / 2, yCenter - height / 2, width, height),
+              beginT_(tCenter - duration / 2),
+              endT_(tCenter + duration / 2) {}
+
+    SpaceTimeCuboid(int xCenter, int yCenter, int tCenter, double aspectRatio, int height,
+                    int duration)
+            : rect_(xCenter - (height * aspectRatio) / 2, yCenter - height / 2,
+                    (height * aspectRatio), height),
+              beginT_(tCenter - duration / 2),
+              endT_(tCenter + duration / 2) {}
+
+    LocalMaximum getLocalMaximum() const { return localMaximum_; }
+
+    cv::Rect getRect() const { return rect_; }
+
+    std::pair<int, int> getRange() const { return std::make_pair(beginT_, endT_); }
+
+    double computeVolume() const { return rect_.area() * (endT_ - beginT_); }
+
+    double computeIoU(const SpaceTimeCuboid& other) const {
+        cv::Rect intersectRect = rect_ & other.rect_;
+        int intersectStartFrame = std::max(beginT_, other.beginT_);
+        int intersectEndFrame = std::min(endT_, other.endT_);
+        SpaceTimeCuboid intersection(intersectRect, intersectStartFrame, intersectEndFrame);
+        double intersectionVolume = intersection.computeVolume();
+        return intersectionVolume / (computeVolume() + other.computeVolume() - intersectionVolume);
+    }
 };
 }
 }

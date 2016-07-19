@@ -12,7 +12,7 @@ namespace randomforests {
 
 template <class Type>
 void RandomForests<Type>::train(const std::vector<FeaturePtr>& features, int maxNumberOfThreads) {
-    typedef std::function<void()> TrainTask;
+    using TrainTask = std::function<void()>;
     std::queue<TrainTask> tasks;
     for (auto i = 0; i < forests.size(); ++i) {
         tasks.push([&, this, i]() { trainOneTree(features, i); });

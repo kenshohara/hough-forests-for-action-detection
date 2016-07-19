@@ -21,10 +21,10 @@ namespace randomforests {
 template <class Type>
 class TreeNode {
    private:
-    typedef typename Type::FeatureType* FeatureRawPtr;
-    typedef std::shared_ptr<typename Type::LeafType> LeafPtr;
-    typedef typename Type::SplitParametersType SplitParameters;
-    typedef std::pair<double, FeatureRawPtr> Container;
+    using FeatureRawPtr = typename Type::FeatureType*;
+    using LeafPtr = std::shared_ptr<typename Type::LeafType>;
+    using SplitParameters = typename Type::SplitParametersType;
+    using Container = std::pair<double, FeatureRawPtr>;
 
    private:
     Type type;

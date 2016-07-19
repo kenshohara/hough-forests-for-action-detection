@@ -14,8 +14,8 @@
 
 namespace nuisken {
 namespace houghforests {
-typedef storage::CoordinateValue<cv::Vec4f> LocalMaximum;
-typedef std::vector<LocalMaximum> LocalMaxima;
+using LocalMaximum = storage::CoordinateValue<cv::Vec4f>;
+using LocalMaxima = std::vector<LocalMaximum>;
 }
 
 enum Axis { X = 2, Y = 1, T = 0 };

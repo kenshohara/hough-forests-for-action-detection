@@ -20,7 +20,7 @@ namespace randomforests {
  */
 class STIPLeaf {
    public:
-    typedef storage::FeatureInfo FeatureInfo;
+    using FeatureInfo = storage::FeatureInfo;
 
    private:
     /**

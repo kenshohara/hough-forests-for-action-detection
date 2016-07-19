@@ -33,6 +33,11 @@ class HoughForestsParameters {
 
     std::vector<double> scoreThresholds_;
 
+    std::vector<std::size_t> averageDurations_;
+    std::vector<double> averageAspectRatios_;
+
+    double iouThreshold_;
+
     bool hasNegativeClass_;
 
     bool isBackprojection_;
@@ -46,8 +51,10 @@ class HoughForestsParameters {
                            double scaleBandwidth, int spatialStep, int temporalStep,
                            int votesDeleteStep, int votesBufferLength,
                            double votingSpaceDiscretizeRatio,
-                           const std::vector<double>& scoreThresholds, bool hasNegativeClass,
-                           bool isBackprojection,
+                           const std::vector<double>& scoreThresholds,
+                           const std::vector<std::size_t>& averageDurations,
+                           const std::vector<double>& averageAspectRatios, double iouThreshold,
+                           bool hasNegativeClass, bool isBackprojection,
                            const randomforests::TreeParameters& treeParameters)
             : width_(width),
               height_(height),
@@ -63,6 +70,9 @@ class HoughForestsParameters {
               votesBufferLength_(votesBufferLength),
               votingSpaceDiscretizeRatio_(votingSpaceDiscretizeRatio),
               scoreThresholds_(scoreThresholds),
+              averageDurations_(averageDurations),
+              averageAspectRatios_(averageAspectRatios),
+              iouThreshold_(iouThreshold),
               hasNegativeClass_(hasNegativeClass),
               isBackprojection_(isBackprojection),
               treeParameters_(treeParameters){};
@@ -94,6 +104,16 @@ class HoughForestsParameters {
     double getVotingSpaceDiscretizeRatio() const { return votingSpaceDiscretizeRatio_; }
 
     double getScoreThreshold(int classLabel) const { return scoreThresholds_.at(classLabel); };
+
+    std::size_t getAverageDuration(int classLabel) const {
+        return averageDurations_.at(classLabel);
+    }
+
+    double getAverageAspectRatio(int classLabel) const {
+        return averageAspectRatios_.at(classLabel);
+    }
+
+    double getIoUThreshold() const { return iouThreshold_; }
 
     bool isBackprojection() const { return isBackprojection_; }
 

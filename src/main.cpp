@@ -564,16 +564,19 @@ void detect() {
     double votingSpaceDiscretizeRatio = 0.5;
     // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
     std::vector<double> scoreThresholds(6, 2.0);
+    std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
+    std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
+    double iouThreshold = 0.5;
     // std::vector<double> scoreThresholds(6, 0.05);
     bool hasNegativeClass = true;
     bool isBackprojection = false;
     TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
                                   hasNegativeClass);
-    HoughForestsParameters parameters(width, height, scales, baseScale, nClasses, bandwidths.at(0),
-                                      bandwidths.at(1), bandwidths.at(2), steps.at(0), steps.at(1),
-                                      votesDeleteStep, votesBufferLength,
-                                      votingSpaceDiscretizeRatio, scoreThresholds, hasNegativeClass,
-                                      isBackprojection, treeParameters);
+    HoughForestsParameters parameters(
+            width, height, scales, baseScale, nClasses, bandwidths.at(0), bandwidths.at(1),
+            bandwidths.at(2), steps.at(0), steps.at(1), votesDeleteStep, votesBufferLength,
+            votingSpaceDiscretizeRatio, scoreThresholds, durations, aspectRatios, iouThreshold,
+            hasNegativeClass, isBackprojection, treeParameters);
     HoughForests houghForests(nThreads);
     houghForests.setHoughForestsParameters(parameters);
     houghForests.load(forestsDirectoryPath);

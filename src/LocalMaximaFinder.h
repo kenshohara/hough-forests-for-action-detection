@@ -27,9 +27,9 @@ class LocalMaximaFinder {
     double threshold_;
     int maxIteration_;
 
-    typedef KernelDensityEstimation<float, DIMENSION_SIZE_> KDE;
-    typedef std::array<float, DIMENSION_SIZE_> Point;
-    typedef std::pair<std::uint32_t, float> Match;
+    using KDE = KernelDensityEstimation<float, DIMENSION_SIZE_>;
+    using Point = std::array<float, DIMENSION_SIZE_>;
+    using Match = std::pair<std::uint32_t, float>;
 
    public:
     LocalMaximaFinder(){};

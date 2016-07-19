@@ -21,7 +21,7 @@ class KernelDensityEstimation {
     template <typename T, std::uint32_t DIM>
     class DataAdaptor {
        private:
-        typedef std::array<T, DIM> Point;
+        using Point = std::array<T, DIM>;
 
        private:
         std::vector<std::array<T, DIM>> data_;
@@ -68,11 +68,10 @@ class KernelDensityEstimation {
         }
     };
 
-    typedef nanoflann::KDTreeSingleIndexAdaptor<
+    using KDTree = nanoflann::KDTreeSingleIndexAdaptor<
             nanoflann::L2_Simple_Adaptor<T, DataAdaptor<T, DIM>>, DataAdaptor<T, DIM>, DIM,
-            std::uint32_t>
-            KDTree;
-    typedef std::array<T, DIM> Point;
+            std::uint32_t>;
+    using Point = std::array<T, DIM>;
 
    private:
     std::unique_ptr<KDTree> kdTree_;

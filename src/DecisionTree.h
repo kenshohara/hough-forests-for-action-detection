@@ -16,8 +16,8 @@ namespace randomforests {
 template <class Type>
 class DecisionTree {
    private:
-    typedef typename Type::FeatureType* FeatureRawPtr;
-    typedef std::shared_ptr<typename Type::LeafType> LeafPtr;
+    using FeatureRawPtr = typename Type::FeatureType*;
+    using LeafPtr = std::shared_ptr<typename Type::LeafType>;
 
    private:
     Type type;
