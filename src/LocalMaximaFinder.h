@@ -47,8 +47,7 @@ class LocalMaximaFinder {
 
     LocalMaxima findLocalMaxima(const VotingSpace& votingSpace, double scoreThreshold,
                                 std::size_t voteStartT, std::size_t voteEndT) const;
-
-    LocalMaxima combineNeighborLocalMaxima(const LocalMaxima& localMaxima) const;
+    LocalMaxima nonMaximumSuppression(const LocalMaxima& localMaxima) const;
 
    private:
     std::vector<Point> getGridPoints(std::size_t beginT, std::size_t endT, std::size_t stepT,
@@ -59,7 +58,6 @@ class LocalMaximaFinder {
                                 std::size_t voteStartT, std::size_t voteEndT,
                                 const std::vector<Point>& gridPoints) const;
     LocalMaximum refineLocalMaximum(const KDE& kde, const Point& localMaximumPoint) const;
-    bool isNeighbor(const cv::Vec4f& a, const cv::Vec4f& b) const;
 };
 }
 }
