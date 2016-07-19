@@ -67,9 +67,9 @@ class HoughForestsParameters {
               isBackprojection_(isBackprojection),
               treeParameters_(treeParameters){};
 
-    std::size_t getWidth() { return width_; }
+    std::size_t getWidth() const { return width_; }
 
-    std::size_t getHeight() { return height_; }
+    std::size_t getHeight() const { return height_; }
 
     std::vector<double> getScales() const { return scales_; }
 

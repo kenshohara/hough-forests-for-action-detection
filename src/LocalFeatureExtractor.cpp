@@ -23,12 +23,14 @@ void LocalFeatureExtractor::makeLocalSizeOdd(int& size) const {
 void LocalFeatureExtractor::extractLocalFeatures(
         std::vector<std::vector<cv::Vec3i>>& scalePoints,
         std::vector<std::vector<Descriptor>>& scaleDescriptors) {
-    extractLocalFeatures(scalePoints, scaleDescriptors, ColorVideo{});
+    std::size_t t;
+    extractLocalFeatures(scalePoints, scaleDescriptors, ColorVideo{}, t);
 }
 
 void LocalFeatureExtractor::extractLocalFeatures(
         std::vector<std::vector<cv::Vec3i>>& scalePoints,
-        std::vector<std::vector<Descriptor>>& scaleDescriptors, ColorVideo& usedVideo) {
+        std::vector<std::vector<Descriptor>>& scaleDescriptors, ColorVideo& usedVideo,
+        std::size_t& usedVideoStartT) {
     readOriginalScaleVideo();
     generateScaledVideos();
     for (int scaleIndex = 0; scaleIndex < scales_.size(); ++scaleIndex) {
@@ -53,6 +55,7 @@ void LocalFeatureExtractor::extractLocalFeatures(
     for (const auto& frame : colorVideo_) {
         usedVideo.push_back(frame.clone());
     }
+    usedVideoStartT = storedColorVideoStartT_;
 
     deleteOldData();
 }
@@ -528,23 +531,6 @@ void LocalFeatureExtractor::visualizeDenseFeature(const std::vector<cv::Vec3i>& 
     int yRange = localHeight_ / 2;
     int tRange = localDuration_ / 2;
 
-    // for (int i = 0; i < points.size(); ++i) {
-    //    int index = 0;
-    //    for (int j = 0; j < localDuration_; ++j) {
-    //        std::cout << localHeight_ * localWidth_ * localDuration_ << ", " <<
-    //        features.at(i).size() << std::endl;
-    //        cv::Mat1f local(localHeight_, localWidth_);
-    //        for (int y = 0; y < localHeight_; ++y) {
-    //            for (int x = 0; x < localWidth_; ++x) {
-    //                local(y, x) = features.at(i).at(index++);
-    //            }
-    //        }
-    //        cv::normalize(local, local, 0.0, 1.0, cv::NORM_MINMAX);
-    //        cv::imshow("local", local);
-    //        cv::waitKey(0);
-    //    }
-    //}
-
     for (int i = 0; i < points.size(); ++i) {
         cv::Vec3i point = points[i];
 
@@ -567,6 +553,21 @@ void LocalFeatureExtractor::visualizeDenseFeature(const std::vector<cv::Vec3i>& 
         cv::normalize(frame, frame, 1.0, 0.0, cv::NORM_MINMAX);
 
         cv::imshow("", frame);
+        cv::waitKey(0);
+    }
+}
+
+void LocalFeatureExtractor::visualizeDenseFeature(const Descriptor& feature) const {
+    int index = 0;
+    for (int j = 0; j < localDuration_; ++j) {
+        cv::Mat1f local(localHeight_, localWidth_);
+        for (int y = 0; y < localHeight_; ++y) {
+            for (int x = 0; x < localWidth_; ++x) {
+                local(y, x) = feature.at(index++);
+            }
+        }
+        cv::normalize(local, local, 0.0, 1.0, cv::NORM_MINMAX);
+        cv::imshow("local", local);
         cv::waitKey(0);
     }
 }
@@ -612,6 +613,23 @@ void LocalFeatureExtractor::visualizePooledDenseFeature(
         cv::normalize(frame, frame, 1.0, 0.0, cv::NORM_MINMAX);
 
         cv::imshow("", frame);
+        cv::waitKey(0);
+    }
+}
+
+void LocalFeatureExtractor::visualizePooledDenseFeature(const Descriptor& feature) const {
+    int index = 0;
+    for (int j = 0; j < localDuration_ / tBlockSize_; ++j) {
+        cv::Mat1f local(localHeight_ / yBlockSize_, localWidth_ / xBlockSize_);
+        for (int y = 0; y < localHeight_ / yBlockSize_; ++y) {
+            for (int x = 0; x < localWidth_ / xBlockSize_; ++x) {
+                local(y, x) = feature.at(index++);
+            }
+        }
+        cv::normalize(local, local, 0.0, 1.0, cv::NORM_MINMAX);
+        cv::Mat1f resizedLocal;
+        cv::resize(local, resizedLocal, cv::Size(), 3.0, 3.0, cv::INTER_NEAREST);
+        cv::imshow("local", resizedLocal);
         cv::waitKey(0);
     }
 }

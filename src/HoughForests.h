@@ -81,9 +81,6 @@ class HoughForests {
         parameters_ = parameters;
     }
 
-    // std::vector<float> getVotingSpace(int classLabel, int spatialStep, int durationStep,
-    //                                  const std::vector<double>& scales) const;
-
     // std::vector<float> calculateScores(const std::vector<FeaturePtr>& features,
     //                                   const cv::Vec4i& calculationPosition);
 
@@ -93,9 +90,10 @@ class HoughForests {
    private:
     void initialize();
     void calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
-                        std::vector<std::vector<VoteInfo>>& votesInfo) const;
+                        std::vector<std::vector<VoteInfo>>& votesInfo,
+                        std::vector<int>& visIndices) const;
     std::vector<VoteInfo> calculateVotes(const FeaturePtr& feature, int scaleIndex,
-                                         const std::vector<LeafPtr>& leavesData) const;
+                                         const std::vector<LeafPtr>& leavesData, bool& isVis) const;
     cv::Vec3i calculateVotingPoint(const FeaturePtr& feature, double scale,
                                    const randomforests::STIPLeaf::FeatureInfo& featureInfo) const;
     void inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& votesInfo);
@@ -107,8 +105,12 @@ class HoughForests {
                                 std::size_t voteStartT, std::size_t voteEndT);
     std::vector<LocalMaxima> thresholdLocalMaxima(std::vector<LocalMaxima> localMaxima) const;
     void deleteOldVotes(int classLabel, std::size_t voteMaxT);
+    std::vector<float> getVotingSpace(int classLabel) const;
     void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
                    const std::vector<LocalMaxima>& localMaxima) const;
+    void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
+                   const std::vector<cv::Vec3i>& points) const;
+    void visualize(const std::vector<std::vector<float>>& votingSpaces) const;
 };
 }
 }

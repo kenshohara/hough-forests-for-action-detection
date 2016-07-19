@@ -53,6 +53,7 @@ class VotingSpace {
     std::size_t getWidth() const { return width_; }
     std::size_t getHeight() const { return height_; }
     std::size_t getMaxT() const { return maxT_; }
+    std::size_t getMinT() const { return minT_; }
     double getDiscretizeRatio() const { return discretizeRatio_; }
 };
 }

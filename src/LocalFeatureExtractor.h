@@ -105,21 +105,19 @@ class LocalFeatureExtractor {
                               std::vector<std::vector<Descriptor>>& scaleDescriptors);
     void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
                               std::vector<std::vector<Descriptor>>& scaleDescriptors,
-                              ColorVideo& usedVideo);
+                              ColorVideo& usedVideo, std::size_t& usedVideoStartT);
 
     bool isEnd() const { return isEnd_; }
     std::size_t getStoredColorVideoStartT() const { return storedColorVideoStartT_; }
     std::size_t getStoredFeatureStartT() const { return storedFeatureStartT_; }
 
-    static std::vector<std::string> getFeatureNames() {
-        return std::vector<std::string>{"intensity",    "x_derivative", "y_derivative",
-                                        "t_derivative", "x_flow",       "y_flow"};
-    }
     void visualizeDenseFeature(const std::vector<cv::Vec3i>& points,
                                const std::vector<Descriptor>& features, int width, int height,
                                int duration) const;
+    void visualizeDenseFeature(const Descriptor& features) const;
     void visualizePooledDenseFeature(const std::vector<cv::Vec3i>& points,
                                      const std::vector<Descriptor>& features) const;
+    void visualizePooledDenseFeature(const Descriptor& feature) const;
 
    private:
     void makeLocalSizeOdd(int& size) const;

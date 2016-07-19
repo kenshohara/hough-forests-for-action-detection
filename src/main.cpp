@@ -34,7 +34,7 @@ void extractPositiveFeatures() {
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string videoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale/";
-    std::string outputDirectoryPath = rootDirectoryPath + "feature_hf_pooling_avg_max/";
+    std::string outputDirectoryPath = rootDirectoryPath + "feature_hf_pooling/";
     std::tr2::sys::path directory(videoDirectoryPath);
     std::tr2::sys::directory_iterator end;
     for (std::tr2::sys::directory_iterator itr(directory); itr != end; ++itr) {
@@ -185,8 +185,8 @@ void extractNegativeFeatures() {
     std::vector<std::string> filePaths;
     std::string videoDirectoryPath = "E:/Hara/UT-Interaction/unsegmented/";
     std::string labelFilePath = "E:/Hara/UT-Interaction/labels.csv";
-    std::string outputDirectoryPath = "E:/Hara/UT-Interaction/feature_hf/";
-    for (int sequenceIndex = 19; sequenceIndex <= 20; ++sequenceIndex) {
+    std::string outputDirectoryPath = "E:/Hara/UT-Interaction/feature_hf_pooling/";
+    for (int sequenceIndex = 1; sequenceIndex <= 20; ++sequenceIndex) {
         std::string filePath =
                 (boost::format("%sseq%d.avi") % videoDirectoryPath % sequenceIndex).str();
         std::vector<cv::Rect> boxes;
@@ -265,15 +265,14 @@ void train() {
     using namespace nuisken::houghforests;
     using namespace nuisken::randomforests;
 
-    const int N_CHANNELS = 6;
-    const int N_USED_CHANNELS = 4;
+    const int N_CHANNELS = 4;
     const int N_CLASSES = 7;
 
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
-    std::string featureDirectoryPath = rootDirectoryPath + "feature_hf3/";
+    std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling/";
     std::string labelFilePath = rootDirectoryPath + "labels.csv";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_noflow2/";
+    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling/";
     std::vector<std::vector<int>> validationCombinations = {{19, 5}, {12, 6}, {4, 7},   {16, 17},
                                                             {9, 13}, {11, 8}, {10, 14}, {18, 15},
                                                             {3, 20}, {2, 1}};
@@ -307,18 +306,17 @@ void train() {
                     std::vector<float> descriptors;
                     aoba::LoadArrayFromNumpy<float>(descriptorFilePath, descShape, descriptors);
 
-                    int nChannelFeatures = descShape[0] / N_CHANNELS;
-
-                    for (int localIndex = 0; localIndex < pointShape[1]; ++localIndex) {
+                    int nChannelFeatures = descShape[1] / N_CHANNELS;
+                    for (int localIndex = 0; localIndex < pointShape[0]; ++localIndex) {
                         int pointIndex = localIndex * 3;
                         cv::Vec3i point(points[pointIndex], points[pointIndex + 1],
                                         points[pointIndex + 2]);
-                        std::vector<Eigen::MatrixXf> features(N_USED_CHANNELS);
-                        for (int channelIndex = 0; channelIndex < N_USED_CHANNELS; ++channelIndex) {
+                        std::vector<Eigen::MatrixXf> features(N_CHANNELS);
+                        for (int channelIndex = 0; channelIndex < N_CHANNELS; ++channelIndex) {
                             Eigen::MatrixXf feature(1, nChannelFeatures);
                             for (int featureIndex = 0; featureIndex < nChannelFeatures;
                                  ++featureIndex) {
-                                int index = localIndex * descShape[0] +
+                                int index = localIndex * descShape[1] +
                                             channelIndex * nChannelFeatures + featureIndex;
                                 feature.coeffRef(0, featureIndex) = descriptors[index];
                             }
@@ -333,6 +331,7 @@ void train() {
                         auto data = std::make_shared<STIPFeature>(features, point, offset,
                                                                   std::make_pair(0.0, 0.0),
                                                                   classLabels[labelIndex]);
+                        data->setIndex(-1);
                         trainingData.push_back(data);
                     }
                 }
@@ -355,8 +354,8 @@ void train() {
                     int pointIndex = localIndex * 3;
                     cv::Vec3i point(points[pointIndex], points[pointIndex + 1],
                                     points[pointIndex + 2]);
-                    std::vector<Eigen::MatrixXf> features(N_USED_CHANNELS);
-                    for (int channelIndex = 0; channelIndex < N_USED_CHANNELS; ++channelIndex) {
+                    std::vector<Eigen::MatrixXf> features(N_CHANNELS);
+                    for (int channelIndex = 0; channelIndex < N_CHANNELS; ++channelIndex) {
                         Eigen::MatrixXf feature(1, nChannelFeatures);
                         for (int featureIndex = 0; featureIndex < nChannelFeatures;
                              ++featureIndex) {
@@ -368,10 +367,12 @@ void train() {
                     }
                     auto data = std::make_shared<STIPFeature>(
                             features, point, cv::Vec3i(), std::make_pair(0.0, 0.0), N_CLASSES - 1);
+                    data->setIndex(-1);
                     trainingData.push_back(data);
                 }
             }
         }
+        std::cout << "data size: " << trainingData.size() << std::endl;
 
         int nTrees = 15;
         double bootstrapRatio = 1.0;
@@ -383,11 +384,11 @@ void train() {
         bool hasNegatieClass = true;
         TreeParameters treeParameters(N_CLASSES, nTrees, bootstrapRatio, maxDepth, minData, nSplits,
                                       nThresholds, type, hasNegatieClass);
-        std::vector<int> numberOfFeatureDimensions(N_USED_CHANNELS);
-        for (auto i = 0; i < N_USED_CHANNELS; ++i) {
+        std::vector<int> numberOfFeatureDimensions(N_CHANNELS);
+        for (auto i = 0; i < N_CHANNELS; ++i) {
             numberOfFeatureDimensions.at(i) = trainingData.front()->getNumberOfFeatureDimensions(i);
         }
-        STIPNode stipNode(N_CLASSES, N_USED_CHANNELS, numberOfFeatureDimensions);
+        STIPNode stipNode(N_CLASSES, N_CHANNELS, numberOfFeatureDimensions);
         HoughForestsParameters houghParameters;
         houghParameters.setTreeParameters(treeParameters);
         int nThreads = 6;
@@ -525,8 +526,9 @@ void detect() {
     using namespace nuisken::randomforests;
     using namespace nuisken::storage;
 
-    std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_noflow/0/";
+    std::string rootDirectoryPath = "D:/UT-Interaction/";
+    // std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
+    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling/0/";
     std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting/";
 
     int localWidth = 21;
@@ -541,14 +543,17 @@ void detect() {
     // std::vector<double> scales = {1.0, 0.707, 0.5};
     std::vector<double> scales = {1.0};
 
-    std::string videoFilePath = rootDirectoryPath + "test.avi";  // "unsegmented/seq5.avi";
+    // std::string videoFilePath = rootDirectoryPath + "test.avi";  // "unsegmented/seq5.avi";
+    std::string videoFilePath = "D:/TestData/test.avi";  // "unsegmented/seq5.avi";
     LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight, localDuration,
                                     xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
 
     int nClasses = 7;
     int nThreads = 1;
-    int width = 300;
-    int height = 200;
+    // int width = 300;
+    // int height = 200;
+    int width = 720;
+    int height = 480;
     double initialScale = 1.0;
     double scalingRate = 0.707;
     int baseScale = 200;
@@ -660,10 +665,10 @@ void classify() {
 }
 
 int main() {
-    extractPositiveFeatures();
+    // extractPositiveFeatures();
     // extractNegativeFeatures();
     // train();
-    // detect();
+    detect();
     // train1data();
     // classify();
 
