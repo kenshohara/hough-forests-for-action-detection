@@ -208,10 +208,10 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
             parameters_.getNumberOfPositiveClasses());
     bool isEnded = false;
 
-    std::thread visualizationThread(
-            [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
-                visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids, isEnded);
-            });
+    //std::thread visualizationThread(
+    //        [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
+    //            visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids, isEnded);
+    //        });
     while (true) {
         auto begin = std::chrono::system_clock::now();
         std::cout << "read" << std::endl;
@@ -258,9 +258,10 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         // std::cout << "input in voting space" << std::endl;
         inputInVotingSpace(votesInfo);
 
-        for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
-            votingSpaces_.at(classLabel).renew();
-        }
+		auto renewBegin = std::chrono::system_clock::now();
+		renewVotingSpaces();
+		auto renewEnd = std::chrono::system_clock::now();
+		std::cout << "density estimation: " << std::chrono::duration_cast<std::chrono::milliseconds>(renewEnd - renewBegin).count() << std::endl;
 
         // auto calcMMStart = std::chrono::system_clock::now();
         // std::cout << "calc min max vote t" << std::endl;
@@ -293,7 +294,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
             std::sort(std::begin(detectionCuboids.at(classLabel)),
                       std::end(detectionCuboids.at(classLabel)),
                       [](const Cuboid& a, const Cuboid& b) {
-                          return a.getLocalMaximum().getValue() > b.getLocalMaximum().getValue();
+                          return a.getLocalMaximum().getValue() < b.getLocalMaximum().getValue();
                       });
             detectionCuboids.at(classLabel) =
                     performNonMaximumSuppression(detectionCuboids.at(classLabel));
@@ -464,6 +465,18 @@ void HoughForests::getMinMaxVotingT(
             }
         }
     }
+}
+
+void HoughForests::renewVotingSpaces() {
+	using RenewTask = std::function<void()>;
+	std::queue<RenewTask> tasks;
+	for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
+		tasks.push([this, classLabel]() {
+			votingSpaces_.at(classLabel).renew();
+		});
+	}
+
+	thread::threadProcess(tasks, nThreads_);
 }
 
 std::vector<LocalMaxima> HoughForests::findLocalMaxima(

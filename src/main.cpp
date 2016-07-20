@@ -666,7 +666,7 @@ void detectAll() {
     std::vector<double> scales = {1.0, 0.707, 0.5};
 
     int nClasses = 7;
-    int nThreads = 1;
+    int nThreads = 6;
     int width = 360;
     int height = 240;
     // int width = 720;
