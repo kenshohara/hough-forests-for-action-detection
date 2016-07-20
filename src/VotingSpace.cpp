@@ -72,14 +72,13 @@ void VotingSpace::renew() {
         return;
     }
 
-    double tau = tau_ * getDiscretizeRatio();
-    double sigma = sigma_ * getDiscretizeRatio();
-    std::vector<double> bandwidths = {tau, sigma, scaleBandwidth_};
+    std::vector<double> bandwidths = {tau_, sigma_, scaleBandwidth_};
     std::vector<int> bandDimensions = {TEMPORAL_DIMENSION_SIZE_, SPATIAL_DIMENSION_SIZE_,
                                        SCALE_DIMENSION_SIZE_};
     KDE voteKde(votingPoints, weights, bandwidths, bandDimensions);
     voteKde.buildTree();
 
+    double maxdens = 0.0;
     for (int i = 0; i < gridPoints_.size(); ++i) {
         gridVotingScores_.at(i) += voteKde.estimateDensity(gridPoints_.at(i));
     }

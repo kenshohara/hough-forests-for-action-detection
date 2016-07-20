@@ -49,7 +49,7 @@ class VotingSpace {
               nScales_(nScales),
               scales_(scales),
               steps_(steps),
-              sigma_(sigma * discretizeRatio_),
+              sigma_(sigma * discretizeRatio),
               tau_(tau * discretizeRatio),
               scaleBandwidth_(scaleBandwidth),
               maxT_(bufferLength * discretizeRatio),
