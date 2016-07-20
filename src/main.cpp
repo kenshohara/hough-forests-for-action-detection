@@ -549,7 +549,7 @@ void detect() {
                                     xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
 
     int nClasses = 7;
-    int nThreads = 1;
+    int nThreads = 6;
     // int width = 300;
     // int height = 200;
     int width = 720;
@@ -563,7 +563,7 @@ void detect() {
     int votesBufferLength = 200;
     double votingSpaceDiscretizeRatio = 0.5;
     // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 1.0);
+    std::vector<double> scoreThresholds(6, 2.0);
     std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
     std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
     double iouThreshold = 0.1;
