@@ -239,9 +239,9 @@ class SpaceTimeCuboid {
 
     double computeIoU(const SpaceTimeCuboid& other) const {
         cv::Rect intersectRect = rect_ & other.rect_;
-        int intersectStartFrame = std::max(beginT_, other.beginT_);
+        int intersectBeginFrame = std::max(beginT_, other.beginT_);
         int intersectEndFrame = std::min(endT_, other.endT_);
-        SpaceTimeCuboid intersection(intersectRect, intersectStartFrame, intersectEndFrame);
+        SpaceTimeCuboid intersection(intersectRect, intersectBeginFrame, intersectEndFrame);
         double intersectionVolume = intersection.computeVolume();
         return intersectionVolume / (computeVolume() + other.computeVolume() - intersectionVolume);
     }

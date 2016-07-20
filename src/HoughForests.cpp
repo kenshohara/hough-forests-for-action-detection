@@ -202,16 +202,16 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
 
     std::vector<cv::Mat3b> video;
     int fps = extractor.getFPS();
-    std::size_t videoStartT = 0;
+    std::size_t videoBeginT = 0;
     std::vector<std::vector<Cuboid>> detectionCuboids(parameters_.getNumberOfPositiveClasses());
     std::vector<std::unordered_map<int, std::vector<Cuboid>>> visualizationDetectionCuboids(
             parameters_.getNumberOfPositiveClasses());
     bool isEnded = false;
-    // std::thread visualizationThread(
-    //        [this, &video, fps, &videoStartT, &visualizationDetectionCuboids, &isEnded]() {
-    //            visualizeParallel(video, fps, videoStartT, visualizationDetectionCuboids,
-    //            isEnded);
-    //        });
+
+    std::thread visualizationThread(
+            [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
+                visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids, isEnded);
+            });
     while (true) {
         auto begin = std::chrono::system_clock::now();
         std::cout << "read" << std::endl;
@@ -219,7 +219,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
         {
             std::lock_guard<std::mutex> lock(m_);
-            extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video, videoStartT);
+            extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video, videoBeginT);
         }
         auto featEnd = std::chrono::system_clock::now();
         std::cout << "extract features: "
@@ -253,10 +253,14 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         // for (int index : indices) {
         //    ps.push_back(scalePoints.front().at(index));
         //}
-        // visualize(video, videoStartT, ps);
+        // visualize(video, videoBeginT, ps);
         // auto inputStart = std::chrono::system_clock::now();
         // std::cout << "input in voting space" << std::endl;
         inputInVotingSpace(votesInfo);
+
+        for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
+            votingSpaces_.at(classLabel).renew();
+        }
 
         // auto calcMMStart = std::chrono::system_clock::now();
         // std::cout << "calc min max vote t" << std::endl;
@@ -318,7 +322,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                   << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
                   << std::endl;
 
-        // visualize(video, videoStartT, detectionCuboids);
+        // visualize(video, videoBeginT, detectionCuboids);
         // std::vector<std::vector<float>> sps(parameters_.getNumberOfPositiveClasses());
         // for (int classLabel = 0; classLabel < sps.size(); ++classLabel) {
         //    sps.at(classLabel) = getVotingSpace(classLabel);
@@ -339,16 +343,17 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
 
 void HoughForests::initialize() {
     votingSpaces_.clear();
-    std::vector<double> scales = parameters_.getScales();
-    for (int i = 0; i < parameters_.getNumberOfPositiveClasses(); ++i) {
-        votingSpaces_.emplace_back(parameters_.getWidth(), parameters_.getHeight(), scales.size(),
-                                   scales, parameters_.getVotesDeleteStep(),
-                                   parameters_.getVotesBufferLength(),
-                                   parameters_.getVotingSpaceDiscretizeRatio());
-    }
-
     std::vector<int> steps = {parameters_.getTemporalStep(), parameters_.getSpatialStep(),
                               parameters_.getSpatialStep()};
+    std::vector<double> scales = parameters_.getScales();
+    for (int i = 0; i < parameters_.getNumberOfPositiveClasses(); ++i) {
+        votingSpaces_.emplace_back(
+                parameters_.getWidth(), parameters_.getHeight(), scales.size(), scales, steps,
+                parameters_.getSigma(), parameters_.getTau(), parameters_.getScaleBandwidth(),
+                parameters_.getVotesDeleteStep(), parameters_.getVotesBufferLength(),
+                parameters_.getVotingSpaceDiscretizeRatio());
+    }
+
     finder_ = LocalMaximaFinder(steps, scales, parameters_.getSigma(), parameters_.getTau(),
                                 parameters_.getScaleBandwidth());
 }
@@ -485,13 +490,13 @@ std::vector<LocalMaxima> HoughForests::findLocalMaxima(
 }
 
 LocalMaxima HoughForests::findLocalMaxima(VotingSpace& votingSpace, double scoreThreshold,
-                                          std::size_t voteStartT, std::size_t voteEndT) {
+                                          std::size_t voteBeginT, std::size_t voteEndT) {
     LocalMaxima localMaxima =
-            finder_.findLocalMaxima(votingSpace, scoreThreshold, voteStartT, voteEndT);
+            finder_.findLocalMaxima(votingSpace, scoreThreshold, voteBeginT, voteEndT);
     LocalMaxima trueLocalMaxima;
     for (const auto& localMaximum : localMaxima) {
         int t = localMaximum.getPoint()(T);
-        if (t >= voteStartT && t < voteEndT) {
+        if (t >= voteBeginT && t < voteEndT) {
             trueLocalMaxima.push_back(localMaximum);
         }
     }
@@ -572,7 +577,7 @@ void HoughForests::deleteOldVotes(int classLabel, std::size_t voteMaxT) {
 }
 
 void HoughForests::visualizeParallel(
-        std::vector<cv::Mat3b>& video, int fps, const std::size_t& videoStartT,
+        std::vector<cv::Mat3b>& video, int fps, const std::size_t& videoBeginT,
         const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
         const bool& isEnded) {
     using namespace std::chrono;
@@ -584,8 +589,7 @@ void HoughForests::visualizeParallel(
 
             for (int t = 0; t < video.size(); ++t) {
                 auto start = system_clock::now();
-                int visT = t + videoStartT;
-                // std::cout << "t: " << visT << std::endl;
+                int visT = t + videoBeginT;
                 cv::Mat visFrame = video.at(t).clone();
                 for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
                     int duration = parameters_.getAverageDuration(classLabel);
@@ -615,9 +619,9 @@ void HoughForests::visualizeParallel(
     }
 }
 
-void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
+void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,
                              const std::vector<std::vector<Cuboid>>& detectionCuboids) const {
-    int videoEndT = videoStartT + video.size();
+    int videoEndT = videoBeginT + video.size();
     std::unordered_map<int, std::vector<std::pair<int, cv::Rect>>> visualizeMap;
     for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
         for (const auto& cuboid : detectionCuboids.at(classLabel)) {
@@ -630,7 +634,7 @@ void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t vi
     }
 
     for (int t = 0; t < video.size(); ++t) {
-        int visT = t + videoStartT;
+        int visT = t + videoBeginT;
         cv::Mat visFrame = video.at(t).clone();
         if (visualizeMap.count(visT) != 0) {
             for (const auto& vis : visualizeMap.at(visT)) {
@@ -644,9 +648,9 @@ void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t vi
     }
 }
 
-void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
+void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,
                              const std::vector<LocalMaxima>& localMaxima) const {
-    int videoEndT = videoStartT + video.size();
+    int videoEndT = videoBeginT + video.size();
     std::unordered_map<int, std::vector<std::pair<int, cv::Point>>> visualizeMap;
     for (int classLabel = 0; classLabel < localMaxima.size(); ++classLabel) {
         for (const auto& localMaximum : localMaxima.at(classLabel)) {
@@ -665,7 +669,7 @@ void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t vi
     }
 
     for (int t = 0; t < video.size(); ++t) {
-        int visT = t + videoStartT;
+        int visT = t + videoBeginT;
         cv::Mat visFrame = video.at(t).clone();
         if (visualizeMap.count(visT) != 0) {
             for (const auto& vis : visualizeMap.at(visT)) {
@@ -679,11 +683,11 @@ void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t vi
     }
 }
 
-void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
+void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,
                              const std::vector<cv::Vec3i>& points) const {
     for (int t = 0; t < video.size(); ++t) {
-        int visT = t + videoStartT;
-        std::cout << videoStartT << std::endl;
+        int visT = t + videoBeginT;
+        std::cout << videoBeginT << std::endl;
         std::cout << visT << std::endl;
         cv::Mat visFrame = video.at(t).clone();
         for (const auto& point : points) {

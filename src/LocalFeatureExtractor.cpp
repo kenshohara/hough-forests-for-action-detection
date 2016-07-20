@@ -30,7 +30,7 @@ void LocalFeatureExtractor::extractLocalFeatures(
 void LocalFeatureExtractor::extractLocalFeatures(
         std::vector<std::vector<cv::Vec3i>>& scalePoints,
         std::vector<std::vector<Descriptor>>& scaleDescriptors, ColorVideo& usedVideo,
-        std::size_t& usedVideoStartT) {
+        std::size_t& usedVideoBeginT) {
     readOriginalScaleVideo();
     generateScaledVideos();
     for (int scaleIndex = 0; scaleIndex < scales_.size(); ++scaleIndex) {
@@ -55,7 +55,7 @@ void LocalFeatureExtractor::extractLocalFeatures(
     for (const auto& frame : colorVideo_) {
         usedVideo.push_back(frame.clone());
     }
-    usedVideoStartT = storedColorVideoStartT_;
+    usedVideoBeginT = storedColorVideoBeginT_;
 
     deleteOldData();
 }
@@ -121,14 +121,14 @@ void LocalFeatureExtractor::deleteOldData() {
         scaleVideos_ = std::vector<Video>(scales_.size());
         scaleChannelFeatures_ =
                 std::vector<MultiChannelFeature>(scales_.size(), MultiChannelFeature(N_CHANNELS_));
-        storedColorVideoStartT_ += tStep_;
-        storedFeatureStartT_ += tStep_;
+        storedColorVideoBeginT_ += tStep_;
+        storedFeatureBeginT_ += tStep_;
         nStoredFeatureFrames_ = 0;
 
         return;
     }
 
-    storedColorVideoStartT_ += colorVideo_.size();
+    storedColorVideoBeginT_ += colorVideo_.size();
     colorVideo_.clear();
     for (auto& video : scaleVideos_) {
         video = {video.back()};
@@ -145,7 +145,7 @@ void LocalFeatureExtractor::deleteOldData() {
             features.erase(beginIt, deleteEndIt);
         }
     }
-    storedFeatureStartT_ += tStep_;
+    storedFeatureBeginT_ += tStep_;
     nStoredFeatureFrames_ -= tStep_;
 }
 
@@ -335,7 +335,7 @@ void LocalFeatureExtractor::denseSampling(int scaleIndex, std::vector<cv::Vec3i>
 
     for (int y = 0; y <= yEnd; y += yStep_) {
         for (int x = 0; x <= xEnd; x += xStep_) {
-            points.emplace_back(storedFeatureStartT_ + (localDuration_ / 2), y + (localHeight_ / 2),
+            points.emplace_back(storedFeatureBeginT_ + (localDuration_ / 2), y + (localHeight_ / 2),
                                 x + (localWidth_ / 2));
 
             Descriptor neighborhoodFeatures =
@@ -382,7 +382,7 @@ void LocalFeatureExtractor::denseSamplingHOG(int scaleIndex, std::vector<cv::Vec
 
     for (int y = 0; y <= yEnd; y += yStep_) {
         for (int x = 0; x <= xEnd; x += xStep_) {
-            points.emplace_back(storedFeatureStartT_ + (localDuration_ / 2), y + (localHeight_ / 2),
+            points.emplace_back(storedFeatureBeginT_ + (localDuration_ / 2), y + (localHeight_ / 2),
                                 x + (localWidth_ / 2));
 
             Descriptor neighborhoodFeatures =

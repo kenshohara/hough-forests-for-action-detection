@@ -220,14 +220,14 @@ class KernelDensityEstimation {
     }
 
     double calculateDistance(const Point& point1, const Point& point2, int bandIndex) const {
-        int bandStartIndex = 0;
+        int bandBeginIndex = 0;
         for (int i = 0; i < bandIndex; ++i) {
-            bandStartIndex += bandDimensions_.at(i);
+            bandBeginIndex += bandDimensions_.at(i);
         }
 
         double distance = 0;
         for (int i = 0; i < bandDimensions_.at(bandIndex); ++i) {
-            double diff = point1.at(bandStartIndex + i) - point2.at(bandStartIndex + i);
+            double diff = point1.at(bandBeginIndex + i) - point2.at(bandBeginIndex + i);
             distance += diff * diff;
         }
 

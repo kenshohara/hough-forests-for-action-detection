@@ -46,7 +46,7 @@ void extractPositiveFeatures() {
         std::vector<cv::Vec3i> selectedPoints;
         std::vector<std::vector<float>> selectedDescriptors;
         while (true) {
-            std::cout << "frame: " << extractor.getStoredFeatureStartT() << std::endl;
+            std::cout << "frame: " << extractor.getStoredFeatureBeginT() << std::endl;
             std::vector<std::vector<cv::Vec3i>> points;
             std::vector<std::vector<std::vector<float>>> descriptors;
             extractor.extractLocalFeatures(points, descriptors);
@@ -200,7 +200,7 @@ void extractNegativeFeatures() {
         std::vector<cv::Vec3i> selectedPoints;
         std::vector<std::vector<float>> selectedDescriptors;
         while (true) {
-            std::cout << "frame: " << extractor.getStoredFeatureStartT() << std::endl;
+            std::cout << "frame: " << extractor.getStoredFeatureBeginT() << std::endl;
             std::vector<std::vector<cv::Vec3i>> points;
             std::vector<std::vector<std::vector<float>>> descriptors;
             extractor.extractLocalFeatures(points, descriptors);
@@ -561,7 +561,7 @@ void detect() {
     int votesBufferLength = 200;
     double votingSpaceDiscretizeRatio = 0.25;
     // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 1.5);
+    std::vector<double> scoreThresholds(6, 2.0);
     std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
     std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
     double iouThreshold = 0.1;

@@ -41,8 +41,8 @@ class LocalFeatureExtractor {
     int tStep_;
     int width_;
     int height_;
-    std::size_t storedColorVideoStartT_;
-    std::size_t storedFeatureStartT_;
+    std::size_t storedColorVideoBeginT_;
+    std::size_t storedFeatureBeginT_;
     int nStoredFeatureFrames_;
     bool isEnded_;
 
@@ -67,8 +67,8 @@ class LocalFeatureExtractor {
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
-              storedColorVideoStartT_(0),
-              storedFeatureStartT_(0),
+              storedColorVideoBeginT_(0),
+              storedFeatureBeginT_(0),
               nStoredFeatureFrames_(0),
               isEnded_(false) {
         makeLocalSizeOdd(localWidth_);
@@ -92,8 +92,8 @@ class LocalFeatureExtractor {
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
-              storedColorVideoStartT_(0),
-              storedFeatureStartT_(0),
+              storedColorVideoBeginT_(0),
+              storedFeatureBeginT_(0),
               nStoredFeatureFrames_(0),
               isEnded_(false) {
         makeLocalSizeOdd(localWidth_);
@@ -105,12 +105,12 @@ class LocalFeatureExtractor {
                               std::vector<std::vector<Descriptor>>& scaleDescriptors);
     void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
                               std::vector<std::vector<Descriptor>>& scaleDescriptors,
-                              ColorVideo& usedVideo, std::size_t& usedVideoStartT);
+                              ColorVideo& usedVideo, std::size_t& usedVideoBeginT);
 
     int getFPS() const { return videoCapture_.get(cv::CAP_PROP_FPS); }
     bool isEnded() const { return isEnded_; }
-    std::size_t getStoredColorVideoStartT() const { return storedColorVideoStartT_; }
-    std::size_t getStoredFeatureStartT() const { return storedFeatureStartT_; }
+    std::size_t getStoredColorVideoBeginT() const { return storedColorVideoBeginT_; }
+    std::size_t getStoredFeatureBeginT() const { return storedFeatureBeginT_; }
 
     void visualizeDenseFeature(const std::vector<cv::Vec3i>& points,
                                const std::vector<Descriptor>& features, int width, int height,

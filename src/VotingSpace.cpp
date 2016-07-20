@@ -14,34 +14,73 @@ void VotingSpace::inputVote(const cv::Vec3i& point, std::size_t scaleIndex, floa
         return;
     }
     std::size_t index = computeIndex(discretizedPoint, scaleIndex);
-    votes_[index] += weight;
+    newVotes_[index] += weight;
+    allVotes_[index] += weight;
 }
 
 void VotingSpace::deleteOldVotes() {
     int deleteEndT = minT_ + deleteStep_;
     std::size_t beginIndex = computeIndex(cv::Vec3i(minT_, 0, 0), 0);
     std::size_t endIndex = computeIndex(cv::Vec3i(deleteEndT, 0, 0), 0);
-    for (auto it = std::cbegin(votes_); it != std::cend(votes_);) {
+    for (auto it = std::cbegin(allVotes_); it != std::cend(allVotes_);) {
         if (it->first >= beginIndex && it->first < endIndex) {
-            votes_.erase(it++);
+            allVotes_.erase(it++);
         } else {
             ++it;
         }
     }
-
     minT_ += deleteStep_;
     maxT_ += deleteStep_;
+
+    for (auto& point : gridPoints_) {
+        point.at(T) += deleteStep_;
+    }
+    std::size_t nDeletedGrids = computeGridIndex(deleteStep_);
+    gridVotingScores_.erase(std::begin(gridVotingScores_),
+                            std::begin(gridVotingScores_) + nDeletedGrids);
+    for (std::size_t i = 0; i < nDeletedGrids; ++i) {
+        gridVotingScores_.push_back(0.0);
+    }
 }
 
 void VotingSpace::getVotes(std::vector<std::array<float, 4>>& votingPoints,
                            std::vector<float>& weights, int beginT, int endT) const {
     int beginIndex = computeIndex(cv::Vec3i(beginT, 0, 0), 0);
     int endIndex = computeIndex(cv::Vec3i(endT, 0, 0), 0);
-    for (const auto& vote : votes_) {
+    for (const auto& vote : allVotes_) {
         if (vote.first >= beginIndex && vote.first < endIndex) {
             votingPoints.push_back(computePoint(vote.first));
             weights.push_back(vote.second);
         }
+    }
+}
+
+void VotingSpace::getNewVotes(std::vector<std::array<float, 4>>& votingPoints,
+                              std::vector<float>& weights) const {
+    for (const auto& vote : newVotes_) {
+        votingPoints.push_back(computePoint(vote.first));
+        weights.push_back(vote.second);
+    }
+}
+
+void VotingSpace::renew() {
+    std::vector<Point> votingPoints;
+    std::vector<float> weights;
+    getNewVotes(votingPoints, weights);
+    newVotes_.clear();
+    if (votingPoints.empty()) {
+        return;
+    }
+
+    std::vector<double> bandwidths = {tau_, sigma_, scaleBandwidth_};
+    std::vector<int> bandDimensions = {TEMPORAL_DIMENSION_SIZE_, SPATIAL_DIMENSION_SIZE_,
+                                       SCALE_DIMENSION_SIZE_};
+    KDE voteKde(votingPoints, weights, bandwidths, bandDimensions);
+    voteKde.buildTree();
+
+    double maxdens = 0.0;
+    for (int i = 0; i < gridPoints_.size(); ++i) {
+        gridVotingScores_.at(i) += voteKde.estimateDensity(gridPoints_.at(i));
     }
 }
 
@@ -86,6 +125,28 @@ std::array<float, 4> VotingSpace::computePoint(std::size_t index) const {
 
     std::array<float, 4> point = {t, y, x, scales_.at(scaleIndex)};
     return point;
+}
+
+std::size_t VotingSpace::computeGridIndex(std::size_t t) const {
+    std::size_t gridT = t / steps_.at(T);
+    std::size_t height = height_ / steps_.at(Y);
+    std::size_t width = width_ / steps_.at(X);
+    std::size_t index = gridT * (height * width * nScales_);
+    return index;
+}
+
+void VotingSpace::initializeGridPoints() {
+    for (std::size_t t = minT_; t < maxT_; t += steps_.at(T)) {
+        for (std::size_t y = 0; y < height_; y += steps_.at(Y)) {
+            for (std::size_t x = 0; x < width_; x += steps_.at(X)) {
+                for (std::size_t s = 0; s < nScales_; ++s) {
+                    gridPoints_.emplace_back(Point{static_cast<float>(t), static_cast<float>(y),
+                                                   static_cast<float>(x),
+                                                   static_cast<float>(scales_.at(s))});
+                }
+            }
+        }
+    }
 }
 }
 }
