@@ -283,7 +283,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
             std::sort(std::begin(detectionCuboids.at(classLabel)),
                       std::end(detectionCuboids.at(classLabel)),
                       [](const Cuboid& a, const Cuboid& b) {
-                          return a.getLocalMaximum().getValue() > b.getLocalMaximum().getValue();
+                          return a.getLocalMaximum().getValue() < b.getLocalMaximum().getValue();
                       });
             detectionCuboids.at(classLabel) =
                     performNonMaximumSuppression(detectionCuboids.at(classLabel));
