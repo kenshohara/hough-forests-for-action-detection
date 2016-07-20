@@ -35,7 +35,7 @@ void VotingSpace::deleteOldVotes() {
     for (auto& point : gridPoints_) {
         point.at(T) += deleteStep_;
     }
-    std::size_t nDeletedGrids = computeGridIndex(cv::Vec3i(deleteStep_, 0, 0), 0);
+    std::size_t nDeletedGrids = computeGridIndex(deleteStep_);
     gridVotingScores_.erase(std::begin(gridVotingScores_),
                             std::begin(gridVotingScores_) + nDeletedGrids);
     for (std::size_t i = 0; i < nDeletedGrids; ++i) {
@@ -128,11 +128,11 @@ std::array<float, 4> VotingSpace::computePoint(std::size_t index) const {
     return point;
 }
 
-std::size_t VotingSpace::computeGridIndex(const cv::Vec3i& point, std::size_t scaleIndex) const {
+std::size_t VotingSpace::computeGridIndex(std::size_t t) const {
+    std::size_t gridT = t / steps_.at(T);
     std::size_t height = height_ / steps_.at(Y);
     std::size_t width = width_ / steps_.at(X);
-    std::size_t index = (point(0) * (height * width * nScales_)) + (point(1) * (width * nScales_)) +
-                        (point(2) * nScales_) + scaleIndex;
+    std::size_t index = gridT * (height * width * nScales_);
     return index;
 }
 

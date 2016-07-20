@@ -76,7 +76,7 @@ class VotingSpace {
     void computePointAndScale(std::size_t index, cv::Vec3i& point, std::size_t& scaleIndex) const;
     std::array<float, 4> computePoint(std::size_t index) const;
     std::size_t computeIndex(const cv::Vec3i& point, std::size_t scaleIndex) const;
-    std::size_t computeGridIndex(const cv::Vec3i& point, std::size_t scaleIndex) const;
+    std::size_t computeGridIndex(std::size_t t) const;
     std::size_t discretizePoint(std::size_t originalPoint) const;
     cv::Vec3i discretizePoint(const cv::Vec3i& originalPoint) const;
     std::size_t calculateOriginalPoint(std::size_t discretizedPoint) const;
@@ -85,11 +85,11 @@ class VotingSpace {
     Point getGridPoint(std::size_t gridIndex) const { return gridPoints_.at(gridIndex); }
     std::vector<Point> getGridPoints() const { return gridPoints_; }
     std::vector<Point> getGridPoints(std::size_t beginT, std::size_t endT) const {
-        std::size_t beginIndex = computeGridIndex(cv::Vec3i(beginT - minT_, 0, 0), 0);
-        std::size_t endIndex = computeGridIndex(cv::Vec3i(endT - minT_, 0, 0), 0);
+        std::size_t beginIndex = computeGridIndex(beginT - minT_);
+        std::size_t endIndex = computeGridIndex(endT - minT_);
         std::vector<Point> gridPoints;
         gridPoints.reserve(endIndex - beginIndex);
-        std::copy(std::begin(gridPoints_) + beginIndex, std::end(gridPoints_) + endIndex,
+        std::copy(std::begin(gridPoints_) + beginIndex, std::begin(gridPoints_) + endIndex,
                   std::back_inserter(gridPoints));
         return gridPoints;
     }
@@ -98,12 +98,12 @@ class VotingSpace {
     }
     std::vector<double> getGridVotingScores() const { return gridVotingScores_; }
     std::vector<double> getGridVotingScores(std::size_t beginT, std::size_t endT) const {
-        std::size_t beginIndex = computeGridIndex(cv::Vec3i(beginT - minT_, 0, 0), 0);
-        std::size_t endIndex = computeGridIndex(cv::Vec3i(endT - minT_, 0, 0), 0);
+        std::size_t beginIndex = computeGridIndex(beginT - minT_);
+        std::size_t endIndex = computeGridIndex(endT - minT_);
         std::vector<double> votingScores;
         votingScores.reserve(endIndex - beginIndex);
         std::copy(std::begin(gridVotingScores_) + beginIndex,
-                  std::end(gridVotingScores_) + endIndex, std::back_inserter(votingScores));
+                  std::begin(gridVotingScores_) + endIndex, std::back_inserter(votingScores));
         return votingScores;
     }
     std::size_t getVotesCount() const { return allVotes_.size(); };

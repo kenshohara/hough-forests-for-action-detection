@@ -207,10 +207,11 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
     std::vector<std::unordered_map<int, std::vector<Cuboid>>> visualizationDetectionCuboids(
             parameters_.getNumberOfPositiveClasses());
     bool isEnded = false;
-    std::thread visualizationThread(
-            [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
-                visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids, isEnded);
-            });
+    // std::thread visualizationThread(
+    //        [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
+    //            visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids,
+    //            isEnded);
+    //        });
     while (true) {
         auto begin = std::chrono::system_clock::now();
         std::cout << "read" << std::endl;
@@ -257,6 +258,10 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         // std::cout << "input in voting space" << std::endl;
         inputInVotingSpace(votesInfo);
 
+        for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
+            votingSpaces_.at(classLabel).renew();
+        }
+
         // auto calcMMStart = std::chrono::system_clock::now();
         // std::cout << "calc min max vote t" << std::endl;
         std::vector<std::pair<std::size_t, std::size_t>> minMaxRanges;
@@ -295,7 +300,6 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         }
 
         for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
-            votingSpaces_.at(classLabel).renew();
             deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
         }
 
@@ -312,7 +316,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         // std::cout << "vis" << std::endl;
         // visualize(sps);
     }
-    visualizationThread.join();
+    // visualizationThread.join();
 
     std::cout << "output process" << std::endl;
     detectionResults.resize(detectionCuboids.size());

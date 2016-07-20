@@ -549,7 +549,7 @@ void detect() {
                                     xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
 
     int nClasses = 7;
-    int nThreads = 6;
+    int nThreads = 1;
     // int width = 300;
     // int height = 200;
     int width = 720;
