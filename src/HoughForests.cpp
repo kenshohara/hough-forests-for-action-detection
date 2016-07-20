@@ -269,6 +269,14 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         // auto threshStart = std::chrono::system_clock::now();
         localMaxima = thresholdLocalMaxima(localMaxima);
 
+		//int maxT = 0;
+		//for (const auto& maximum : localMaxima.front()) {
+		//	if (maximum.getPoint()(T) > maxT) {
+		//		maxT = maximum.getPoint()(T);
+		//	}
+		//}
+		//std::cout << "max t: " << maxT << std::endl;
+
         // auto combineStart = std::chrono::system_clock::now();
         for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
             std::vector<Cuboid> cuboids = calculateCuboids(
@@ -303,7 +311,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                   << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
                   << std::endl;
 
-        // visualize(video, videoStartT, detectionCuboids);
+        //visualize(video, videoStartT, detectionCuboids);
         // std::vector<std::vector<float>> sps(parameters_.getNumberOfPositiveClasses());
         // for (int classLabel = 0; classLabel < sps.size(); ++classLabel) {
         //    sps.at(classLabel) = getVotingSpace(classLabel);
@@ -561,20 +569,20 @@ void HoughForests::visualizeParallel(
         const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
         const bool& isEnded) {
     using namespace std::chrono;
-
     double millisecPerFrame = 1.0 / fps * 1000;
     double opencvWaitKeyTime = 15;
     while (!isEnded) {
-        if (!video.empty()) {
+		if (!video.empty()) {
             std::lock_guard<std::mutex> lock(m_);
 
             for (int t = 0; t < video.size(); ++t) {
                 auto start = system_clock::now();
                 int visT = t + videoStartT;
-                cv::Mat visFrame = video.at(t).clone();
+				// std::cout << "t: " << visT << std::endl;
+				cv::Mat visFrame = video.at(t).clone();
                 for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
                     int duration = parameters_.getAverageDuration(classLabel);
-                    for (int t2 = visT - duration; t2 < t; ++t2) {
+                    for (int t2 = visT - duration; t2 < visT; ++t2) {
 						if (detectionCuboids.at(classLabel).count(t2) == 0) {
 							continue;
 						}

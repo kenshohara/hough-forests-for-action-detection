@@ -33,8 +33,8 @@ void extractPositiveFeatures() {
 
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    std::string videoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale/";
-    std::string outputDirectoryPath = rootDirectoryPath + "feature_hf_pooling/";
+    std::string videoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale_100/";
+    std::string outputDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half/";
     std::tr2::sys::path directory(videoDirectoryPath);
     std::tr2::sys::directory_iterator end;
     for (std::tr2::sys::directory_iterator itr(directory); itr != end; ++itr) {
@@ -183,10 +183,10 @@ void extractNegativeFeatures() {
     std::mt19937 randomEngine(randomSeed);
 
     std::vector<std::string> filePaths;
-    std::string videoDirectoryPath = "E:/Hara/UT-Interaction/unsegmented/";
+    std::string videoDirectoryPath = "E:/Hara/UT-Interaction/unsegmented_half/";
     std::string labelFilePath = "E:/Hara/UT-Interaction/labels.csv";
-    std::string outputDirectoryPath = "E:/Hara/UT-Interaction/feature_hf_pooling/";
-    for (int sequenceIndex = 1; sequenceIndex <= 20; ++sequenceIndex) {
+    std::string outputDirectoryPath = "E:/Hara/UT-Interaction/feature_hf_pooling_half/";
+    for (int sequenceIndex = 1; sequenceIndex <= 5; ++sequenceIndex) {
         std::string filePath =
                 (boost::format("%sseq%d.avi") % videoDirectoryPath % sequenceIndex).str();
         std::vector<cv::Rect> boxes;
@@ -270,9 +270,9 @@ void train() {
 
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
-    std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling/";
+    std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half/";
     std::string labelFilePath = rootDirectoryPath + "labels.csv";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling/";
+    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half/";
     std::vector<std::vector<int>> validationCombinations = {{19, 5}, {12, 6}, {4, 7},   {16, 17},
                                                             {9, 13}, {11, 8}, {10, 14}, {18, 15},
                                                             {3, 20}, {2, 1}};
@@ -527,8 +527,8 @@ void detect() {
     using namespace nuisken::storage;
 
     std::string rootDirectoryPath = "D:/UT-Interaction/";
-    // std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling/9/";
+    //std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
+    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half/2/";
     std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting/";
 
     int localWidth = 21;
@@ -541,29 +541,27 @@ void detect() {
     int yStep = xStep;
     int tStep = 5;
     // std::vector<double> scales = {1.0, 0.707, 0.5};
-    std::vector<double> scales = {1.0};
+	//std::vector<double> scales = {1.0};
+	std::vector<double> scales = {0.707};
 
-    // std::string videoFilePath = rootDirectoryPath + "test.avi";  // "unsegmented/seq5.avi";
-    std::string videoFilePath = "D:/TestData/test.avi";  // "unsegmented/seq5.avi";
+    std::string videoFilePath = rootDirectoryPath + "unsegmented_half/seq4.avi";
     LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight, localDuration,
                                     xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
 
     int nClasses = 7;
-    int nThreads = 6;
-    // int width = 300;
-    // int height = 200;
-    int width = 720;
-    int height = 480;
-    double initialScale = 1.0;
-    double scalingRate = 0.707;
-    int baseScale = 200;
+    int nThreads = 1;
+    int width = 360;
+    int height = 240;
+    //int width = 720;
+    //int height = 480;
+    int baseScale = 100;
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
     std::vector<int> steps = {20, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
     double votingSpaceDiscretizeRatio = 0.5;
     // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 4.0);
+    std::vector<double> scoreThresholds(6, 0.5);
     std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
     std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
     double iouThreshold = 0.1;
@@ -672,9 +670,9 @@ void classify() {
 }
 
 int main() {
-    // extractPositiveFeatures();
-    // extractNegativeFeatures();
-    // train();
+    //extractPositiveFeatures();
+    //extractNegativeFeatures();
+    //train();
     detect();
     // train1data();
     // classify();
