@@ -207,19 +207,20 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
     std::vector<std::unordered_map<int, std::vector<Cuboid>>> visualizationDetectionCuboids(
             parameters_.getNumberOfPositiveClasses());
     bool isEnded = false;
-    std::thread visualizationThread(
-            [this, &video, fps, &videoStartT, &visualizationDetectionCuboids, &isEnded]() {
-                visualizeParallel(video, fps, videoStartT, visualizationDetectionCuboids, isEnded);
-            });
+    // std::thread visualizationThread(
+    //        [this, &video, fps, &videoStartT, &visualizationDetectionCuboids, &isEnded]() {
+    //            visualizeParallel(video, fps, videoStartT, visualizationDetectionCuboids,
+    //            isEnded);
+    //        });
     while (true) {
         auto begin = std::chrono::system_clock::now();
         std::cout << "read" << std::endl;
         std::vector<std::vector<cv::Vec3i>> scalePoints;
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
-		{
-			std::lock_guard<std::mutex> lock(m_);
-			extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video, videoStartT);
-		}
+        {
+            std::lock_guard<std::mutex> lock(m_);
+            extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video, videoStartT);
+        }
         auto featEnd = std::chrono::system_clock::now();
         std::cout << "extract features: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(featEnd - begin).count()
@@ -269,15 +270,16 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         // auto threshStart = std::chrono::system_clock::now();
         localMaxima = thresholdLocalMaxima(localMaxima);
 
-		//int maxT = 0;
-		//for (const auto& maximum : localMaxima.front()) {
-		//	if (maximum.getPoint()(T) > maxT) {
-		//		maxT = maximum.getPoint()(T);
-		//	}
-		//}
-		//std::cout << "max t: " << maxT << std::endl;
+        // int maxT = 0;
+        // for (const auto& maximum : localMaxima.front()) {
+        //	if (maximum.getPoint()(T) > maxT) {
+        //		maxT = maximum.getPoint()(T);
+        //	}
+        //}
+        // std::cout << "max t: " << maxT << std::endl;
 
         // auto combineStart = std::chrono::system_clock::now();
+        auto postStart = std::chrono::system_clock::now();
         for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
             std::vector<Cuboid> cuboids = calculateCuboids(
                     localMaxima.at(classLabel), parameters_.getAverageAspectRatio(classLabel),
@@ -292,15 +294,20 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
             detectionCuboids.at(classLabel) =
                     performNonMaximumSuppression(detectionCuboids.at(classLabel));
 
-			{
-				std::lock_guard<std::mutex> lock(m_);
-				visualizationDetectionCuboids.at(classLabel).clear();
-				for (const auto& cuboid : detectionCuboids.at(classLabel)) {
-					int beginT = cuboid.getBeginT();
-					visualizationDetectionCuboids.at(classLabel)[beginT].push_back(cuboid);
-				}
-			}
+            {
+                std::lock_guard<std::mutex> lock(m_);
+                visualizationDetectionCuboids.at(classLabel).clear();
+                for (const auto& cuboid : detectionCuboids.at(classLabel)) {
+                    int beginT = cuboid.getBeginT();
+                    visualizationDetectionCuboids.at(classLabel)[beginT].push_back(cuboid);
+                }
+            }
         }
+        auto postEnd = std::chrono::system_clock::now();
+        std::cout << "post: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(postEnd - postStart)
+                             .count()
+                  << std::endl;
 
         for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
             deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
@@ -311,7 +318,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                   << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
                   << std::endl;
 
-        //visualize(video, videoStartT, detectionCuboids);
+        // visualize(video, videoStartT, detectionCuboids);
         // std::vector<std::vector<float>> sps(parameters_.getNumberOfPositiveClasses());
         // for (int classLabel = 0; classLabel < sps.size(); ++classLabel) {
         //    sps.at(classLabel) = getVotingSpace(classLabel);
@@ -319,7 +326,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         // std::cout << "vis" << std::endl;
         // visualize(sps);
     }
-    visualizationThread.join();
+    // visualizationThread.join();
 
     std::cout << "output process" << std::endl;
     detectionResults.resize(detectionCuboids.size());
@@ -572,20 +579,20 @@ void HoughForests::visualizeParallel(
     double millisecPerFrame = 1.0 / fps * 1000;
     double opencvWaitKeyTime = 15;
     while (!isEnded) {
-		if (!video.empty()) {
+        if (!video.empty()) {
             std::lock_guard<std::mutex> lock(m_);
 
             for (int t = 0; t < video.size(); ++t) {
                 auto start = system_clock::now();
                 int visT = t + videoStartT;
-				// std::cout << "t: " << visT << std::endl;
-				cv::Mat visFrame = video.at(t).clone();
+                // std::cout << "t: " << visT << std::endl;
+                cv::Mat visFrame = video.at(t).clone();
                 for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
                     int duration = parameters_.getAverageDuration(classLabel);
                     for (int t2 = visT - duration; t2 < visT; ++t2) {
-						if (detectionCuboids.at(classLabel).count(t2) == 0) {
-							continue;
-						}
+                        if (detectionCuboids.at(classLabel).count(t2) == 0) {
+                            continue;
+                        }
 
                         for (const auto& cuboid : detectionCuboids.at(classLabel).at(t2)) {
                             cv::rectangle(visFrame, cuboid.getRect(), cv::Scalar(0, 0, 255), 3);

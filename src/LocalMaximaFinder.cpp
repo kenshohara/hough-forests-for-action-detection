@@ -44,16 +44,22 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
     voteKde.buildTree();
 
     // std::cout << "estimate densities" << std::endl;
+    auto estStart = std::chrono::system_clock::now();
     std::vector<double> densities;
     densities.reserve(gridPoints.size());
     for (int i = 0; i < gridPoints.size(); ++i) {
         densities.push_back(voteKde.estimateDensity(gridPoints.at(i)));
     }
+    auto estEnd = std::chrono::system_clock::now();
+    std::cout << "density estimation: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(estEnd - estStart).count()
+              << std::endl;
 
     KDE gridKde(gridPoints, bandwidths, bandDimensions);
     gridKde.buildTree();
 
     // std::cout << "quick shift" << std::endl;
+    auto quickStart = std::chrono::system_clock::now();
     std::vector<int> links(gridPoints.size());
     std::fill(std::begin(links), std::end(links), -1);
     for (int i = 0; i < gridPoints.size(); ++i) {
@@ -74,14 +80,24 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
             }
         }
     }
+    auto quickEnd = std::chrono::system_clock::now();
+    std::cout
+            << "quick shift: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(quickEnd - quickStart).count()
+            << std::endl;
 
     // std::cout << "mean shift" << std::endl;
+    auto meanStart = std::chrono::system_clock::now();
     LocalMaxima localMaxima;
     for (int i = 0; i < links.size(); ++i) {
         if (links.at(i) == -1 && densities.at(i) > scoreThreshold) {
             localMaxima.push_back(refineLocalMaximum(voteKde, gridPoints.at(i)));
         }
     }
+    auto meanEnd = std::chrono::system_clock::now();
+    std::cout << "mean shift: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(meanEnd - meanStart).count()
+              << std::endl;
 
     for (auto& localMaximum : localMaxima) {
         cv::Vec4f point = localMaximum.getPoint();
