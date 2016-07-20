@@ -108,7 +108,7 @@ class HoughForests {
     std::vector<LocalMaxima> findLocalMaxima(
             const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges);
     LocalMaxima findLocalMaxima(VotingSpace& votingSpace, double scoreThreshold,
-                                std::size_t voteStartT, std::size_t voteEndT);
+                                std::size_t voteBeginT, std::size_t voteEndT);
     std::vector<LocalMaxima> thresholdLocalMaxima(std::vector<LocalMaxima> localMaxima) const;
     std::vector<Cuboid> calculateCuboids(const LocalMaxima& localMaxima, double averageAspectRatio,
                                          int averageDuration) const;
@@ -116,14 +116,14 @@ class HoughForests {
     void deleteOldVotes(int classLabel, std::size_t voteMaxT);
     std::vector<float> getVotingSpace(int classLabel) const;
     void visualizeParallel(
-            std::vector<cv::Mat3b>& video, int fps, const std::size_t& videoStartT,
+            std::vector<cv::Mat3b>& video, int fps, const std::size_t& videoBeginT,
             const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
             const bool& isEnded);
-    void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
+    void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,
                    const std::vector<std::vector<Cuboid>>& detectionCuboids) const;
-    void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
+    void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,
                    const std::vector<LocalMaxima>& localMaxima) const;
-    void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
+    void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,
                    const std::vector<cv::Vec3i>& points) const;
     void visualize(const std::vector<std::vector<float>>& votingSpaces) const;
 };

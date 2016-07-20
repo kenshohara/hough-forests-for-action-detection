@@ -7,53 +7,30 @@ namespace nuisken {
 namespace houghforests {
 
 LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
-                                               double scoreThreshold, std::size_t voteStartT,
+                                               double scoreThreshold, std::size_t voteBeginT,
                                                std::size_t voteEndT) const {
     std::size_t bandwidthRange = 3.0 * tau_;
-    std::size_t findStartT = (voteStartT < bandwidthRange) ? 0 : voteStartT - bandwidthRange;
-    findStartT = votingSpace.discretizePoint(findStartT);
+    std::size_t findBeginT = (voteBeginT < bandwidthRange) ? 0 : voteBeginT - bandwidthRange;
+    findBeginT = votingSpace.discretizePoint(findBeginT);
+    findBeginT = std::max(findBeginT, votingSpace.getMinT());
     std::size_t findEndT = voteEndT + bandwidthRange;
     findEndT = votingSpace.discretizePoint(findEndT);
+    findEndT = std::min(findEndT, votingSpace.getMaxT());
+    voteBeginT = votingSpace.discretizePoint(voteBeginT);
+    voteEndT = votingSpace.discretizePoint(voteEndT);
 
-    std::size_t tStep = steps_.at(T) * votingSpace.getDiscretizeRatio();
-    std::size_t yStep = steps_.at(Y) * votingSpace.getDiscretizeRatio();
-    std::size_t xStep = steps_.at(X) * votingSpace.getDiscretizeRatio();
-    std::vector<Point> gridPoints =
-            getGridPoints(findStartT, findEndT, tStep, 0, votingSpace.getHeight(), yStep, 0,
-                          votingSpace.getWidth(), xStep, 0, scales_.size());
-    return findLocalMaxima(votingSpace, scoreThreshold, votingSpace.discretizePoint(voteStartT),
-                           votingSpace.discretizePoint(voteEndT), gridPoints);
-}
+    std::vector<Point> gridPoints = votingSpace.getGridPoints(findBeginT, findEndT);
+    std::vector<double> densities = votingSpace.getGridVotingScores(findBeginT, findEndT);
 
-LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
-                                               double scoreThreshold, std::size_t voteStartT,
-                                               std::size_t voteEndT,
-                                               const std::vector<Point>& gridPoints) const {
-    std::vector<std::array<float, DIMENSION_SIZE_>> votingPoints;
-    std::vector<float> weights;
-    votingSpace.getVotes(votingPoints, weights, voteStartT, voteEndT);
-    if (votingPoints.empty()) {
-        return {};
-    }
     double tau = tau_ * votingSpace.getDiscretizeRatio();
     double sigma = sigma_ * votingSpace.getDiscretizeRatio();
     std::vector<double> bandwidths = {tau, sigma, scaleBandwidth_};
     std::vector<int> bandDimensions = {TEMPORAL_DIMENSION_SIZE_, SPATIAL_DIMENSION_SIZE_,
                                        SCALE_DIMENSION_SIZE_};
-    KDE voteKde(votingPoints, weights, bandwidths, bandDimensions);
-    voteKde.buildTree();
-
-    // std::cout << "estimate densities" << std::endl;
-    std::vector<double> densities;
-    densities.reserve(gridPoints.size());
-    for (int i = 0; i < gridPoints.size(); ++i) {
-        densities.push_back(voteKde.estimateDensity(gridPoints.at(i)));
-    }
-
-    KDE gridKde(gridPoints, bandwidths, bandDimensions);
-    gridKde.buildTree();
 
     // std::cout << "quick shift" << std::endl;
+    KDE gridKde(gridPoints, bandwidths, bandDimensions);
+    gridKde.buildTree();
     std::vector<int> links(gridPoints.size());
     std::fill(std::begin(links), std::end(links), -1);
     for (int i = 0; i < gridPoints.size(); ++i) {
@@ -76,6 +53,15 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
     }
 
     // std::cout << "mean shift" << std::endl;
+    std::vector<std::array<float, DIMENSION_SIZE_>> votingPoints;
+    std::vector<float> weights;
+    votingSpace.getVotes(votingPoints, weights, voteBeginT, voteEndT);
+    if (votingPoints.empty()) {
+        return {};
+    }
+    KDE voteKde(votingPoints, weights, bandwidths, bandDimensions);
+    voteKde.buildTree();
+
     LocalMaxima localMaxima;
     for (int i = 0; i < links.size(); ++i) {
         if (links.at(i) == -1 && densities.at(i) > scoreThreshold) {
@@ -114,26 +100,6 @@ LocalMaximum LocalMaximaFinder::refineLocalMaximum(const KDE& kde,
 
     double density = kde.estimateDensity(meanPoint);
     return LocalMaximum(cv::Vec4f(meanPoint.data()), density);
-}
-
-std::vector<LocalMaximaFinder::Point> LocalMaximaFinder::getGridPoints(
-        std::size_t beginT, std::size_t endT, std::size_t stepT, std::size_t beginY,
-        std::size_t endY, std::size_t stepY, std::size_t beginX, std::size_t endX,
-        std::size_t stepX, std::size_t beginSIndex, std::size_t endSIndex) const {
-    std::vector<Point> gridPoints;
-    for (std::size_t t = beginT; t < endT; t += stepT) {
-        for (std::size_t y = beginY; y < endY; y += stepY) {
-            for (std::size_t x = beginX; x < endX; x += stepX) {
-                for (std::size_t s = beginSIndex; s < endSIndex; ++s) {
-                    gridPoints.emplace_back(Point{static_cast<float>(t), static_cast<float>(y),
-                                                  static_cast<float>(x),
-                                                  static_cast<float>(scales_.at(s))});
-                }
-            }
-        }
-    }
-
-    return gridPoints;
 }
 }
 }

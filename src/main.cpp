@@ -46,7 +46,7 @@ void extractPositiveFeatures() {
         std::vector<cv::Vec3i> selectedPoints;
         std::vector<std::vector<float>> selectedDescriptors;
         while (true) {
-            std::cout << "frame: " << extractor.getStoredFeatureStartT() << std::endl;
+            std::cout << "frame: " << extractor.getStoredFeatureBeginT() << std::endl;
             std::vector<std::vector<cv::Vec3i>> points;
             std::vector<std::vector<std::vector<float>>> descriptors;
             extractor.extractLocalFeatures(points, descriptors);
@@ -200,7 +200,7 @@ void extractNegativeFeatures() {
         std::vector<cv::Vec3i> selectedPoints;
         std::vector<std::vector<float>> selectedDescriptors;
         while (true) {
-            std::cout << "frame: " << extractor.getStoredFeatureStartT() << std::endl;
+            std::cout << "frame: " << extractor.getStoredFeatureBeginT() << std::endl;
             std::vector<std::vector<cv::Vec3i>> points;
             std::vector<std::vector<std::vector<float>>> descriptors;
             extractor.extractLocalFeatures(points, descriptors);
