@@ -47,6 +47,8 @@ class HoughForests {
 
     int nThreads_;
 
+    std::mutex m_;
+
    private:
     randomforests::STIPNode stipNode_;
 
@@ -62,11 +64,11 @@ class HoughForests {
 
     void HoughForests::train(const std::vector<FeaturePtr>& features);
 
-    void classify(LocalFeatureExtractor& extractor);
+    // void classify(LocalFeatureExtractor& extractor);
     void detect(LocalFeatureExtractor& extractor,
                 std::vector<std::vector<DetectionResult>>& detectionResults);
-    void detect(const std::vector<std::string>& featureFilePaths,
-                std::vector<std::vector<DetectionResult>>& detectionResults);
+    // void detect(const std::vector<std::string>& featureFilePaths,
+    //            std::vector<std::vector<DetectionResult>>& detectionResults);
 
     HoughForestsParameters getHoughForestsParameters() const { return parameters_; }
 
@@ -90,6 +92,9 @@ class HoughForests {
 
    private:
     void initialize();
+    std::vector<FeaturePtr> convertFeatureFormats(
+            const std::vector<cv::Vec3i>& points,
+            const std::vector<std::vector<float>>& descriptors, int nChannels) const;
     void calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
                         std::vector<std::vector<VoteInfo>>& votesInfo,
                         std::vector<int>& visIndices) const;
@@ -110,6 +115,10 @@ class HoughForests {
     std::vector<Cuboid> performNonMaximumSuppression(const std::vector<Cuboid>& cuboids) const;
     void deleteOldVotes(int classLabel, std::size_t voteMaxT);
     std::vector<float> getVotingSpace(int classLabel) const;
+    void visualizeParallel(
+            std::vector<cv::Mat3b>& video, int fps, const std::size_t& videoStartT,
+            const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
+            const bool& isEnded);
     void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,
                    const std::vector<std::vector<Cuboid>>& detectionCuboids) const;
     void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoStartT,

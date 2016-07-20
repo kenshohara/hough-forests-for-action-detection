@@ -41,7 +41,7 @@ void LocalFeatureExtractor::extractLocalFeatures(
             nStoredFeatureFrames_ += endFrame - beginFrame;
         }
         if (nStoredFeatureFrames_ < localDuration_) {
-            isEnd_ = true;
+            isEnded_ = true;
             return;
         }
 
@@ -81,7 +81,7 @@ void LocalFeatureExtractor::readOriginalScaleVideo() {
         cv::Mat frame;
         videoCapture_ >> frame;
         if (frame.empty()) {
-            isEnd_ = true;
+            isEnded_ = true;
             break;
         }
         colorVideo_.push_back(frame.clone());

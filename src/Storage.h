@@ -231,6 +231,8 @@ class SpaceTimeCuboid {
 
     cv::Rect getRect() const { return rect_; }
 
+    int getBeginT() const { return beginT_; }
+
     std::pair<int, int> getRange() const { return std::make_pair(beginT_, endT_); }
 
     double computeVolume() const { return rect_.area() * (endT_ - beginT_); }

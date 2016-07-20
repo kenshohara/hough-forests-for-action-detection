@@ -44,7 +44,7 @@ class LocalFeatureExtractor {
     std::size_t storedColorVideoStartT_;
     std::size_t storedFeatureStartT_;
     int nStoredFeatureFrames_;
-    bool isEnd_;
+    bool isEnded_;
 
     HoG hog_;
 
@@ -70,7 +70,7 @@ class LocalFeatureExtractor {
               storedColorVideoStartT_(0),
               storedFeatureStartT_(0),
               nStoredFeatureFrames_(0),
-              isEnd_(false) {
+              isEnded_(false) {
         makeLocalSizeOdd(localWidth_);
         makeLocalSizeOdd(localHeight_);
         makeLocalSizeOdd(localDuration_);
@@ -95,7 +95,7 @@ class LocalFeatureExtractor {
               storedColorVideoStartT_(0),
               storedFeatureStartT_(0),
               nStoredFeatureFrames_(0),
-              isEnd_(false) {
+              isEnded_(false) {
         makeLocalSizeOdd(localWidth_);
         makeLocalSizeOdd(localHeight_);
         makeLocalSizeOdd(localDuration_);
@@ -107,7 +107,8 @@ class LocalFeatureExtractor {
                               std::vector<std::vector<Descriptor>>& scaleDescriptors,
                               ColorVideo& usedVideo, std::size_t& usedVideoStartT);
 
-    bool isEnd() const { return isEnd_; }
+    int getFPS() const { return videoCapture_.get(cv::CAP_PROP_FPS); }
+    bool isEnded() const { return isEnded_; }
     std::size_t getStoredColorVideoStartT() const { return storedColorVideoStartT_; }
     std::size_t getStoredFeatureStartT() const { return storedFeatureStartT_; }
 

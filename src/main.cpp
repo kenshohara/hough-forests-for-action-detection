@@ -50,7 +50,7 @@ void extractPositiveFeatures() {
             std::vector<std::vector<cv::Vec3i>> points;
             std::vector<std::vector<std::vector<float>>> descriptors;
             extractor.extractLocalFeatures(points, descriptors);
-            if (extractor.isEnd()) {
+            if (extractor.isEnded()) {
                 break;
             }
 
@@ -204,7 +204,7 @@ void extractNegativeFeatures() {
             std::vector<std::vector<cv::Vec3i>> points;
             std::vector<std::vector<std::vector<float>>> descriptors;
             extractor.extractLocalFeatures(points, descriptors);
-            if (extractor.isEnd()) {
+            if (extractor.isEnded()) {
                 break;
             }
 
@@ -528,7 +528,7 @@ void detect() {
 
     std::string rootDirectoryPath = "D:/UT-Interaction/";
     // std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling/0/";
+    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling/9/";
     std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting/";
 
     int localWidth = 21;
@@ -563,7 +563,7 @@ void detect() {
     int votesBufferLength = 200;
     double votingSpaceDiscretizeRatio = 0.5;
     // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 5.0);
+    std::vector<double> scoreThresholds(6, 4.0);
     std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
     std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
     double iouThreshold = 0.1;
@@ -610,61 +610,65 @@ void detect() {
 }
 
 void classify() {
-    //using namespace nuisken;
-    //using namespace nuisken::houghforests;
-    //using namespace nuisken::randomforests;
-    //using namespace nuisken::storage;
+    // using namespace nuisken;
+    // using namespace nuisken::houghforests;
+    // using namespace nuisken::randomforests;
+    // using namespace nuisken::storage;
 
-    //std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    //std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_data1_7/0/";
-    //std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting/";
+    // std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
+    // std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_data1_7/0/";
+    // std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting/";
 
-    //int localWidth = 21;
-    //int localHeight = localWidth;
-    //int localDuration = 9;
-    //int xBlockSize = 7;
-    //int yBlockSize = 7;
-    //int tBlockSize = 3;
-    //int xStep = 10;
-    //int yStep = xStep;
-    //int tStep = 5;
+    // int localWidth = 21;
+    // int localHeight = localWidth;
+    // int localDuration = 9;
+    // int xBlockSize = 7;
+    // int yBlockSize = 7;
+    // int tBlockSize = 3;
+    // int xStep = 10;
+    // int yStep = xStep;
+    // int tStep = 5;
     //// std::vector<double> scales = {1.0, 0.707, 0.5};
-    //std::vector<double> scales = {1.0};
+    // std::vector<double> scales = {1.0};
 
     //// std::string videoFilePath = rootDirectoryPath + "test.avi";  // "unsegmented/seq5.avi";
-    //std::string videoFilePath = rootDirectoryPath + "segmented_fixed_scale/seq5_0_0.avi";
-    //LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight, localDuration,
+    // std::string videoFilePath = rootDirectoryPath + "segmented_fixed_scale/seq5_0_0.avi";
+    // LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight,
+    // localDuration,
     //                                xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
 
-    //int nClasses = 7;
-    //int nThreads = 1;
-    //int width = 300;
-    //int height = 200;
-    //double initialScale = 1.0;
-    //double scalingRate = 0.707;
-    //int baseScale = 200;
-    //std::vector<double> bandwidths = {10.0, 8.0, 0.5};
-    //std::vector<int> steps = {20, 10};
-    //int votesDeleteStep = 50;
-    //int votesBufferLength = 200;
-    //double votingSpaceDiscretizeRatio = 0.5;
+    // int nClasses = 7;
+    // int nThreads = 1;
+    // int width = 300;
+    // int height = 200;
+    // double initialScale = 1.0;
+    // double scalingRate = 0.707;
+    // int baseScale = 200;
+    // std::vector<double> bandwidths = {10.0, 8.0, 0.5};
+    // std::vector<int> steps = {20, 10};
+    // int votesDeleteStep = 50;
+    // int votesBufferLength = 200;
+    // double votingSpaceDiscretizeRatio = 0.5;
     //// std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    //std::vector<double> scoreThresholds(6, 2.0);
+    // std::vector<double> scoreThresholds(6, 2.0);
     //// std::vector<double> scoreThresholds(6, 0.05);
-    //bool hasNegativeClass = true;
-    //bool isBackprojection = false;
-    //TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
+    // bool hasNegativeClass = true;
+    // bool isBackprojection = false;
+    // TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
     //                              hasNegativeClass);
-    //HoughForestsParameters parameters(width, height, scales, baseScale, nClasses, bandwidths.at(0),
-    //                                  bandwidths.at(1), bandwidths.at(2), steps.at(0), steps.at(1),
+    // HoughForestsParameters parameters(width, height, scales, baseScale, nClasses,
+    // bandwidths.at(0),
+    //                                  bandwidths.at(1), bandwidths.at(2), steps.at(0),
+    //                                  steps.at(1),
     //                                  votesDeleteStep, votesBufferLength,
-    //                                  votingSpaceDiscretizeRatio, scoreThresholds, hasNegativeClass,
+    //                                  votingSpaceDiscretizeRatio, scoreThresholds,
+    //                                  hasNegativeClass,
     //                                  isBackprojection, treeParameters);
-    //HoughForests houghForests(nThreads);
-    //houghForests.setHoughForestsParameters(parameters);
-    //houghForests.load(forestsDirectoryPath);
+    // HoughForests houghForests(nThreads);
+    // houghForests.setHoughForestsParameters(parameters);
+    // houghForests.load(forestsDirectoryPath);
 
-    //houghForests.classify(extractor);
+    // houghForests.classify(extractor);
 }
 
 int main() {
