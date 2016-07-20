@@ -574,7 +574,7 @@ void HoughForests::visualizeParallel(
                 cv::Mat visFrame = video.at(t).clone();
                 for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
                     int duration = parameters_.getAverageDuration(classLabel);
-                    for (int t2 = visT - duration; t2 < t; ++t2) {
+                    for (int t2 = visT - duration; t2 < visT; ++t2) {
 						if (detectionCuboids.at(classLabel).count(t2) == 0) {
 							continue;
 						}
