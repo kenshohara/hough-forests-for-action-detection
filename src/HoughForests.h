@@ -105,6 +105,9 @@ class HoughForests {
     void getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& votesInfo,
                           std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges) const;
     void renewVotingSpaces();
+    void updateDetectionCuboids(
+            const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges,
+            std::vector<std::vector<Cuboid>>& detectionCuboids) const;
     std::vector<LocalMaxima> findLocalMaxima(
             const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges);
     LocalMaxima findLocalMaxima(VotingSpace& votingSpace, double scoreThreshold,

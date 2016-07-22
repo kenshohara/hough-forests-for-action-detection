@@ -293,40 +293,27 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         std::vector<std::pair<std::size_t, std::size_t>> minMaxRanges;
         getMinMaxVotingT(votesInfo, minMaxRanges);
 
-        // auto findStart = std::chrono::system_clock::now();
         // std::cout << "find local maxima" << std::endl;
-        auto findBegin = std::chrono::system_clock::now();
-        std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
-        auto findEnd = std::chrono::system_clock::now();
-        std::cout << "find local maxima: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(findEnd - findBegin)
-                             .count()
-                  << std::endl;
+        // auto findBegin = std::chrono::system_clock::now();
+        // std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
+        // auto findEnd = std::chrono::system_clock::now();
+        // std::cout << "find local maxima: "
+        //          << std::chrono::duration_cast<std::chrono::milliseconds>(findEnd - findBegin)
+        //                     .count()
+        //          << std::endl;
 
-        // auto threshStart = std::chrono::system_clock::now();
-        localMaxima = thresholdLocalMaxima(localMaxima);
-        auto threshEnd = std::chrono::system_clock::now();
-        std::cout << "threshold local maxima: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(threshEnd - findEnd)
-                             .count()
-                  << std::endl;
+        //// auto threshStart = std::chrono::system_clock::now();
+        // localMaxima = thresholdLocalMaxima(localMaxima);
+        // auto threshEnd = std::chrono::system_clock::now();
+        // std::cout << "threshold local maxima: "
+        //          << std::chrono::duration_cast<std::chrono::milliseconds>(threshEnd - findEnd)
+        //                     .count()
+        //          << std::endl;
 
         // auto combineStart = std::chrono::system_clock::now();
         auto postStart = std::chrono::system_clock::now();
+        updateDetectionCuboids(minMaxRanges, detectionCuboids);
         for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
-            std::vector<Cuboid> cuboids = calculateCuboids(
-                    localMaxima.at(classLabel), parameters_.getAverageAspectRatio(classLabel),
-                    parameters_.getAverageDuration(classLabel));
-            std::copy(std::begin(cuboids), std::end(cuboids),
-                      std::back_inserter(detectionCuboids.at(classLabel)));
-            std::sort(std::begin(detectionCuboids.at(classLabel)),
-                      std::end(detectionCuboids.at(classLabel)),
-                      [](const Cuboid& a, const Cuboid& b) {
-                          return a.getLocalMaximum().getValue() < b.getLocalMaximum().getValue();
-                      });
-            detectionCuboids.at(classLabel) =
-                    performNonMaximumSuppression(detectionCuboids.at(classLabel));
-
             {
                 std::lock_guard<std::mutex> lock(m_);
                 visualizationDetectionCuboids.at(classLabel).clear();
@@ -494,6 +481,35 @@ void HoughForests::renewVotingSpaces() {
     }
 
     thread::threadProcess(tasks, nThreads_);
+}
+
+void HoughForests::updateDetectionCuboids(
+        const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges,
+        std::vector<std::vector<Cuboid>>& detectionCuboids) const {
+    for (int classLabel = 0; classLabel < minMaxRanges.size(); ++classLabel) {
+        auto gridPoints = votingSpaces_.at(classLabel).getGridPoints();
+        auto votingScores = votingSpaces_.at(classLabel).getGridVotingScores();
+        double threshold = parameters_.getScoreThreshold(classLabel);
+        LocalMaxima overThresholdPoints;
+        for (int pointIndex = 0; pointIndex < gridPoints.size(); ++pointIndex) {
+            if (votingScores.at(pointIndex) > threshold) {
+                overThresholdPoints.push_back(LocalMaximum(
+                        cv::Vec4f(gridPoints.at(pointIndex).data()), votingScores.at(pointIndex)));
+            }
+        }
+
+        std::vector<Cuboid> cuboids =
+                calculateCuboids(overThresholdPoints, parameters_.getAverageAspectRatio(classLabel),
+                                 parameters_.getAverageDuration(classLabel));
+        std::copy(std::begin(cuboids), std::end(cuboids),
+                  std::back_inserter(detectionCuboids.at(classLabel)));
+        std::sort(std::begin(detectionCuboids.at(classLabel)),
+                  std::end(detectionCuboids.at(classLabel)), [](const Cuboid& a, const Cuboid& b) {
+                      return a.getLocalMaximum().getValue() < b.getLocalMaximum().getValue();
+                  });
+        detectionCuboids.at(classLabel) =
+                performNonMaximumSuppression(detectionCuboids.at(classLabel));
+    }
 }
 
 std::vector<LocalMaxima> HoughForests::findLocalMaxima(
