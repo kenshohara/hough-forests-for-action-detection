@@ -106,94 +106,107 @@ void HoughForests::train(const std::vector<FeaturePtr>& features) {
 //}
 //}
 
-// void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
-//                          std::vector<std::vector<DetectionResult>>& detectionResults) {
-// std::vector<std::unordered_map<int, std::vector<FeaturePtr>>> scaleFeatures;
-// scaleFeatures.reserve(featureFilePaths.size());
-// int minT = std::numeric_limits<int>::max();
-// int maxT = 0;
-// for (const auto& featureFilePath : featureFilePaths) {
-//    std::vector<std::vector<Eigen::MatrixXf>> features;
-//    std::vector<cv::Vec3i> points;
-//    io::readSTIPFeatures(featureFilePath, features, points);
-//    std::unordered_map<int, std::vector<FeaturePtr>> featuresMap(features.size());
-//    for (int i = 0; i < features.size(); ++i) {
-//        auto feature = std::make_shared<randomforests::STIPNode::FeatureType>(
-//                features.at(i), points.at(i), cv::Vec3i(), std::make_pair(0.0, 0.0), 0);
-//        if (featuresMap.count(points.at(i)(T)) == 0) {
-//            featuresMap.insert(
-//                    std::make_pair(points.at(i)(T), std::vector<FeaturePtr>{feature}));
-//        } else {
-//            featuresMap.at(points.at(i)(T)).push_back(feature);
-//        }
+void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
+                          std::vector<std::vector<DetectionResult>>& detectionResults) {
+    std::vector<std::unordered_map<int, std::vector<FeaturePtr>>> scaleFeatures;
+    scaleFeatures.reserve(featureFilePaths.size());
+    int minT = std::numeric_limits<int>::max();
+    int maxT = 0;
+    for (const auto& featureFilePath : featureFilePaths) {
+        std::vector<std::vector<Eigen::MatrixXf>> features;
+        std::vector<cv::Vec3i> points;
+        io::readSTIPFeatures(featureFilePath, features, points);
+        std::unordered_map<int, std::vector<FeaturePtr>> featuresMap(features.size());
+        for (int i = 0; i < features.size(); ++i) {
+            auto feature = std::make_shared<randomforests::STIPNode::FeatureType>(
+                    features.at(i), points.at(i), cv::Vec3i(), std::make_pair(0.0, 0.0), 0);
+            if (featuresMap.count(points.at(i)(T)) == 0) {
+                featuresMap.insert(
+                        std::make_pair(points.at(i)(T), std::vector<FeaturePtr>{feature}));
+            } else {
+                featuresMap.at(points.at(i)(T)).push_back(feature);
+            }
 
-//        if (points.at(i)(T) < minT) {
-//            minT = points.at(i)(T);
-//        }
-//        if (points.at(i)(T) > maxT) {
-//            maxT = points.at(i)(T);
-//        }
-//    }
-//    scaleFeatures.push_back(featuresMap);
-//}
+            if (points.at(i)(T) < minT) {
+                minT = points.at(i)(T);
+            }
+            if (points.at(i)(T) > maxT) {
+                maxT = points.at(i)(T);
+            }
+        }
+        scaleFeatures.push_back(featuresMap);
+    }
 
-// std::cout << "initialize" << std::endl;
-// initialize();
+    std::cout << "initialize" << std::endl;
+    initialize();
 
-// std::cout << "votes" << std::endl;
-// std::vector<LocalMaxima> totalLocalMaxima(parameters_.getNumberOfPositiveClasses());
-// for (int t = minT; t < maxT; ++t) {
-//    std::cout << "t: " << t << std::endl;
-//    auto begin = std::chrono::system_clock::now();
+    std::cout << "votes" << std::endl;
+    std::vector<std::vector<Cuboid>> detectionCuboids(parameters_.getNumberOfPositiveClasses());
+    for (int t = minT; t < maxT; ++t) {
+        std::cout << "t: " << t << std::endl;
 
-//    std::vector<std::vector<VoteInfo>> votesInfo;
-//    for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
-//        if (scaleFeatures.at(scaleIndex).count(t) == 0) {
-//            continue;
-//        }
+        std::cout << "voting" << std::endl;
+        std::vector<std::vector<VoteInfo>> votesInfo;
+        std::vector<int> indices;
+        for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
+            if (scaleFeatures.at(scaleIndex).empty() ||
+                scaleFeatures.at(scaleIndex).count(t) == 0) {
+                continue;
+            }
 
-//        calculateVotes(scaleFeatures.at(scaleIndex).at(t), scaleIndex, votesInfo);
-//    }
-//    auto inputStart = std::chrono::system_clock::now();
-//    inputInVotingSpace(votesInfo);
+            calculateVotes(scaleFeatures.at(scaleIndex).at(t), scaleIndex, votesInfo, indices);
+        }
+        std::cout << "input" << std::endl;
+        inputInVotingSpace(votesInfo);
+        std::cout << "renew" << std::endl;
+        renewVotingSpaces();
 
-//    auto calcMMStart = std::chrono::system_clock::now();
-//    std::vector<std::pair<std::size_t, std::size_t>> minMaxRanges;
-//    getMinMaxVotingT(votesInfo, minMaxRanges);
+        std::cout << "mm" << std::endl;
+        std::vector<std::pair<std::size_t, std::size_t>> minMaxRanges;
+        getMinMaxVotingT(votesInfo, minMaxRanges);
 
-//    auto findStart = std::chrono::system_clock::now();
-//    std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
-//    auto threshStart = std::chrono::system_clock::now();
-//    localMaxima = thresholdLocalMaxima(localMaxima);
+        std::cout << "find" << std::endl;
+        std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
+        std::cout << "thresh" << std::endl;
+        localMaxima = thresholdLocalMaxima(localMaxima);
 
-//    auto combineStart = std::chrono::system_clock::now();
-//    for (int classLabel = 0; classLabel < totalLocalMaxima.size(); ++classLabel) {
-//        LocalMaxima oneClassLocalMaxima(totalLocalMaxima.at(classLabel));
-//        std::copy(std::begin(localMaxima.at(classLabel)),
-//        std::end(localMaxima.at(classLabel)),
-//                  std::back_inserter(oneClassLocalMaxima));
-//        totalLocalMaxima.at(classLabel) =
-//                finder_.combineNeighborLocalMaxima(oneClassLocalMaxima);
-//    }
+        std::cout << "post" << std::endl;
+        for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
+            std::vector<Cuboid> cuboids = calculateCuboids(
+                    localMaxima.at(classLabel), parameters_.getAverageAspectRatio(classLabel),
+                    parameters_.getAverageDuration(classLabel));
+            std::copy(std::begin(cuboids), std::end(cuboids),
+                      std::back_inserter(detectionCuboids.at(classLabel)));
+            std::sort(std::begin(detectionCuboids.at(classLabel)),
+                      std::end(detectionCuboids.at(classLabel)),
+                      [](const Cuboid& a, const Cuboid& b) {
+                          return a.getLocalMaximum().getValue() < b.getLocalMaximum().getValue();
+                      });
+            detectionCuboids.at(classLabel) =
+                    performNonMaximumSuppression(detectionCuboids.at(classLabel));
+        }
 
-//    for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
-//        deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
-//    }
+        for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
+            deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
+        }
+    }
 
-//    auto end = std::chrono::system_clock::now();
-//    std::cout << "one cycle: "
-//              << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
-//              << std::endl;
-//}
-
-// std::cout << "output process" << std::endl;
-// detectionResults.resize(totalLocalMaxima.size());
-// for (int classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
-//    for (const auto& localMaximum : totalLocalMaxima.at(classLabel)) {
-//        detectionResults.at(classLabel).emplace_back(localMaximum);
-//    }
-//}
-//}
+    std::cout << "output process" << std::endl;
+    detectionResults.resize(detectionCuboids.size());
+    for (int classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
+        for (const auto& cuboid : detectionCuboids.at(classLabel)) {
+            cv::Vec4f localMaximumPoint = cuboid.getLocalMaximum().getPoint();
+            if (localMaximumPoint(S) > std::numeric_limits<float>::epsilon()) {
+                localMaximumPoint(S) = parameters_.getBaseScale() / localMaximumPoint(S);
+            } else {
+                localMaximumPoint(S) = 0;
+            }
+            detectionResults.at(classLabel)
+                    .emplace_back(
+                            LocalMaximum(localMaximumPoint, cuboid.getLocalMaximum().getValue()));
+        }
+    }
+}
 
 void HoughForests::detect(LocalFeatureExtractor& extractor,
                           std::vector<std::vector<DetectionResult>>& detectionResults) {
@@ -201,19 +214,21 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
     initialize();
 
     std::vector<cv::Mat3b> video;
-    int fps = extractor.getFPS();
+    // int fps = extractor.getFPS();
+    int fps = 4;
     std::size_t videoBeginT = 0;
     std::vector<std::vector<Cuboid>> detectionCuboids(parameters_.getNumberOfPositiveClasses());
     std::vector<std::unordered_map<int, std::vector<Cuboid>>> visualizationDetectionCuboids(
             parameters_.getNumberOfPositiveClasses());
     bool isEnded = false;
+
     std::thread visualizationThread(
             [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
                 visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids, isEnded);
             });
     while (true) {
         auto begin = std::chrono::system_clock::now();
-        std::cout << "read" << std::endl;
+        // std::cout << "read" << std::endl;
         std::vector<std::vector<cv::Vec3i>> scalePoints;
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
         {
@@ -237,8 +252,13 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                                                           scaleDescriptors.at(scaleIndex),
                                                           extractor.N_CHANNELS_));
         }
+        auto convertEnd = std::chrono::system_clock::now();
+        std::cout << "convert features: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(convertEnd - featEnd)
+                             .count()
+                  << std::endl;
 
-        std::cout << "calculate votes" << std::endl;
+        // std::cout << "calculate votes" << std::endl;
         std::vector<std::vector<VoteInfo>> votesInfo;
         std::vector<int> indices;
         for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
@@ -248,6 +268,11 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
 
             calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo, indices);
         }
+        auto voteEnd = std::chrono::system_clock::now();
+        std::cout << "voting: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(voteEnd - convertEnd)
+                             .count()
+                  << std::endl;
         // std::vector<cv::Vec3i> ps;
         // for (int index : indices) {
         //    ps.push_back(scalePoints.front().at(index));
@@ -256,10 +281,19 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         // auto inputStart = std::chrono::system_clock::now();
         // std::cout << "input in voting space" << std::endl;
         inputInVotingSpace(votesInfo);
+        auto inputEnd = std::chrono::system_clock::now();
+        std::cout
+                << "vote input: "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(inputEnd - voteEnd).count()
+                << std::endl;
 
-        for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
-            votingSpaces_.at(classLabel).renew();
-        }
+        auto renewBegin = std::chrono::system_clock::now();
+        renewVotingSpaces();
+        auto renewEnd = std::chrono::system_clock::now();
+        std::cout << "density estimation: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(renewEnd - renewBegin)
+                             .count()
+                  << std::endl;
 
         // auto calcMMStart = std::chrono::system_clock::now();
         // std::cout << "calc min max vote t" << std::endl;
@@ -267,13 +301,25 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         getMinMaxVotingT(votesInfo, minMaxRanges);
 
         // auto findStart = std::chrono::system_clock::now();
-        std::cout << "find local maxima" << std::endl;
+        // std::cout << "find local maxima" << std::endl;
+        auto findBegin = std::chrono::system_clock::now();
         std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
+        auto findEnd = std::chrono::system_clock::now();
+        std::cout << "find local maxima: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(findEnd - findBegin)
+                             .count()
+                  << std::endl;
 
         // auto threshStart = std::chrono::system_clock::now();
         localMaxima = thresholdLocalMaxima(localMaxima);
-
+        auto threshEnd = std::chrono::system_clock::now();
+        std::cout << "threshold local maxima: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(threshEnd - findEnd)
+                             .count()
+                  << std::endl;
+		
         // auto combineStart = std::chrono::system_clock::now();
+        auto postStart = std::chrono::system_clock::now();
         for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
             std::vector<Cuboid> cuboids = calculateCuboids(
                     localMaxima.at(classLabel), parameters_.getAverageAspectRatio(classLabel),
@@ -297,6 +343,11 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                 }
             }
         }
+        auto postEnd = std::chrono::system_clock::now();
+        std::cout << "post: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(postEnd - postStart)
+                             .count()
+                  << std::endl;
 
         for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
             deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
@@ -321,7 +372,15 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
     detectionResults.resize(detectionCuboids.size());
     for (int classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
         for (const auto& cuboid : detectionCuboids.at(classLabel)) {
-            detectionResults.at(classLabel).emplace_back(cuboid.getLocalMaximum());
+            cv::Vec4f localMaximumPoint = cuboid.getLocalMaximum().getPoint();
+            if (localMaximumPoint(S) > std::numeric_limits<float>::epsilon()) {
+                localMaximumPoint(S) = parameters_.getBaseScale() / localMaximumPoint(S);
+            } else {
+                localMaximumPoint(S) = 0;
+            }
+            detectionResults.at(classLabel)
+                    .emplace_back(
+                            LocalMaximum(localMaximumPoint, cuboid.getLocalMaximum().getValue()));
         }
     }
 }
@@ -451,6 +510,16 @@ void HoughForests::getMinMaxVotingT(
     }
 }
 
+void HoughForests::renewVotingSpaces() {
+    using RenewTask = std::function<void()>;
+    std::queue<RenewTask> tasks;
+    for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
+        tasks.push([this, classLabel]() { votingSpaces_.at(classLabel).renew(); });
+    }
+
+    thread::threadProcess(tasks, nThreads_);
+}
+
 std::vector<LocalMaxima> HoughForests::findLocalMaxima(
         const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges) {
     std::vector<LocalMaxima> localMaxima(parameters_.getNumberOfPositiveClasses());
@@ -566,7 +635,6 @@ void HoughForests::visualizeParallel(
         const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
         const bool& isEnded) {
     using namespace std::chrono;
-
     double millisecPerFrame = 1.0 / fps * 1000;
     double opencvWaitKeyTime = 15;
     while (!isEnded) {

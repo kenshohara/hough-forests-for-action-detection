@@ -19,6 +19,10 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
     voteBeginT = votingSpace.discretizePoint(voteBeginT);
     voteEndT = votingSpace.discretizePoint(voteEndT);
 
+    if (findBeginT >= findEndT) {
+        return {};
+    }
+
     std::vector<Point> gridPoints = votingSpace.getGridPoints(findBeginT, findEndT);
     std::vector<double> densities = votingSpace.getGridVotingScores(findBeginT, findEndT);
 
@@ -31,6 +35,8 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
     // std::cout << "quick shift" << std::endl;
     KDE gridKde(gridPoints, bandwidths, bandDimensions);
     gridKde.buildTree();
+
+    // auto quickStart = std::chrono::system_clock::now();
     std::vector<int> links(gridPoints.size());
     std::fill(std::begin(links), std::end(links), -1);
     for (int i = 0; i < gridPoints.size(); ++i) {
@@ -51,8 +57,15 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
             }
         }
     }
+    // auto quickEnd = std::chrono::system_clock::now();
+    // std::cout
+    //        << "quick shift: "
+    //        << std::chrono::duration_cast<std::chrono::milliseconds>(quickEnd -
+    //        quickStart).count()
+    //        << std::endl;
 
     // std::cout << "mean shift" << std::endl;
+    // auto meanStart = std::chrono::system_clock::now();
     std::vector<std::array<float, DIMENSION_SIZE_>> votingPoints;
     std::vector<float> weights;
     votingSpace.getVotes(votingPoints, weights, voteBeginT, voteEndT);
@@ -68,6 +81,11 @@ LocalMaxima LocalMaximaFinder::findLocalMaxima(const VotingSpace& votingSpace,
             localMaxima.push_back(refineLocalMaximum(voteKde, gridPoints.at(i)));
         }
     }
+    // auto meanEnd = std::chrono::system_clock::now();
+    // std::cout << "mean shift: "
+    //          << std::chrono::duration_cast<std::chrono::milliseconds>(meanEnd -
+    //          meanStart).count()
+    //          << std::endl;
 
     for (auto& localMaximum : localMaxima) {
         cv::Vec4f point = localMaximum.getPoint();

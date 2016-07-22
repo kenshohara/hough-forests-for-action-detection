@@ -67,8 +67,8 @@ class HoughForests {
     // void classify(LocalFeatureExtractor& extractor);
     void detect(LocalFeatureExtractor& extractor,
                 std::vector<std::vector<DetectionResult>>& detectionResults);
-    // void detect(const std::vector<std::string>& featureFilePaths,
-    //            std::vector<std::vector<DetectionResult>>& detectionResults);
+    void detect(const std::vector<std::string>& featureFilePaths,
+                std::vector<std::vector<DetectionResult>>& detectionResults);
 
     HoughForestsParameters getHoughForestsParameters() const { return parameters_; }
 
@@ -105,6 +105,7 @@ class HoughForests {
     void inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& votesInfo);
     void getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& votesInfo,
                           std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges) const;
+    void renewVotingSpaces();
     std::vector<LocalMaxima> findLocalMaxima(
             const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges);
     LocalMaxima findLocalMaxima(VotingSpace& votingSpace, double scoreThreshold,

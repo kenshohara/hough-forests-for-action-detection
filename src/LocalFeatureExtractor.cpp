@@ -111,8 +111,8 @@ void LocalFeatureExtractor::extractFeatures(int scaleIndex, int beginFrame, int 
     extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, beginFrame,
                               endFrame);
     // extractFlowFeature(scaleChannelFeatures_[scaleIndex][4],
-    // scaleChannelFeatures_[scaleIndex][5],
-    //                   scaleIndex, beginFrame, endFrame);
+    //					scaleChannelFeatures_[scaleIndex][5],
+    //					scaleIndex, beginFrame, endFrame);
     // extractHOGFeature(scaleChannelFeatures_[scaleIndex], scaleIndex, beginFrame, endFrame);
 }
 
