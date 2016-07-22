@@ -96,10 +96,9 @@ class HoughForests {
             const std::vector<cv::Vec3i>& points,
             const std::vector<std::vector<float>>& descriptors, int nChannels) const;
     void calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
-                        std::vector<std::vector<VoteInfo>>& votesInfo,
-                        std::vector<int>& visIndices) const;
+                        std::vector<std::vector<VoteInfo>>& votesInfo) const;
     std::vector<VoteInfo> calculateVotes(const FeaturePtr& feature, int scaleIndex,
-                                         const std::vector<LeafPtr>& leavesData, bool& isVis) const;
+                                         const std::vector<LeafPtr>& leavesData) const;
     cv::Vec3i calculateVotingPoint(const FeaturePtr& feature, double scale,
                                    const randomforests::STIPLeaf::FeatureInfo& featureInfo) const;
     void inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& votesInfo);
@@ -124,8 +123,6 @@ class HoughForests {
                    const std::vector<std::vector<Cuboid>>& detectionCuboids) const;
     void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,
                    const std::vector<LocalMaxima>& localMaxima) const;
-    void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,
-                   const std::vector<cv::Vec3i>& points) const;
     void visualize(const std::vector<std::vector<float>>& votingSpaces) const;
 };
 }

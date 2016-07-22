@@ -147,14 +147,13 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
 
         std::cout << "voting" << std::endl;
         std::vector<std::vector<VoteInfo>> votesInfo;
-        std::vector<int> indices;
         for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
             if (scaleFeatures.at(scaleIndex).empty() ||
                 scaleFeatures.at(scaleIndex).count(t) == 0) {
                 continue;
             }
 
-            calculateVotes(scaleFeatures.at(scaleIndex).at(t), scaleIndex, votesInfo, indices);
+            calculateVotes(scaleFeatures.at(scaleIndex).at(t), scaleIndex, votesInfo);
         }
         std::cout << "input" << std::endl;
         inputInVotingSpace(votesInfo);
@@ -260,24 +259,18 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
 
         // std::cout << "calculate votes" << std::endl;
         std::vector<std::vector<VoteInfo>> votesInfo;
-        std::vector<int> indices;
         for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
             if (scaleFeatures.at(scaleIndex).empty()) {
                 continue;
             }
 
-            calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo, indices);
+            calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo);
         }
         auto voteEnd = std::chrono::system_clock::now();
         std::cout << "voting: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(voteEnd - convertEnd)
                              .count()
                   << std::endl;
-        // std::vector<cv::Vec3i> ps;
-        // for (int index : indices) {
-        //    ps.push_back(scalePoints.front().at(index));
-        //}
-        // visualize(video, videoBeginT, ps);
         // auto inputStart = std::chrono::system_clock::now();
         // std::cout << "input in voting space" << std::endl;
         inputInVotingSpace(votesInfo);
@@ -317,7 +310,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                   << std::chrono::duration_cast<std::chrono::milliseconds>(threshEnd - findEnd)
                              .count()
                   << std::endl;
-		
+
         // auto combineStart = std::chrono::system_clock::now();
         auto postStart = std::chrono::system_clock::now();
         for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
@@ -357,14 +350,6 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         std::cout << "one cycle: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
                   << std::endl;
-
-        // visualize(video, videoBeginT, detectionCuboids);
-        // std::vector<std::vector<float>> sps(parameters_.getNumberOfPositiveClasses());
-        // for (int classLabel = 0; classLabel < sps.size(); ++classLabel) {
-        //    sps.at(classLabel) = getVotingSpace(classLabel);
-        //}
-        // std::cout << "vis" << std::endl;
-        // visualize(sps);
     }
     visualizationThread.join();
 
@@ -427,28 +412,19 @@ std::vector<HoughForests::FeaturePtr> HoughForests::convertFeatureFormats(
 }
 
 void HoughForests::calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
-                                  std::vector<std::vector<VoteInfo>>& votesInfo,
-                                  std::vector<int>& visIndices) const {
-    int featIndex = 0;
+                                  std::vector<std::vector<VoteInfo>>& votesInfo) const {
     for (const auto& feature : features) {
         std::vector<LeafPtr> leavesData = randomForests_.match(feature);
-        bool isVis = false;
-        votesInfo.push_back(calculateVotes(feature, scaleIndex, leavesData, isVis));
-        if (isVis) {
-            visIndices.push_back(featIndex);
-        }
-        featIndex++;
+        votesInfo.push_back(calculateVotes(feature, scaleIndex, leavesData));
     }
 }
 
 std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(
-        const FeaturePtr& feature, int scaleIndex, const std::vector<LeafPtr>& leavesData,
-        bool& isVis) const {
+        const FeaturePtr& feature, int scaleIndex, const std::vector<LeafPtr>& leavesData) const {
     std::vector<VoteInfo> votesInfo;
     for (const auto& leafData : leavesData) {
         auto featuresInfo = leafData->getFeatureInfo();
         if (featuresInfo.size() > 300) {
-            isVis = true;
             continue;
         }
         // std::cout << featuresInfo.size() << std::endl;
@@ -734,24 +710,6 @@ void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t vi
         }
         cv::imshow("vis", visFrame);
         cv::waitKey(5);
-    }
-}
-
-void HoughForests::visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,
-                             const std::vector<cv::Vec3i>& points) const {
-    for (int t = 0; t < video.size(); ++t) {
-        int visT = t + videoBeginT;
-        std::cout << videoBeginT << std::endl;
-        std::cout << visT << std::endl;
-        cv::Mat visFrame = video.at(t).clone();
-        for (const auto& point : points) {
-            if (visT == point(T)) {
-                cv::Point p(point(X), point(Y));
-                cv::circle(visFrame, p, 10, cv::Scalar(0, 0, 255), -1);
-            }
-        }
-        cv::imshow("vis", visFrame);
-        cv::waitKey(0);
     }
 }
 
