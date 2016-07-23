@@ -257,28 +257,14 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                              .count()
                   << std::endl;
 
-        // std::cout << "calculate votes" << std::endl;
-        std::vector<std::vector<VoteInfo>> votesInfo;
-        for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
-            if (scaleFeatures.at(scaleIndex).empty()) {
-                continue;
-            }
-
-            calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo);
-        }
+        auto voteBegin = std::chrono::system_clock::now();
+        std::vector<std::pair<std::size_t, std::size_t>> minMaxRanges;
+        votingProcess(scaleFeatures, minMaxRanges);
         auto voteEnd = std::chrono::system_clock::now();
-        std::cout << "voting: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(voteEnd - convertEnd)
+        std::cout << "voting process: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(voteEnd - voteBegin)
                              .count()
                   << std::endl;
-        // auto inputStart = std::chrono::system_clock::now();
-        // std::cout << "input in voting space" << std::endl;
-        inputInVotingSpace(votesInfo);
-        auto inputEnd = std::chrono::system_clock::now();
-        std::cout
-                << "vote input: "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(inputEnd - voteEnd).count()
-                << std::endl;
 
         auto renewBegin = std::chrono::system_clock::now();
         renewVotingSpaces();
@@ -288,29 +274,6 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                              .count()
                   << std::endl;
 
-        // auto calcMMStart = std::chrono::system_clock::now();
-        // std::cout << "calc min max vote t" << std::endl;
-        std::vector<std::pair<std::size_t, std::size_t>> minMaxRanges;
-        getMinMaxVotingT(votesInfo, minMaxRanges);
-
-        // std::cout << "find local maxima" << std::endl;
-        // auto findBegin = std::chrono::system_clock::now();
-        // std::vector<LocalMaxima> localMaxima = findLocalMaxima(minMaxRanges);
-        // auto findEnd = std::chrono::system_clock::now();
-        // std::cout << "find local maxima: "
-        //          << std::chrono::duration_cast<std::chrono::milliseconds>(findEnd - findBegin)
-        //                     .count()
-        //          << std::endl;
-
-        //// auto threshStart = std::chrono::system_clock::now();
-        // localMaxima = thresholdLocalMaxima(localMaxima);
-        // auto threshEnd = std::chrono::system_clock::now();
-        // std::cout << "threshold local maxima: "
-        //          << std::chrono::duration_cast<std::chrono::milliseconds>(threshEnd - findEnd)
-        //                     .count()
-        //          << std::endl;
-
-        // auto combineStart = std::chrono::system_clock::now();
         auto postStart = std::chrono::system_clock::now();
         updateDetectionCuboids(minMaxRanges, detectionCuboids);
         for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
@@ -399,11 +362,33 @@ std::vector<HoughForests::FeaturePtr> HoughForests::convertFeatureFormats(
     return features;
 }
 
+void HoughForests::votingProcess(const std::vector<std::vector<FeaturePtr>>& scaleFeatures,
+                                 std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges) {
+    minMaxRanges.resize(parameters_.getNumberOfPositiveClasses());
+    for (auto& oneClassRange : minMaxRanges) {
+        int minT = std::numeric_limits<std::size_t>::max();
+        int maxT = 0;
+        oneClassRange = std::make_pair(minT, maxT);
+    }
+    for (int scaleIndex = 0; scaleIndex < scaleFeatures.size(); ++scaleIndex) {
+        if (scaleFeatures.at(scaleIndex).empty()) {
+            continue;
+        }
+        std::vector<std::vector<VoteInfo>> votesInfo(scaleFeatures.at(scaleIndex).size());
+        calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo);
+
+        inputInVotingSpace(votesInfo);
+
+        getMinMaxVotingT(votesInfo, minMaxRanges);
+    }
+}
+
 void HoughForests::calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
                                   std::vector<std::vector<VoteInfo>>& votesInfo) const {
-    for (const auto& feature : features) {
-        std::vector<LeafPtr> leavesData = randomForests_.match(feature);
-        votesInfo.push_back(calculateVotes(feature, scaleIndex, leavesData));
+    for (int featureIndex = 0; featureIndex < features.size(); ++featureIndex) {
+        std::vector<LeafPtr> leavesData = randomForests_.match(features.at(featureIndex));
+        votesInfo.at(featureIndex) =
+                calculateVotes(features.at(featureIndex), scaleIndex, leavesData);
     }
 }
 
@@ -453,12 +438,6 @@ void HoughForests::inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& 
 void HoughForests::getMinMaxVotingT(
         const std::vector<std::vector<VoteInfo>>& votesInfo,
         std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges) const {
-    minMaxRanges.resize(parameters_.getNumberOfPositiveClasses());
-    for (auto& oneClassRange : minMaxRanges) {
-        int minT = std::numeric_limits<std::size_t>::max();
-        int maxT = 0;
-        oneClassRange = std::make_pair(minT, maxT);
-    }
     for (const auto& oneFeatureVotesInfo : votesInfo) {
         for (const auto& voteInfo : oneFeatureVotesInfo) {
             int t = voteInfo.getVotingPoint()(T);

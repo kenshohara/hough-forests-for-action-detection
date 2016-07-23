@@ -95,6 +95,8 @@ class HoughForests {
     std::vector<FeaturePtr> convertFeatureFormats(
             const std::vector<cv::Vec3i>& points,
             const std::vector<std::vector<float>>& descriptors, int nChannels) const;
+    void votingProcess(const std::vector<std::vector<FeaturePtr>>& scaleFeatures,
+                       std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges);
     void calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
                         std::vector<std::vector<VoteInfo>>& votesInfo) const;
     std::vector<VoteInfo> calculateVotes(const FeaturePtr& feature, int scaleIndex,
