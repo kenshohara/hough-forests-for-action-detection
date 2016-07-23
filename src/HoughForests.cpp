@@ -4,6 +4,8 @@
 #include "ThreadProcess.h"
 #include "Utils.h"
 
+#include <omp.h>
+
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include <algorithm>
@@ -385,6 +387,7 @@ void HoughForests::votingProcess(const std::vector<std::vector<FeaturePtr>>& sca
 
 void HoughForests::calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
                                   std::vector<std::vector<VoteInfo>>& votesInfo) const {
+#pragma omp parallel for
     for (int featureIndex = 0; featureIndex < features.size(); ++featureIndex) {
         std::vector<LeafPtr> leavesData = randomForests_.match(features.at(featureIndex));
         votesInfo.at(featureIndex) =

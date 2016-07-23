@@ -78,7 +78,6 @@ void VotingSpace::renew() {
     KDE voteKde(votingPoints, weights, bandwidths, bandDimensions);
     voteKde.buildTree();
 
-    double maxdens = 0.0;
     for (int i = 0; i < gridPoints_.size(); ++i) {
         gridVotingScores_.at(i) += voteKde.estimateDensity(gridPoints_.at(i));
     }

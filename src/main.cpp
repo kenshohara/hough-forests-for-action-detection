@@ -3,6 +3,8 @@
 #include "STIPFeature.h"
 #include "Utils.h"
 
+#include <omp.h>
+
 #include <numpy.hpp>
 
 #include <boost/format.hpp>
