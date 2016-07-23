@@ -214,7 +214,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
 
     std::vector<cv::Mat3b> video;
     // int fps = extractor.getFPS();
-    int fps = 4;
+    int fps = 10;
     std::size_t videoBeginT = 0;
     std::vector<std::vector<Cuboid>> detectionCuboids(parameters_.getNumberOfPositiveClasses());
     std::vector<std::unordered_map<int, std::vector<Cuboid>>> visualizationDetectionCuboids(
@@ -336,6 +336,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         auto end = std::chrono::system_clock::now();
         std::cout << "one cycle: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
+                  << std::endl
                   << std::endl;
     }
     visualizationThread.join();
@@ -487,17 +488,24 @@ void HoughForests::updateDetectionCuboids(
         const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges,
         std::vector<std::vector<Cuboid>>& detectionCuboids) const {
     for (int classLabel = 0; classLabel < minMaxRanges.size(); ++classLabel) {
+        auto s1 = std::chrono::system_clock::now();
         auto gridPoints = votingSpaces_.at(classLabel).getGridPoints();
         auto votingScores = votingSpaces_.at(classLabel).getGridVotingScores();
+        auto s2 = std::chrono::system_clock::now();
         double threshold = parameters_.getScoreThreshold(classLabel);
         LocalMaxima overThresholdPoints;
         for (int pointIndex = 0; pointIndex < gridPoints.size(); ++pointIndex) {
             if (votingScores.at(pointIndex) > threshold) {
-                overThresholdPoints.push_back(LocalMaximum(
-                        cv::Vec4f(gridPoints.at(pointIndex).data()), votingScores.at(pointIndex)));
+                cv::Vec3f pointWithoutScale(gridPoints.at(pointIndex).data());
+                cv::Vec3i originalPoint =
+                        votingSpaces_.at(classLabel).calculateOriginalPoint(pointWithoutScale);
+                cv::Vec4f originalPointWithScale(originalPoint(T), originalPoint(Y),
+                                                 originalPoint(X), gridPoints.at(pointIndex).at(3));
+                overThresholdPoints.push_back(
+                        LocalMaximum(originalPointWithScale, votingScores.at(pointIndex)));
             }
         }
-
+        auto s3 = std::chrono::system_clock::now();
         std::vector<Cuboid> cuboids =
                 calculateCuboids(overThresholdPoints, parameters_.getAverageAspectRatio(classLabel),
                                  parameters_.getAverageDuration(classLabel));
@@ -507,8 +515,18 @@ void HoughForests::updateDetectionCuboids(
                   std::end(detectionCuboids.at(classLabel)), [](const Cuboid& a, const Cuboid& b) {
                       return a.getLocalMaximum().getValue() < b.getLocalMaximum().getValue();
                   });
+        auto s4 = std::chrono::system_clock::now();
         detectionCuboids.at(classLabel) =
                 performNonMaximumSuppression(detectionCuboids.at(classLabel));
+        auto s5 = std::chrono::system_clock::now();
+        // std::cout << "get grids: " << std::chrono::duration_cast<std::chrono::milliseconds>(s2 -
+        // s1).count() << std::endl;
+        // std::cout << "thresholding: " << std::chrono::duration_cast<std::chrono::milliseconds>(s3
+        // - s2).count() << std::endl;
+        // std::cout << "calc cuboids: " << std::chrono::duration_cast<std::chrono::milliseconds>(s4
+        // - s3).count() << std::endl;
+        // std::cout << "nms: " << std::chrono::duration_cast<std::chrono::milliseconds>(s5 -
+        // s4).count() << std::endl;
     }
 }
 
@@ -631,36 +649,45 @@ void HoughForests::visualizeParallel(
     double opencvWaitKeyTime = 15;
     while (!isEnded) {
         if (!video.empty()) {
-            std::lock_guard<std::mutex> lock(m_);
+            // auto start = system_clock::now();
+            std::vector<cv::Mat3b> visVideo;
+            visVideo.reserve(video.size());
+            {
+                std::lock_guard<std::mutex> lock(m_);
+                for (int t = 0; t < video.size(); ++t) {
+                    cv::Mat3b visFrame = video.at(t).clone();
+                    int visT = t + videoBeginT;
+                    for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
+                        int duration = parameters_.getAverageDuration(classLabel);
+                        for (int t2 = visT - duration; t2 < visT; ++t2) {
+                            if (detectionCuboids.at(classLabel).count(t2) == 0) {
+                                continue;
+                            }
 
-            for (int t = 0; t < video.size(); ++t) {
-                auto start = system_clock::now();
-                int visT = t + videoBeginT;
-                cv::Mat visFrame = video.at(t).clone();
-                for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
-                    int duration = parameters_.getAverageDuration(classLabel);
-                    for (int t2 = visT - duration; t2 < visT; ++t2) {
-                        if (detectionCuboids.at(classLabel).count(t2) == 0) {
-                            continue;
-                        }
-
-                        for (const auto& cuboid : detectionCuboids.at(classLabel).at(t2)) {
-                            cv::rectangle(visFrame, cuboid.getRect(), cv::Scalar(0, 0, 255), 3);
-                            cv::putText(visFrame, std::to_string(classLabel), cuboid.getRect().tl(),
-                                        cv::FONT_HERSHEY_PLAIN, 2.5, cv::Scalar(0, 0, 255));
+                            for (const auto& cuboid : detectionCuboids.at(classLabel).at(t2)) {
+                                cv::rectangle(visFrame, cuboid.getRect(), cv::Scalar(0, 0, 255), 3);
+                                cv::putText(visFrame, std::to_string(classLabel),
+                                            cuboid.getRect().tl(), cv::FONT_HERSHEY_PLAIN, 2.5,
+                                            cv::Scalar(0, 0, 255));
+                            }
                         }
                     }
+                    visVideo.push_back(visFrame);
                 }
-                auto end = system_clock::now();
-                double time = duration_cast<milliseconds>(end - start).count();
-                time += opencvWaitKeyTime;
-                double sleepTime = std::max(0.0, millisecPerFrame - time);
+                video.clear();
+            }
+            // auto end = system_clock::now();
+            // std::cout << "calc vis: " <<
+            // std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() <<
+            // std::endl;
+
+            for (const auto& frame : visVideo) {
+                double sleepTime = std::max(0.0, millisecPerFrame - opencvWaitKeyTime);
                 std::this_thread::sleep_for(milliseconds(static_cast<long>(sleepTime)));
 
-                cv::imshow("result", visFrame);
+                cv::imshow("result", frame);
                 cv::waitKey(1);
             }
-            video.clear();
         }
     }
 }
