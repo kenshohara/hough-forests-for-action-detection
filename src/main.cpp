@@ -699,7 +699,7 @@ void detectAll() {
                                                             {9, 13}, {11, 8}, {10, 14}, {18, 15},
                                                             {3, 20}, {2, 1}};
 
-    for (int validationIndex = 8; validationIndex < 10; ++validationIndex) {
+    for (int validationIndex = 0; validationIndex < 10; ++validationIndex) {
         std::vector<double> aspectRatios =
                 readAspectRatios(aspectDirectoryPath + std::to_string(validationIndex) + ".csv");
         std::vector<std::size_t> durations =

@@ -40,6 +40,7 @@ std::vector<cv::Vec4f> VotingSpace::getOriginalGridPoints() const {
     originalGridPoints.reserve(gridPoints_.size());
     for (const auto& point : gridPoints_) {
         cv::Vec4i originalPoint = calculateOriginalPoint(point);
+		originalPoint(T) += minT_;
         cv::Vec4f originalScalePoint(originalPoint(T), originalPoint(Y), originalPoint(X),
                                      scales_.at(originalPoint(S)));
         originalGridPoints.push_back(originalScalePoint);
