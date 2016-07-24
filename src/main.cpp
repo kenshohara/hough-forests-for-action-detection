@@ -569,7 +569,7 @@ void detect() {
     int votesBufferLength = 200;
     double votingSpaceDiscretizeRatio = 0.5;
     // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 8.0);
+    std::vector<double> scoreThresholds(6, 0.5);
     std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
     std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
     double iouThreshold = 0.1;
@@ -656,7 +656,7 @@ void detectAll() {
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half/";
-    std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting/";
+    std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting_hist/";
     std::string durationDirectoryPath = rootDirectoryPath + "average_durations/";
     std::string aspectDirectoryPath = rootDirectoryPath + "average_aspect_ratios/";
 
@@ -674,7 +674,7 @@ void detectAll() {
     std::vector<double> scales = {1.0, 0.707, 0.5};
 
     int nClasses = 7;
-    int nThreads = 4;
+    int nThreads = 6;
     int width = 360;
     int height = 240;
     // int width = 720;
@@ -687,7 +687,7 @@ void detectAll() {
     int votesBufferLength = 200;
     double votingSpaceDiscretizeRatio = 1.0;
     // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 0.1);
+    std::vector<double> scoreThresholds(6, 0.05);
     double iouThreshold = 0.1;
     // std::vector<double> scoreThresholds(6, 0.05);
     bool hasNegativeClass = true;
@@ -921,8 +921,8 @@ int main() {
     // extractPositiveFeatures();
     // extractNegativeFeatures();
     // train();
-    detect();
-    // detectAll();
+    // detect();
+    detectAll();
     // detectAllSTIP();
     // train1data();
     // classify();

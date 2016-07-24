@@ -17,7 +17,7 @@ void VotingSpace::inputVote(const cv::Vec3i& point, std::size_t scaleIndex, floa
         scaleIndex >= votingSpace_.size[S]) {
         return;
     }
-    votingSpace_(originalPoint) += weight;
+    votingSpace_(binnedPoint) += weight;
 }
 
 void VotingSpace::deleteOldVotes() {

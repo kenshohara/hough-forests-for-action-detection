@@ -210,17 +210,18 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
 
     std::vector<cv::Mat3b> video;
     // int fps = extractor.getFPS();
-    int fps = 10;
+    int fps = 20;
     std::size_t videoBeginT = 0;
     std::vector<std::vector<Cuboid>> detectionCuboids(parameters_.getNumberOfPositiveClasses());
     std::vector<std::unordered_map<int, std::vector<Cuboid>>> visualizationDetectionCuboids(
             parameters_.getNumberOfPositiveClasses());
     bool isEnded = false;
 
-    std::thread visualizationThread(
-            [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
-                visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids, isEnded);
-            });
+    // std::thread visualizationThread(
+    //        [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
+    //            visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids,
+    //            isEnded);
+    //        });
     while (true) {
         auto begin = std::chrono::system_clock::now();
         // std::cout << "read" << std::endl;
@@ -290,7 +291,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                   << std::endl
                   << std::endl;
     }
-    visualizationThread.join();
+    // visualizationThread.join();
 
     std::cout << "output process" << std::endl;
     detectionResults.resize(detectionCuboids.size());
