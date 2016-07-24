@@ -8,9 +8,9 @@ namespace houghforests {
 
 void VotingSpace::inputVote(const cv::Vec3i& point, std::size_t scaleIndex, float weight) {
     cv::Vec4i originalPoint(point.val);
-    originalPoint(T) -= minT_;
     originalPoint(S) = scaleIndex;
     cv::Vec4i binnedPoint = binPoint(originalPoint);
+    binnedPoint(T) -= minT_;
     if (binnedPoint(T) < 0 || binnedPoint(T) >= votingSpace_.size[T] || binnedPoint(X) < 0 ||
         binnedPoint(X) >= votingSpace_.size[X] || binnedPoint(Y) < 0 ||
         binnedPoint(Y) >= votingSpace_.size[Y] || scaleIndex < 0 ||
