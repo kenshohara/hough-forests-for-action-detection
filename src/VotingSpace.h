@@ -78,6 +78,7 @@ class VotingSpace {
     cv::Vec4i binPoint(const cv::Vec4i& originalPoint) const;
     int binT(int t) const;
     cv::Vec4i calculateOriginalPoint(const cv::Vec4i& discretizedPoint) const;
+    int calculateOriginalT(int binnedT) const;
 
     std::size_t getMaxT() const { return maxT_; }
     std::size_t getMinT() const { return minT_; }

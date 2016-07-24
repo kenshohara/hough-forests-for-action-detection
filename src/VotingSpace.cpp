@@ -40,7 +40,7 @@ std::vector<cv::Vec4f> VotingSpace::getOriginalGridPoints() const {
     originalGridPoints.reserve(gridPoints_.size());
     for (const auto& point : gridPoints_) {
         cv::Vec4i originalPoint = calculateOriginalPoint(point);
-		originalPoint(T) += minT_;
+        originalPoint(T) += calculateOriginalT(minT_);
         cv::Vec4f originalScalePoint(originalPoint(T), originalPoint(Y), originalPoint(X),
                                      scales_.at(originalPoint(S)));
         originalGridPoints.push_back(originalScalePoint);
@@ -74,6 +74,8 @@ cv::Vec4i VotingSpace::calculateOriginalPoint(const cv::Vec4i& binnedPoint) cons
     originalPoint(X) *= binSizes_.at(X);
     return originalPoint;
 }
+
+int VotingSpace::calculateOriginalT(int binnedT) const { return binnedT * binSizes_.at(T); }
 
 void VotingSpace::initializeGridPoints() {
     for (std::size_t t = 0; t < votingSpace_.size[T]; t += steps_.at(T)) {
