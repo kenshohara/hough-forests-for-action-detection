@@ -24,6 +24,8 @@ class HoughForestsParameters {
     double tau_;
     double scaleBandwidth_;
 
+    std::vector<int> binSizes_;
+
     int spatialStep_;
     int temporalStep_;
 
@@ -49,9 +51,8 @@ class HoughForestsParameters {
     HoughForestsParameters(std::size_t width, std::size_t height, const std::vector<double>& scales,
                            int baseScale, int nClasses, double sigma, double tau,
                            double scaleBandwidth, int spatialStep, int temporalStep,
-                           int votesDeleteStep, int votesBufferLength,
-                           double votingSpaceDiscretizeRatio,
-                           const std::vector<double>& scoreThresholds,
+                           const std::vector<int>& binSizes, int votesDeleteStep,
+                           int votesBufferLength, const std::vector<double>& scoreThresholds,
                            const std::vector<std::size_t>& averageDurations,
                            const std::vector<double>& averageAspectRatios, double iouThreshold,
                            bool hasNegativeClass, bool isBackprojection,
@@ -64,11 +65,11 @@ class HoughForestsParameters {
               sigma_(sigma),
               tau_(tau),
               scaleBandwidth_(scaleBandwidth),
+              binSizes_(binSizes),
               spatialStep_(spatialStep),
               temporalStep_(temporalStep),
               votesDeleteStep_(votesDeleteStep),
               votesBufferLength_(votesBufferLength),
-              votingSpaceDiscretizeRatio_(votingSpaceDiscretizeRatio),
               scoreThresholds_(scoreThresholds),
               averageDurations_(averageDurations),
               averageAspectRatios_(averageAspectRatios),
@@ -92,6 +93,8 @@ class HoughForestsParameters {
     double getTau() const { return tau_; }
 
     double getScaleBandwidth() const { return scaleBandwidth_; }
+
+    std::vector<int> getBinSizes() const { return binSizes_; }
 
     int getSpatialStep() const { return spatialStep_; }
 

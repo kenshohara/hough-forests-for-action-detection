@@ -3,7 +3,6 @@
 
 #include "HoughForestsParameters.h"
 #include "LocalFeatureExtractor.h"
-#include "LocalMaximaFinder.h"
 #include "RandomForests.hpp"
 #include "STIPNode.h"
 #include "Storage.h"
@@ -39,7 +38,6 @@ class HoughForests {
     randomforests::RandomForests<randomforests::STIPNode> randomForests_;
 
     std::vector<VotingSpace> votingSpaces_;
-    LocalMaximaFinder finder_;
 
     HoughForestsParameters parameters_;
 
@@ -84,9 +82,6 @@ class HoughForests {
         parameters_ = parameters;
     }
 
-    // std::vector<float> calculateScores(const std::vector<FeaturePtr>& features,
-    //                                   const cv::Vec4i& calculationPosition);
-
     void save(const std::string& directoryPath) const;
     void load(const std::string& directoryPath);
 
@@ -106,15 +101,9 @@ class HoughForests {
     void inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& votesInfo);
     void getMinMaxVotingT(const std::vector<std::vector<VoteInfo>>& votesInfo,
                           std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges) const;
-    void renewVotingSpaces();
     void updateDetectionCuboids(
             const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges,
             std::vector<std::vector<Cuboid>>& detectionCuboids) const;
-    std::vector<LocalMaxima> findLocalMaxima(
-            const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges);
-    LocalMaxima findLocalMaxima(VotingSpace& votingSpace, double scoreThreshold,
-                                std::size_t voteBeginT, std::size_t voteEndT);
-    std::vector<LocalMaxima> thresholdLocalMaxima(std::vector<LocalMaxima> localMaxima) const;
     std::vector<Cuboid> calculateCuboids(const LocalMaxima& localMaxima, double averageAspectRatio,
                                          int averageDuration) const;
     std::vector<Cuboid> performNonMaximumSuppression(const std::vector<Cuboid>& cuboids) const;

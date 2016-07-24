@@ -12,6 +12,7 @@
 #include <Eigen/Core>
 
 #include <filesystem>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -562,6 +563,7 @@ void detect() {
     // int height = 480;
     int baseScale = 100;
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
+    std::vector<int> binSizes = {5, 10, 10};
     std::vector<int> steps = {20, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
@@ -576,11 +578,11 @@ void detect() {
     bool isBackprojection = false;
     TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
                                   hasNegativeClass);
-    HoughForestsParameters parameters(
-            width, height, scales, baseScale, nClasses, bandwidths.at(0), bandwidths.at(1),
-            bandwidths.at(2), steps.at(0), steps.at(1), votesDeleteStep, votesBufferLength,
-            votingSpaceDiscretizeRatio, scoreThresholds, durations, aspectRatios, iouThreshold,
-            hasNegativeClass, isBackprojection, treeParameters);
+    HoughForestsParameters parameters(width, height, scales, baseScale, nClasses, bandwidths.at(0),
+                                      bandwidths.at(1), bandwidths.at(2), steps.at(0), steps.at(1),
+                                      binSizes, votesDeleteStep, votesBufferLength, scoreThresholds,
+                                      durations, aspectRatios, iouThreshold, hasNegativeClass,
+                                      isBackprojection, treeParameters);
     HoughForests houghForests(nThreads);
     houghForests.setHoughForestsParameters(parameters);
     houghForests.load(forestsDirectoryPath);
@@ -680,6 +682,7 @@ void detectAll() {
     int baseScale = 100;
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
     std::vector<int> steps = {20, 10};
+    std::vector<int> binSizes = {5, 10, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
     double votingSpaceDiscretizeRatio = 1.0;
@@ -703,8 +706,8 @@ void detectAll() {
                 readDurations(durationDirectoryPath + std::to_string(validationIndex) + ".csv");
         HoughForestsParameters parameters(
                 width, height, scales, baseScale, nClasses, bandwidths.at(0), bandwidths.at(1),
-                bandwidths.at(2), steps.at(0), steps.at(1), votesDeleteStep, votesBufferLength,
-                votingSpaceDiscretizeRatio, scoreThresholds, durations, aspectRatios, iouThreshold,
+                bandwidths.at(2), steps.at(0), steps.at(1), binSizes, votesDeleteStep,
+                votesBufferLength, scoreThresholds, durations, aspectRatios, iouThreshold,
                 hasNegativeClass, isBackprojection, treeParameters);
 
         std::cout << "validation: " << validationIndex << std::endl;
@@ -779,6 +782,7 @@ void detectAllSTIP() {
     // int height = 480;
     int baseScale = 100;
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
+    std::vector<int> binSizes = {5, 10, 10};
     std::vector<int> steps = {20, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
@@ -803,8 +807,8 @@ void detectAllSTIP() {
                 readDurations(durationDirectoryPath + std::to_string(validationIndex) + ".csv");
         HoughForestsParameters parameters(
                 width, height, scales, baseScale, nClasses, bandwidths.at(0), bandwidths.at(1),
-                bandwidths.at(2), steps.at(0), steps.at(1), votesDeleteStep, votesBufferLength,
-                votingSpaceDiscretizeRatio, scoreThresholds, durations, aspectRatios, iouThreshold,
+                bandwidths.at(2), steps.at(0), steps.at(1), binSizes, votesDeleteStep,
+                votesBufferLength, scoreThresholds, durations, aspectRatios, iouThreshold,
                 hasNegativeClass, isBackprojection, treeParameters);
 
         std::cout << "validation: " << validationIndex << std::endl;
