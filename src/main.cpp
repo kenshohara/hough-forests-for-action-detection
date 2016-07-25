@@ -413,120 +413,6 @@ void train() {
     }
 }
 
-void train1data() {
-    using namespace nuisken::storage;
-    using namespace nuisken::houghforests;
-    using namespace nuisken::randomforests;
-
-    const int N_CHANNELS = 4;
-    const int N_USED_CHANNELS = 4;
-    const int N_CLASSES = 7;
-
-    std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    // std::string rootDirectoryPath = "D:/UT-Interaction/";
-    std::string featureDirectoryPath = rootDirectoryPath + "feature_hf2/";
-    std::string labelFilePath = rootDirectoryPath + "labels.csv";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_data1_7/";
-    std::vector<std::vector<int>> validationCombinations = {{19, 5}, {12, 6}, {4, 7},   {16, 17},
-                                                            {9, 13}, {11, 8}, {10, 14}, {18, 15},
-                                                            {3, 20}, {2, 1}};
-
-    for (int validationIndex = 0; validationIndex < 1; ++validationIndex) {
-        std::cout << "validation: " << validationIndex << std::endl;
-        std::vector<std::shared_ptr<STIPFeature>> trainingData;
-        for (int i = 0; i < validationCombinations.size(); ++i) {
-            if (i == validationIndex) {
-                continue;
-            }
-            std::cout << i << std::endl;
-            for (int sequenceIndex : validationCombinations.at(i)) {
-                if (sequenceIndex != 1) {
-                    continue;
-                }
-                std::cout << "read seq" << sequenceIndex << std::endl;
-                std::vector<int> classLabels;
-                std::vector<cv::Rect> boxes;
-                std::vector<std::pair<int, int>> ranges;
-                readLabelsInfo(labelFilePath, sequenceIndex, classLabels, boxes, ranges);
-                for (int labelIndex = 0; labelIndex < classLabels.size(); ++labelIndex) {
-                    std::string baseFilePath =
-                            (boost::format("%sseq%d_%d_%d") % featureDirectoryPath % sequenceIndex %
-                             labelIndex % classLabels[labelIndex])
-                                    .str();
-                    std::string pointFilePath = baseFilePath + "_pt.npy";
-                    std::vector<int> pointShape;
-                    std::vector<int> points;
-                    aoba::LoadArrayFromNumpy<int>(pointFilePath, pointShape, points);
-
-                    std::string descriptorFilePath = baseFilePath + "_desc.npy";
-                    std::vector<int> descShape;
-                    std::vector<float> descriptors;
-                    aoba::LoadArrayFromNumpy<float>(descriptorFilePath, descShape, descriptors);
-
-                    int nChannelFeatures = descShape[0] / N_CHANNELS;
-
-                    for (int localIndex = 0; localIndex < pointShape[1]; ++localIndex) {
-                        int pointIndex = localIndex * 3;
-                        cv::Vec3i point(points[pointIndex], points[pointIndex + 1],
-                                        points[pointIndex + 2]);
-                        std::vector<Eigen::MatrixXf> features(N_USED_CHANNELS);
-                        for (int channelIndex = 0; channelIndex < N_USED_CHANNELS; ++channelIndex) {
-                            Eigen::MatrixXf feature(1, nChannelFeatures);
-                            for (int featureIndex = 0; featureIndex < nChannelFeatures;
-                                 ++featureIndex) {
-                                int index = localIndex * descShape[0] +
-                                            channelIndex * nChannelFeatures + featureIndex;
-                                feature.coeffRef(0, featureIndex) = descriptors[index];
-                            }
-                            features.at(channelIndex) = feature;
-                        }
-                        cv::Vec3i actionPosition;
-                        actionPosition(0) =
-                                (ranges[labelIndex].second - ranges[labelIndex].first) / 2;
-                        actionPosition(1) = boxes[labelIndex].height / 2;
-                        actionPosition(2) = boxes[labelIndex].width / 2;
-                        cv::Vec3i offset = actionPosition - point;
-                        auto data = std::make_shared<STIPFeature>(features, point, offset,
-                                                                  std::make_pair(0.0, 0.0),
-                                                                  classLabels[labelIndex]);
-                        trainingData.push_back(data);
-                    }
-                }
-            }
-        }
-
-        int nTrees = 15;
-        double bootstrapRatio = 1.0;
-        int maxDepth = 80;
-        int minData = 5;
-        int nSplits = 100;
-        int nThresholds = 10;
-        auto type = TreeParameters::ALL_RATIO;
-        bool hasNegatieClass = true;
-        TreeParameters treeParameters(N_CLASSES, nTrees, bootstrapRatio, maxDepth, minData, nSplits,
-                                      nThresholds, type, hasNegatieClass);
-        std::vector<int> numberOfFeatureDimensions(N_USED_CHANNELS);
-        for (auto i = 0; i < N_USED_CHANNELS; ++i) {
-            numberOfFeatureDimensions.at(i) = trainingData.front()->getNumberOfFeatureDimensions(i);
-        }
-        STIPNode stipNode(N_CLASSES, N_USED_CHANNELS, numberOfFeatureDimensions);
-        HoughForestsParameters houghParameters;
-        houghParameters.setTreeParameters(treeParameters);
-        int nThreads = 6;
-        HoughForests houghForests(stipNode, houghParameters, nThreads);
-        houghForests.train(trainingData);
-
-        std::string outputDirectoryPath =
-                (boost::format("%s%d/") % forestsDirectoryPath % validationIndex).str();
-        std::tr2::sys::path directory(outputDirectoryPath);
-        if (!std::tr2::sys::exists(directory)) {
-            std::tr2::sys::create_directory(directory);
-        }
-
-        houghForests.save(outputDirectoryPath);
-    }
-}
-
 void detect() {
     using namespace nuisken;
     using namespace nuisken::houghforests;
@@ -859,68 +745,6 @@ void detectAllSTIP() {
     }
 }
 
-void classify() {
-    // using namespace nuisken;
-    // using namespace nuisken::houghforests;
-    // using namespace nuisken::randomforests;
-    // using namespace nuisken::storage;
-
-    // std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    // std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_data1_7/0/";
-    // std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting/";
-
-    // int localWidth = 21;
-    // int localHeight = localWidth;
-    // int localDuration = 9;
-    // int xBlockSize = 7;
-    // int yBlockSize = 7;
-    // int tBlockSize = 3;
-    // int xStep = 10;
-    // int yStep = xStep;
-    // int tStep = 5;
-    //// std::vector<double> scales = {1.0, 0.707, 0.5};
-    // std::vector<double> scales = {1.0};
-
-    //// std::string videoFilePath = rootDirectoryPath + "test.avi";  // "unsegmented/seq5.avi";
-    // std::string videoFilePath = rootDirectoryPath + "segmented_fixed_scale/seq5_0_0.avi";
-    // LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight,
-    // localDuration,
-    //                                xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
-
-    // int nClasses = 7;
-    // int nThreads = 1;
-    // int width = 300;
-    // int height = 200;
-    // double initialScale = 1.0;
-    // double scalingRate = 0.707;
-    // int baseScale = 200;
-    // std::vector<double> bandwidths = {10.0, 8.0, 0.5};
-    // std::vector<int> steps = {20, 10};
-    // int votesDeleteStep = 50;
-    // int votesBufferLength = 200;
-    // double votingSpaceDiscretizeRatio = 0.5;
-    //// std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    // std::vector<double> scoreThresholds(6, 2.0);
-    //// std::vector<double> scoreThresholds(6, 0.05);
-    // bool hasNegativeClass = true;
-    // bool isBackprojection = false;
-    // TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
-    //                              hasNegativeClass);
-    // HoughForestsParameters parameters(width, height, scales, baseScale, nClasses,
-    // bandwidths.at(0),
-    //                                  bandwidths.at(1), bandwidths.at(2), steps.at(0),
-    //                                  steps.at(1),
-    //                                  votesDeleteStep, votesBufferLength,
-    //                                  votingSpaceDiscretizeRatio, scoreThresholds,
-    //                                  hasNegativeClass,
-    //                                  isBackprojection, treeParameters);
-    // HoughForests houghForests(nThreads);
-    // houghForests.setHoughForestsParameters(parameters);
-    // houghForests.load(forestsDirectoryPath);
-
-    // houghForests.classify(extractor);
-}
-
 int main() {
     // extractPositiveFeatures();
     // extractNegativeFeatures();
@@ -928,8 +752,6 @@ int main() {
     // detect();
     detectAll();
     // detectAllSTIP();
-    // train1data();
-    // classify();
 
     // using namespace nuisken;
     // using namespace nuisken::houghforests;
