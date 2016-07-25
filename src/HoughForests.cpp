@@ -300,7 +300,16 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
     std::cout << "output process" << std::endl;
     detectionResults.resize(detectionCuboids.size());
     for (int classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
-        for (const auto& cuboid : detectionCuboids.at(classLabel)) {
+        std::copy(std::begin(detectionCuboids.at(classLabel)),
+                  std::end(detectionCuboids.at(classLabel)),
+                  std::back_inserter(fixedDetectionCuboids.at(classLabel)));
+        std::sort(std::begin(fixedDetectionCuboids.at(classLabel)),
+                  std::end(fixedDetectionCuboids.at(classLabel)),
+                  [](const Cuboid& a, const Cuboid& b) {
+                      return a.getLocalMaximum().getValue() > b.getLocalMaximum().getValue();
+                  });
+
+        for (const auto& cuboid : fixedDetectionCuboids.at(classLabel)) {
             cv::Vec4f localMaximumPoint = cuboid.getLocalMaximum().getPoint();
             if (localMaximumPoint(S) > std::numeric_limits<float>::epsilon()) {
                 localMaximumPoint(S) = parameters_.getBaseScale() / localMaximumPoint(S);
