@@ -1,4 +1,5 @@
 #include "LocalFeatureExtractor.h"
+#include "ThreadProcess.h"
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -103,13 +104,34 @@ void LocalFeatureExtractor::generateScaledVideos() {
 }
 
 void LocalFeatureExtractor::extractFeatures(int scaleIndex, int beginFrame, int endFrame) {
-    extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0], scaleIndex, beginFrame, endFrame);
-    extractXDerivativeFeature(scaleChannelFeatures_[scaleIndex][1], scaleIndex, beginFrame,
-                              endFrame);
-    extractYDerivativeFeature(scaleChannelFeatures_[scaleIndex][2], scaleIndex, beginFrame,
-                              endFrame);
-    extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, beginFrame,
-                              endFrame);
+    using Task = std::function<void()>;
+    std::queue<Task> tasks;
+    tasks.push([this, scaleIndex, beginFrame, endFrame] {
+        extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0], scaleIndex, beginFrame,
+                                endFrame);
+    });
+    tasks.push([this, scaleIndex, beginFrame, endFrame] {
+        extractXDerivativeFeature(scaleChannelFeatures_[scaleIndex][1], scaleIndex, beginFrame,
+                                  endFrame);
+    });
+    tasks.push([this, scaleIndex, beginFrame, endFrame] {
+        extractYDerivativeFeature(scaleChannelFeatures_[scaleIndex][2], scaleIndex, beginFrame,
+                                  endFrame);
+    });
+    tasks.push([this, scaleIndex, beginFrame, endFrame] {
+        extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, beginFrame,
+                                  endFrame);
+    });
+    thread::threadProcess(tasks, N_CHANNELS_);
+
+    // extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0], scaleIndex, beginFrame,
+    // endFrame);
+    // extractXDerivativeFeature(scaleChannelFeatures_[scaleIndex][1], scaleIndex, beginFrame,
+    //                          endFrame);
+    // extractYDerivativeFeature(scaleChannelFeatures_[scaleIndex][2], scaleIndex, beginFrame,
+    //                          endFrame);
+    // extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, beginFrame,
+    //                          endFrame);
     // extractFlowFeature(scaleChannelFeatures_[scaleIndex][4],
     //					scaleChannelFeatures_[scaleIndex][5],
     //					scaleIndex, beginFrame, endFrame);
@@ -152,7 +174,8 @@ void LocalFeatureExtractor::deleteOldData() {
 void LocalFeatureExtractor::extractIntensityFeature(Feature& features, int scaleIndex,
                                                     int beginFrame, int endFrame) {
     for (int t = beginFrame; t < endFrame; ++t) {
-        Feature oneFrameFeature = extractIntensityFeature(scaleVideos_[scaleIndex][t]);
+        Feature oneFrameFeature;
+        extractIntensityFeature(scaleVideos_[scaleIndex][t], oneFrameFeature);
         std::copy(std::begin(oneFrameFeature), std::end(oneFrameFeature),
                   std::back_inserter(features));
     }
@@ -161,7 +184,8 @@ void LocalFeatureExtractor::extractIntensityFeature(Feature& features, int scale
 void LocalFeatureExtractor::extractXDerivativeFeature(Feature& features, int scaleIndex,
                                                       int beginFrame, int endFrame) {
     for (int t = beginFrame; t < endFrame; ++t) {
-        Feature oneFrameFeature = extractXDerivativeFeature(scaleVideos_[scaleIndex][t]);
+        Feature oneFrameFeature;
+        extractXDerivativeFeature(scaleVideos_[scaleIndex][t], oneFrameFeature);
         std::copy(std::begin(oneFrameFeature), std::end(oneFrameFeature),
                   std::back_inserter(features));
     }
@@ -170,7 +194,8 @@ void LocalFeatureExtractor::extractXDerivativeFeature(Feature& features, int sca
 void LocalFeatureExtractor::extractYDerivativeFeature(Feature& features, int scaleIndex,
                                                       int beginFrame, int endFrame) {
     for (int t = beginFrame; t < endFrame; ++t) {
-        Feature oneFrameFeature = extractYDerivativeFeature(scaleVideos_[scaleIndex][t]);
+        Feature oneFrameFeature;
+        extractYDerivativeFeature(scaleVideos_[scaleIndex][t], oneFrameFeature);
         std::copy(std::begin(oneFrameFeature), std::end(oneFrameFeature),
                   std::back_inserter(features));
     }
@@ -182,7 +207,8 @@ void LocalFeatureExtractor::extractTDerivativeFeature(Feature& features, int sca
     for (int t = beginFrame; t < endFrame; ++t) {
         cv::Mat next = scaleVideos_[scaleIndex][t];
 
-        Feature oneFrameFeature = extractTDerivativeFeature(prev, next);
+        Feature oneFrameFeature;
+        extractTDerivativeFeature(prev, next, oneFrameFeature);
         std::copy(std::begin(oneFrameFeature), std::end(oneFrameFeature),
                   std::back_inserter(features));
 
@@ -195,9 +221,10 @@ void LocalFeatureExtractor::extractFlowFeature(Feature& xFeatures, Feature& yFea
     cv::Mat prev = scaleVideos_[scaleIndex][beginFrame - 1];
     for (int t = beginFrame; t < endFrame; ++t) {
         cv::Mat next = scaleVideos_[scaleIndex][t];
-        std::vector<Feature> feature = extractFlowFeature(prev, next);
-        std::copy(std::begin(feature[0]), std::end(feature[0]), std::back_inserter(xFeatures));
-        std::copy(std::begin(feature[1]), std::end(feature[1]), std::back_inserter(yFeatures));
+        std::vector<Feature> features;
+        extractFlowFeature(prev, next, features);
+        std::copy(std::begin(features[0]), std::end(features[0]), std::back_inserter(xFeatures));
+        std::copy(std::begin(features[1]), std::end(features[1]), std::back_inserter(yFeatures));
 
         prev = next;
     }
@@ -214,34 +241,31 @@ void LocalFeatureExtractor::extractHOGFeature(std::vector<Feature>& features, in
     }
 }
 
-LocalFeatureExtractor::Feature LocalFeatureExtractor::extractIntensityFeature(
-        const cv::Mat1b& frame) const {
-    cv::Mat feature = frame.reshape(0, 1);
-    feature.convertTo(feature, CV_32F);
-
-    return feature;
+void LocalFeatureExtractor::extractIntensityFeature(const cv::Mat1b& frame,
+                                                    Feature& feature) const {
+    cv::Mat featureMat = frame.reshape(0, 1);
+    featureMat.convertTo(featureMat, CV_32F);
+    feature = featureMat;
 }
 
-LocalFeatureExtractor::Feature LocalFeatureExtractor::extractXDerivativeFeature(
-        const cv::Mat1b& frame) const {
+void LocalFeatureExtractor::extractXDerivativeFeature(const cv::Mat1b& frame,
+                                                      Feature& feature) const {
     cv::Mat dst;
     cv::Sobel(frame, dst, CV_32F, 1, 0);
 
-    cv::Mat feature = dst.reshape(0, 1);
-    return feature;
+    feature = dst.reshape(0, 1);
 }
 
-LocalFeatureExtractor::Feature LocalFeatureExtractor::extractYDerivativeFeature(
-        const cv::Mat1b& frame) const {
+void LocalFeatureExtractor::extractYDerivativeFeature(const cv::Mat1b& frame,
+                                                      Feature& feature) const {
     cv::Mat dst;
     cv::Sobel(frame, dst, CV_32F, 0, 1);
 
-    cv::Mat feature = dst.reshape(0, 1);
-    return feature;
+    feature = dst.reshape(0, 1);
 }
 
-LocalFeatureExtractor::Feature LocalFeatureExtractor::extractTDerivativeFeature(
-        const cv::Mat1b& prev, const cv::Mat1b& next) const {
+void LocalFeatureExtractor::extractTDerivativeFeature(const cv::Mat1b& prev, const cv::Mat1b& next,
+                                                      Feature& feature) const {
     cv::Mat floatPrev;
     cv::Mat floatNext;
     prev.convertTo(floatPrev, CV_32F);
@@ -249,12 +273,11 @@ LocalFeatureExtractor::Feature LocalFeatureExtractor::extractTDerivativeFeature(
 
     cv::Mat diff = floatNext - floatPrev;
 
-    cv::Mat feature = diff.reshape(0, 1);
-    return feature;
+    feature = diff.reshape(0, 1);
 }
 
-std::vector<LocalFeatureExtractor::Feature> LocalFeatureExtractor::extractFlowFeature(
-        const cv::Mat1b& prev, const cv::Mat1b& next) const {
+void LocalFeatureExtractor::extractFlowFeature(const cv::Mat1b& prev, const cv::Mat1b& next,
+                                               std::vector<Feature>& features) const {
     auto flow = cv::superres::createOptFlow_Farneback();
 
     cv::Mat1f flowX;
@@ -263,7 +286,8 @@ std::vector<LocalFeatureExtractor::Feature> LocalFeatureExtractor::extractFlowFe
 
     flowX = flowX.reshape(0, 1);
     flowY = flowY.reshape(0, 1);
-    return std::vector<Feature>{flowX, flowY};
+    features.push_back(flowX);
+    features.push_back(flowY);
 }
 
 std::vector<LocalFeatureExtractor::Feature> LocalFeatureExtractor::extractHOGFeature(
@@ -338,16 +362,15 @@ void LocalFeatureExtractor::denseSampling(int scaleIndex, std::vector<cv::Vec3i>
             points.emplace_back(storedFeatureBeginT_ + (localDuration_ / 2), y + (localHeight_ / 2),
                                 x + (localWidth_ / 2));
 
-            Descriptor neighborhoodFeatures =
-                    getDescriptor(scaleIndex, cv::Vec3i(0, y, x), width, height);
+            Descriptor neighborhoodFeatures;
+            getDescriptor(scaleIndex, cv::Vec3i(0, y, x), width, height, neighborhoodFeatures);
             descriptors.push_back(neighborhoodFeatures);
         }
     }
 }
 
-LocalFeatureExtractor::Descriptor LocalFeatureExtractor::getDescriptor(
-        int scaleIndex, const cv::Vec3i& topLeftPoint, int width, int height) const {
-    Descriptor descriptor;
+void LocalFeatureExtractor::getDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
+                                          int height, Descriptor& descriptor) const {
     int nLocalElements = localWidth_ * localHeight_ * localDuration_;
     int nPooledElements = xBlockSize_ * yBlockSize_ * tBlockSize_;
     descriptor.reserve(nPooledElements * N_CHANNELS_);
@@ -365,12 +388,11 @@ LocalFeatureExtractor::Descriptor LocalFeatureExtractor::getDescriptor(
                 }
             }
         }
-        Descriptor averagePooledChannelDescriptor = pooling(channelDescriptor, AVERAGE);
+        Descriptor averagePooledChannelDescriptor;
+        pooling(channelDescriptor, AVERAGE, averagePooledChannelDescriptor);
         std::copy(std::begin(averagePooledChannelDescriptor),
                   std::end(averagePooledChannelDescriptor), std::back_inserter(descriptor));
     }
-
-    return descriptor;
 }
 
 void LocalFeatureExtractor::denseSamplingHOG(int scaleIndex, std::vector<cv::Vec3i>& points,
@@ -462,9 +484,8 @@ LocalFeatureExtractor::Descriptor LocalFeatureExtractor::calculateBlockHistogram
     return blockHistogram;
 }
 
-LocalFeatureExtractor::Descriptor LocalFeatureExtractor::pooling(const Descriptor& descriptor,
-                                                                 PoolingType type) const {
-    Descriptor pooledDescriptor;
+void LocalFeatureExtractor::pooling(const Descriptor& descriptor, PoolingType type,
+                                    Descriptor& pooledDescriptor) const {
     int xSize = localWidth_ / xBlockSize_;
     int ySize = localHeight_ / yBlockSize_;
     int tSize = localDuration_ / tBlockSize_;
@@ -483,7 +504,6 @@ LocalFeatureExtractor::Descriptor LocalFeatureExtractor::pooling(const Descripto
             }
         }
     }
-    return pooledDescriptor;
 }
 
 float LocalFeatureExtractor::averagePooling(const Descriptor& descriptor, int beginX, int beginY,

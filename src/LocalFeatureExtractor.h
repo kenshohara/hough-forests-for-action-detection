@@ -140,15 +140,17 @@ class LocalFeatureExtractor {
     void extractHOGFeature(std::vector<Feature>& features, int scaleIndex, int beginFrame,
                            int endFrame);
 
-    Feature extractIntensityFeature(const cv::Mat1b& frame) const;
-    Feature extractXDerivativeFeature(const cv::Mat1b& frame) const;
-    Feature extractYDerivativeFeature(const cv::Mat1b& frame) const;
-    Feature extractTDerivativeFeature(const cv::Mat1b& prev, const cv::Mat1b& next) const;
-    std::vector<Feature> extractFlowFeature(const cv::Mat1b& prev, const cv::Mat1b& next) const;
+    void extractIntensityFeature(const cv::Mat1b& frame, Feature& feature) const;
+    void extractXDerivativeFeature(const cv::Mat1b& frame, Feature& feature) const;
+    void extractYDerivativeFeature(const cv::Mat1b& frame, Feature& feature) const;
+    void extractTDerivativeFeature(const cv::Mat1b& prev, const cv::Mat1b& next,
+                                   Feature& feature) const;
+    void extractFlowFeature(const cv::Mat1b& prev, const cv::Mat1b& next,
+                            std::vector<Feature>& features) const;
     std::vector<Feature> extractHOGFeature(const cv::Mat1b& frame) const;
 
-    Descriptor getDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
-                             int height) const;
+    void getDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width, int height,
+                       Descriptor& descriptor) const;
     Descriptor getHOGDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
                                 int height) const;
     int calculateFeatureIndex(int x, int y, int t, int width, int height) const;
@@ -156,7 +158,8 @@ class LocalFeatureExtractor {
     Descriptor calculateHistogram(const std::vector<Descriptor>& binValues) const;
     Descriptor calculateBlockHistogram(const std::vector<Descriptor>& binValues, int beginX,
                                        int beginY, int beginT) const;
-    Descriptor pooling(const Descriptor& descriptor, PoolingType type) const;
+    void pooling(const Descriptor& descriptor, PoolingType type,
+                 Descriptor& pooledDescriptor) const;
     float averagePooling(const Descriptor& descriptor, int beginX, int beginY, int beginT) const;
     float maxPooling(const Descriptor& descriptor, int beginX, int beginY, int beginT) const;
 };
