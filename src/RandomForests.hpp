@@ -116,15 +116,11 @@ void RandomForests<Type>::selectBootstrapDataMaxWithoutNegative(
 }
 
 template <class Type>
-std::vector<typename RandomForests<Type>::LeafPtr> RandomForests<Type>::match(
-        const FeaturePtr& feature) const {
-    std::vector<LeafPtr> leafData;
-    leafData.reserve(forests.size());
+void RandomForests<Type>::match(const FeaturePtr& feature, std::vector<LeafPtr>& leavesData) const {
+    leavesData.reserve(forests.size());
     for (const auto& tree : forests) {
-        leafData.push_back(tree.match(feature.get()));
+        leavesData.push_back(tree.match(feature.get()));
     }
-
-    return leafData;
 }
 
 template <class Type>

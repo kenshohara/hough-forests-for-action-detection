@@ -379,7 +379,8 @@ void HoughForests::calculateVotes(const std::vector<FeaturePtr>& features, int s
     std::queue<Task> tasks;
     for (int featureIndex = 0; featureIndex < features.size(); ++featureIndex) {
         tasks.push([this, featureIndex, &features, scaleIndex, &votesInfo]() {
-            std::vector<LeafPtr> leavesData = randomForests_.match(features.at(featureIndex));
+            std::vector<LeafPtr> leavesData;
+            randomForests_.match(features.at(featureIndex), leavesData);
             calculateVotes(features.at(featureIndex), scaleIndex, leavesData,
                            votesInfo.at(featureIndex));
         });

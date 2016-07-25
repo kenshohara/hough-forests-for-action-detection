@@ -69,7 +69,7 @@ class RandomForests {
     void RandomForests::setType(const Type& type) { this->type = type; }
 
     void train(const std::vector<FeaturePtr>& features, int maxNumberOfThreads = 1);
-    std::vector<LeafPtr> match(const FeaturePtr& feature) const;
+    void match(const FeaturePtr& feature, std::vector<LeafPtr>& leavesData) const;
     void save(const std::string& directoryPath) const;
     void load(const std::string& directoryPath);
 
