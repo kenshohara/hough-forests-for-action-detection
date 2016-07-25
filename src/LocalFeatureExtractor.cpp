@@ -104,23 +104,23 @@ void LocalFeatureExtractor::generateScaledVideos() {
 }
 
 void LocalFeatureExtractor::extractFeatures(int scaleIndex, int beginFrame, int endFrame) {
-    extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0], scaleIndex, beginFrame, endFrame);
-    extractXDerivativeFeature(scaleChannelFeatures_[scaleIndex][1], scaleIndex, beginFrame,
+    extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0],
+                            scaleChannelIntegrals_[scaleIndex][0], scaleIndex, beginFrame,
+                            endFrame);
+    extractXDerivativeFeature(scaleChannelFeatures_[scaleIndex][1],
+                              scaleChannelIntegrals_[scaleIndex][1], scaleIndex, beginFrame,
                               endFrame);
-    extractYDerivativeFeature(scaleChannelFeatures_[scaleIndex][2], scaleIndex, beginFrame,
+    extractYDerivativeFeature(scaleChannelFeatures_[scaleIndex][2],
+                              scaleChannelIntegrals_[scaleIndex][2], scaleIndex, beginFrame,
                               endFrame);
-    extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, beginFrame,
+    extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3],
+                              scaleChannelIntegrals_[scaleIndex][3], scaleIndex, beginFrame,
                               endFrame);
     // extractFlowFeature(scaleChannelFeatures_[scaleIndex][4],
     //					scaleChannelFeatures_[scaleIndex][5],
     //					scaleIndex, beginFrame, endFrame);
     // extractHOGFeature(scaleChannelFeatures_[scaleIndex], scaleIndex, beginFrame, endFrame);
 }
-
-void LocalFeatureExtractor::calculateIntegralImages() {
-
-}
-
 
 void LocalFeatureExtractor::deleteOldData() {
     if (localDuration_ <= tStep_) {
@@ -144,75 +144,112 @@ void LocalFeatureExtractor::deleteOldData() {
         int width = width_ * scales_[scaleIndex];
         int height = height_ * scales_[scaleIndex];
 
-        int featureIndex = calculateFeatureIndex(0, 0, tStep_, width, height);
-        for (auto& features : scaleChannelFeatures_[scaleIndex]) {
-            auto beginIt = std::begin(features);
-            auto deleteEndIt = beginIt + featureIndex;
-            features.erase(beginIt, deleteEndIt);
+        for (int channelIndex = 0; channelIndex < N_CHANNELS_; ++channelIndex) {
+            auto beginIt = std::begin(scaleChannelFeatures_[scaleIndex][channelIndex]);
+            auto deleteEndIt = beginIt + tStep_;
+            scaleChannelFeatures_[scaleIndex][channelIndex].erase(beginIt, deleteEndIt);
+
+            auto integralBeginIt = std::begin(scaleChannelIntegrals_[scaleIndex][channelIndex]);
+            auto integralDeleteEndIt = integralBeginIt + tStep_;
+            scaleChannelIntegrals_[scaleIndex][channelIndex].erase(integralBeginIt,
+                                                                   integralDeleteEndIt);
         }
     }
     storedFeatureBeginT_ += tStep_;
     nStoredFeatureFrames_ -= tStep_;
 }
 
-void LocalFeatureExtractor::extractIntensityFeature(Feature& features, int scaleIndex,
-                                                    int beginFrame, int endFrame) {
-	features.reserve(features.size() + (endFrame - beginFrame));
+void LocalFeatureExtractor::extractIntensityFeature(Feature& features, Feature& integrals,
+                                                    int scaleIndex, int beginFrame, int endFrame) {
+    features.reserve(features.size() + (endFrame - beginFrame));
+    integrals.reserve(integrals.size() + (endFrame - beginFrame));
     for (int t = beginFrame; t < endFrame; ++t) {
         cv::Mat1f oneFrameFeature;
         extractIntensityFeature(scaleVideos_[scaleIndex][t], oneFrameFeature);
-		features.push_back(oneFrameFeature);
+        features.push_back(oneFrameFeature);
+
+        cv::Mat oneFrameIntegral;
+        cv::integral(cv::Mat(oneFrameFeature), oneFrameIntegral, CV_32F);
+        integrals.push_back(oneFrameIntegral);
     }
 }
 
-void LocalFeatureExtractor::extractXDerivativeFeature(Feature& features, int scaleIndex,
-                                                      int beginFrame, int endFrame) {
-	features.reserve(features.size() + (endFrame - beginFrame));
-	for (int t = beginFrame; t < endFrame; ++t) {
+void LocalFeatureExtractor::extractXDerivativeFeature(Feature& features, Feature& integrals,
+                                                      int scaleIndex, int beginFrame,
+                                                      int endFrame) {
+    features.reserve(features.size() + (endFrame - beginFrame));
+    integrals.reserve(integrals.size() + (endFrame - beginFrame));
+    for (int t = beginFrame; t < endFrame; ++t) {
         cv::Mat1f oneFrameFeature;
         extractXDerivativeFeature(scaleVideos_[scaleIndex][t], oneFrameFeature);
-		features.push_back(oneFrameFeature);
+        features.push_back(oneFrameFeature);
+
+        cv::Mat oneFrameIntegral;
+        cv::integral(cv::Mat(oneFrameFeature), oneFrameIntegral, CV_32F);
+        integrals.push_back(oneFrameIntegral);
     }
 }
 
-void LocalFeatureExtractor::extractYDerivativeFeature(Feature& features, int scaleIndex,
-                                                      int beginFrame, int endFrame) {
-	features.reserve(features.size() + (endFrame - beginFrame));
-	for (int t = beginFrame; t < endFrame; ++t) {
+void LocalFeatureExtractor::extractYDerivativeFeature(Feature& features, Feature& integrals,
+                                                      int scaleIndex, int beginFrame,
+                                                      int endFrame) {
+    features.reserve(features.size() + (endFrame - beginFrame));
+    integrals.reserve(integrals.size() + (endFrame - beginFrame));
+    for (int t = beginFrame; t < endFrame; ++t) {
         cv::Mat1f oneFrameFeature;
         extractYDerivativeFeature(scaleVideos_[scaleIndex][t], oneFrameFeature);
-		features.push_back(oneFrameFeature);
+        features.push_back(oneFrameFeature);
+
+        cv::Mat oneFrameIntegral;
+        cv::integral(cv::Mat(oneFrameFeature), oneFrameIntegral, CV_32F);
+        integrals.push_back(oneFrameIntegral);
     }
 }
 
-void LocalFeatureExtractor::extractTDerivativeFeature(Feature& features, int scaleIndex,
-                                                      int beginFrame, int endFrame) {
-	features.reserve(features.size() + (endFrame - beginFrame));
+void LocalFeatureExtractor::extractTDerivativeFeature(Feature& features, Feature& integrals,
+                                                      int scaleIndex, int beginFrame,
+                                                      int endFrame) {
+    features.reserve(features.size() + (endFrame - beginFrame));
+    integrals.reserve(integrals.size() + (endFrame - beginFrame));
 
-	cv::Mat prev = scaleVideos_[scaleIndex][beginFrame - 1];
+    cv::Mat prev = scaleVideos_[scaleIndex][beginFrame - 1];
     for (int t = beginFrame; t < endFrame; ++t) {
         cv::Mat next = scaleVideos_[scaleIndex][t];
 
         cv::Mat1f oneFrameFeature;
         extractTDerivativeFeature(prev, next, oneFrameFeature);
-		features.push_back(oneFrameFeature);
+        features.push_back(oneFrameFeature);
+
+        cv::Mat oneFrameIntegral;
+        cv::integral(cv::Mat(oneFrameFeature), oneFrameIntegral, CV_32F);
+        integrals.push_back(oneFrameIntegral);
 
         prev = next;
     }
 }
 
 void LocalFeatureExtractor::extractFlowFeature(Feature& xFeatures, Feature& yFeatures,
+                                               Feature& xIntegrals, Feature& yIntegrals,
                                                int scaleIndex, int beginFrame, int endFrame) {
-	xFeatures.reserve(xFeatures.size() + (endFrame - beginFrame));
-	yFeatures.reserve(yFeatures.size() + (endFrame - beginFrame));
+    xFeatures.reserve(xFeatures.size() + (endFrame - beginFrame));
+    yFeatures.reserve(yFeatures.size() + (endFrame - beginFrame));
+    xIntegrals.reserve(xIntegrals.size() + (endFrame - beginFrame));
+    yIntegrals.reserve(yIntegrals.size() + (endFrame - beginFrame));
 
-	cv::Mat prev = scaleVideos_[scaleIndex][beginFrame - 1];
+    cv::Mat prev = scaleVideos_[scaleIndex][beginFrame - 1];
     for (int t = beginFrame; t < endFrame; ++t) {
         cv::Mat next = scaleVideos_[scaleIndex][t];
         std::vector<cv::Mat1f> features;
         extractFlowFeature(prev, next, features);
-		xFeatures.push_back(features.at(0));
-		yFeatures.push_back(features.at(1));
+        xFeatures.push_back(features.at(0));
+        yFeatures.push_back(features.at(1));
+
+        cv::Mat xIntegral;
+        cv::integral(cv::Mat(features.at(0)), xIntegral, CV_32F);
+        cv::Mat yIntegral;
+        cv::integral(cv::Mat(features.at(1)), yIntegral, CV_32F);
+        xIntegrals.push_back(xIntegral);
+        yIntegrals.push_back(yIntegral);
 
         prev = next;
     }
@@ -235,17 +272,17 @@ void LocalFeatureExtractor::extractIntensityFeature(const cv::Mat1b& frame,
 }
 
 void LocalFeatureExtractor::extractXDerivativeFeature(const cv::Mat1b& frame,
-													  cv::Mat1f& feature) const {
+                                                      cv::Mat1f& feature) const {
     cv::Sobel(frame, feature, CV_32F, 1, 0);
 }
 
 void LocalFeatureExtractor::extractYDerivativeFeature(const cv::Mat1b& frame,
-													  cv::Mat1f& feature) const {
+                                                      cv::Mat1f& feature) const {
     cv::Sobel(frame, feature, CV_32F, 0, 1);
 }
 
 void LocalFeatureExtractor::extractTDerivativeFeature(const cv::Mat1b& prev, const cv::Mat1b& next,
-													  cv::Mat1f& feature) const {
+                                                      cv::Mat1f& feature) const {
     cv::Mat floatPrev;
     cv::Mat floatNext;
     prev.convertTo(floatPrev, CV_32F);
@@ -348,26 +385,27 @@ void LocalFeatureExtractor::denseSampling(int scaleIndex, std::vector<cv::Vec3i>
 void LocalFeatureExtractor::getDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
                                           int height, Descriptor& descriptor) const {
     int nLocalElements = localWidth_ * localHeight_ * localDuration_;
-    int nPooledElements = xBlockSize_ * yBlockSize_ * tBlockSize_;
-    descriptor.reserve(nPooledElements * N_CHANNELS_);
-    for (int channelIndex = 0; channelIndex < N_CHANNELS_; ++channelIndex) {
-        Descriptor channelDescriptor;
-        channelDescriptor.reserve(nLocalElements);
-        for (int t = 0; t < localDuration_; ++t) {
-            for (int y = 0; y < localHeight_; ++y) {
-                for (int x = 0; x < localWidth_; ++x) {
-                    int featureIndex =
-                            calculateFeatureIndex(x + topLeftPoint(X), y + topLeftPoint(Y),
-                                                  t + topLeftPoint(T), width, height);
-                    channelDescriptor.push_back(
-                            scaleChannelFeatures_[scaleIndex][channelIndex][featureIndex]);
-                }
+    int nXBlocks = localWidth_ / xBlockSize_;
+    int nYBlocks = localHeight_ / yBlockSize_;
+    int nTBlocks = localDuration_ / tBlockSize_;
+    int nPooledElements = nXBlocks * nYBlocks * nTBlocks;
+    descriptor.resize(nPooledElements * N_CHANNELS_);
+    int blockIndex = 0;
+    for (int tBlockIndex = 0; tBlockIndex < nTBlocks; ++tBlockIndex) {
+        int tBegin = topLeftPoint(T) + tBlockSize_ * tBlockIndex;
+        int tEnd = tBegin + tBlockSize_;
+        for (int yBlockIndex = 0; yBlockIndex < nYBlocks; ++yBlockIndex) {
+            int yBegin = topLeftPoint(Y) + yBlockSize_ * yBlockIndex;
+            int yEnd = yBegin + yBlockSize_;
+            for (int xBlockIndex = 0; xBlockIndex < nXBlocks; ++xBlockIndex) {
+                int xBegin = topLeftPoint(X) + xBlockSize_ * xBlockIndex;
+                int xEnd = xBegin + xBlockSize_;
+
+                pooling(scaleIndex, blockIndex, nPooledElements, nLocalElements, xBegin, xEnd,
+                        yBegin, yEnd, tBegin, tEnd, descriptor);
+                blockIndex++;
             }
         }
-        Descriptor averagePooledChannelDescriptor;
-        pooling(channelDescriptor, AVERAGE, averagePooledChannelDescriptor);
-        std::copy(std::begin(averagePooledChannelDescriptor),
-                  std::end(averagePooledChannelDescriptor), std::back_inserter(descriptor));
     }
 }
 
@@ -460,58 +498,17 @@ LocalFeatureExtractor::Descriptor LocalFeatureExtractor::calculateBlockHistogram
     return blockHistogram;
 }
 
-void LocalFeatureExtractor::pooling(const Descriptor& descriptor, PoolingType type,
-                                    Descriptor& pooledDescriptor) const {
-    int xSize = localWidth_ / xBlockSize_;
-    int ySize = localHeight_ / yBlockSize_;
-    int tSize = localDuration_ / tBlockSize_;
-    pooledDescriptor.reserve(xSize * ySize * tSize);
-    for (int tBlockIndex = 0; tBlockIndex < tSize; ++tBlockIndex) {
-        for (int yBlockIndex = 0; yBlockIndex < ySize; ++yBlockIndex) {
-            for (int xBlockIndex = 0; xBlockIndex < xSize; ++xBlockIndex) {
-                int beginX = xBlockIndex * xBlockSize_;
-                int beginY = yBlockIndex * yBlockSize_;
-                int beginT = tBlockIndex * tBlockSize_;
-                if (type == AVERAGE) {
-                    pooledDescriptor.push_back(averagePooling(descriptor, beginX, beginY, beginT));
-                } else {
-                    pooledDescriptor.push_back(maxPooling(descriptor, beginX, beginY, beginT));
-                }
-            }
+void LocalFeatureExtractor::pooling(int scaleIndex, int blockIndex, int nPooledElements,
+                                    int nLocalElements, int xBegin, int xEnd, int yBegin, int yEnd,
+                                    int tBegin, int tEnd, Descriptor& pooledDescriptor) const {
+    for (int channelIndex = 0; channelIndex < N_CHANNELS_; ++channelIndex) {
+        for (int t = tBegin; t < tEnd; ++t) {
+            cv::Mat1f integralMat = scaleChannelIntegrals_[scaleIndex][channelIndex][t];
+            double sum = integralMat(yEnd, xEnd) - integralMat(yBegin, xEnd) -
+                         integralMat(yEnd, xBegin) + integralMat(yBegin, xBegin);
+            pooledDescriptor[channelIndex * nPooledElements + blockIndex] = sum / nLocalElements;
         }
     }
-}
-
-float LocalFeatureExtractor::averagePooling(const Descriptor& descriptor, int beginX, int beginY,
-                                            int beginT) const {
-    float sum = 0.0;
-    for (int t = 0; t < tBlockSize_; ++t) {
-        for (int y = 0; y < yBlockSize_; ++y) {
-            int featureIndex = calculateFeatureIndex(beginX, beginY + y, beginT + t, localWidth_,
-                                                     localHeight_);
-            for (int x = 0; x < xBlockSize_; ++x) {
-                sum += descriptor[featureIndex++];
-            }
-        }
-    }
-    return sum / (xBlockSize_ * yBlockSize_ * tBlockSize_);
-}
-
-float LocalFeatureExtractor::maxPooling(const Descriptor& descriptor, int beginX, int beginY,
-                                        int beginT) const {
-    float max = 0.0;
-    for (int t = 0; t < tBlockSize_; ++t) {
-        for (int y = 0; y < yBlockSize_; ++y) {
-            int featureIndex = calculateFeatureIndex(beginX, beginY + y, beginT + t, localWidth_,
-                                                     localHeight_);
-            for (int x = 0; x < xBlockSize_; ++x, ++featureIndex) {
-                if (descriptor[featureIndex] > max) {
-                    max = descriptor[featureIndex];
-                }
-            }
-        }
-    }
-    return max;
 }
 
 void LocalFeatureExtractor::visualizeDenseFeature(const std::vector<cv::Vec3i>& points,

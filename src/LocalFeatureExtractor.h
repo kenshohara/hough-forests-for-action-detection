@@ -14,7 +14,6 @@ namespace houghforests {
 class LocalFeatureExtractor {
    public:
     enum Axis { X = 2, Y = 1, T = 0 };
-    enum PoolingType { AVERAGE, MAX };
     static const int N_CHANNELS_;
     static const int N_HOG_BINS_;
 
@@ -28,8 +27,8 @@ class LocalFeatureExtractor {
     cv::VideoCapture videoCapture_;
     Video colorVideo_;
     std::vector<Video> scaleVideos_;
-	std::vector<MultiChannelFeature> scaleChannelFeatures_;
-	std::vector<MultiChannelFeature> scaleChannelIntegrals_;
+    std::vector<MultiChannelFeature> scaleChannelFeatures_;
+    std::vector<MultiChannelFeature> scaleChannelIntegrals_;
     std::vector<double> scales_;
     int localWidth_;
     int localHeight_;
@@ -125,7 +124,6 @@ class LocalFeatureExtractor {
     void makeLocalSizeOdd(int& size) const;
     void readOriginalScaleVideo();
     void generateScaledVideos();
-	void calculateIntegralImages();
     void denseSampling(int scaleIndex, std::vector<cv::Vec3i>& points,
                        std::vector<Descriptor>& descriptors) const;
     void denseSamplingHOG(int scaleIndex, std::vector<cv::Vec3i>& points,
@@ -133,12 +131,16 @@ class LocalFeatureExtractor {
     void deleteOldData();
 
     void extractFeatures(int scaleIndex, int beginFrame, int endFrame);
-    void extractIntensityFeature(Feature& features, int scaleIndex, int beginFrame, int endFrame);
-    void extractXDerivativeFeature(Feature& features, int scaleIndex, int beginFrame, int endFrame);
-    void extractYDerivativeFeature(Feature& features, int scaleIndex, int beginFrame, int endFrame);
-    void extractTDerivativeFeature(Feature& features, int scaleIndex, int beginFrame, int endFrame);
-    void extractFlowFeature(Feature& xFeatures, Feature& yFeatures, int scaleIndex, int beginFrame,
-                            int endFrame);
+    void extractIntensityFeature(Feature& features, Feature& integrals, int scaleIndex,
+                                 int beginFrame, int endFrame);
+    void extractXDerivativeFeature(Feature& features, Feature& integrals, int scaleIndex,
+                                   int beginFrame, int endFrame);
+    void extractYDerivativeFeature(Feature& features, Feature& integrals, int scaleIndex,
+                                   int beginFrame, int endFrame);
+    void extractTDerivativeFeature(Feature& features, Feature& integrals, int scaleIndex,
+                                   int beginFrame, int endFrame);
+    void extractFlowFeature(Feature& xFeatures, Feature& yFeatures, Feature& xIntegrals,
+                            Feature& yIntegrals, int scaleIndex, int beginFrame, int endFrame);
     void extractHOGFeature(std::vector<Feature>& features, int scaleIndex, int beginFrame,
                            int endFrame);
 
@@ -160,10 +162,11 @@ class LocalFeatureExtractor {
     Descriptor calculateHistogram(const std::vector<Descriptor>& binValues) const;
     Descriptor calculateBlockHistogram(const std::vector<Descriptor>& binValues, int beginX,
                                        int beginY, int beginT) const;
-    void pooling(const Descriptor& descriptor, PoolingType type,
+    void pooling(const Descriptor& descriptor, Descriptor& pooledDescriptor) const;
+    void pooling(int scaleIndex, int blockIndex, int nPooledElements, int nLocalElements,
+                 int xBegin, int xEnd, int yBegin, int yEnd, int tBegin, int tEnd,
                  Descriptor& pooledDescriptor) const;
     float averagePooling(const Descriptor& descriptor, int beginX, int beginY, int beginT) const;
-    float maxPooling(const Descriptor& descriptor, int beginX, int beginY, int beginT) const;
 };
 }
 }
