@@ -117,6 +117,11 @@ void LocalFeatureExtractor::extractFeatures(int scaleIndex, int beginFrame, int 
     // extractHOGFeature(scaleChannelFeatures_[scaleIndex], scaleIndex, beginFrame, endFrame);
 }
 
+void LocalFeatureExtractor::calculateIntegralImages() {
+
+}
+
+
 void LocalFeatureExtractor::deleteOldData() {
     if (localDuration_ <= tStep_) {
         scaleVideos_ = std::vector<Video>(scales_.size());
@@ -152,44 +157,45 @@ void LocalFeatureExtractor::deleteOldData() {
 
 void LocalFeatureExtractor::extractIntensityFeature(Feature& features, int scaleIndex,
                                                     int beginFrame, int endFrame) {
+	features.reserve(features.size() + (endFrame - beginFrame));
     for (int t = beginFrame; t < endFrame; ++t) {
-        Feature oneFrameFeature;
+        cv::Mat1f oneFrameFeature;
         extractIntensityFeature(scaleVideos_[scaleIndex][t], oneFrameFeature);
-        std::copy(std::begin(oneFrameFeature), std::end(oneFrameFeature),
-                  std::back_inserter(features));
+		features.push_back(oneFrameFeature);
     }
 }
 
 void LocalFeatureExtractor::extractXDerivativeFeature(Feature& features, int scaleIndex,
                                                       int beginFrame, int endFrame) {
-    for (int t = beginFrame; t < endFrame; ++t) {
-        Feature oneFrameFeature;
+	features.reserve(features.size() + (endFrame - beginFrame));
+	for (int t = beginFrame; t < endFrame; ++t) {
+        cv::Mat1f oneFrameFeature;
         extractXDerivativeFeature(scaleVideos_[scaleIndex][t], oneFrameFeature);
-        std::copy(std::begin(oneFrameFeature), std::end(oneFrameFeature),
-                  std::back_inserter(features));
+		features.push_back(oneFrameFeature);
     }
 }
 
 void LocalFeatureExtractor::extractYDerivativeFeature(Feature& features, int scaleIndex,
                                                       int beginFrame, int endFrame) {
-    for (int t = beginFrame; t < endFrame; ++t) {
-        Feature oneFrameFeature;
+	features.reserve(features.size() + (endFrame - beginFrame));
+	for (int t = beginFrame; t < endFrame; ++t) {
+        cv::Mat1f oneFrameFeature;
         extractYDerivativeFeature(scaleVideos_[scaleIndex][t], oneFrameFeature);
-        std::copy(std::begin(oneFrameFeature), std::end(oneFrameFeature),
-                  std::back_inserter(features));
+		features.push_back(oneFrameFeature);
     }
 }
 
 void LocalFeatureExtractor::extractTDerivativeFeature(Feature& features, int scaleIndex,
                                                       int beginFrame, int endFrame) {
-    cv::Mat prev = scaleVideos_[scaleIndex][beginFrame - 1];
+	features.reserve(features.size() + (endFrame - beginFrame));
+
+	cv::Mat prev = scaleVideos_[scaleIndex][beginFrame - 1];
     for (int t = beginFrame; t < endFrame; ++t) {
         cv::Mat next = scaleVideos_[scaleIndex][t];
 
-        Feature oneFrameFeature;
+        cv::Mat1f oneFrameFeature;
         extractTDerivativeFeature(prev, next, oneFrameFeature);
-        std::copy(std::begin(oneFrameFeature), std::end(oneFrameFeature),
-                  std::back_inserter(features));
+		features.push_back(oneFrameFeature);
 
         prev = next;
     }
@@ -197,13 +203,16 @@ void LocalFeatureExtractor::extractTDerivativeFeature(Feature& features, int sca
 
 void LocalFeatureExtractor::extractFlowFeature(Feature& xFeatures, Feature& yFeatures,
                                                int scaleIndex, int beginFrame, int endFrame) {
-    cv::Mat prev = scaleVideos_[scaleIndex][beginFrame - 1];
+	xFeatures.reserve(xFeatures.size() + (endFrame - beginFrame));
+	yFeatures.reserve(yFeatures.size() + (endFrame - beginFrame));
+
+	cv::Mat prev = scaleVideos_[scaleIndex][beginFrame - 1];
     for (int t = beginFrame; t < endFrame; ++t) {
         cv::Mat next = scaleVideos_[scaleIndex][t];
-        std::vector<Feature> features;
+        std::vector<cv::Mat1f> features;
         extractFlowFeature(prev, next, features);
-        std::copy(std::begin(features[0]), std::end(features[0]), std::back_inserter(xFeatures));
-        std::copy(std::begin(features[1]), std::end(features[1]), std::back_inserter(yFeatures));
+		xFeatures.push_back(features.at(0));
+		yFeatures.push_back(features.at(1));
 
         prev = next;
     }
@@ -221,50 +230,38 @@ void LocalFeatureExtractor::extractHOGFeature(std::vector<Feature>& features, in
 }
 
 void LocalFeatureExtractor::extractIntensityFeature(const cv::Mat1b& frame,
-                                                    Feature& feature) const {
-    cv::Mat featureMat = frame.reshape(0, 1);
-    featureMat.convertTo(featureMat, CV_32F);
-    feature = featureMat;
+                                                    cv::Mat1f& feature) const {
+    frame.convertTo(feature, CV_32F);
 }
 
 void LocalFeatureExtractor::extractXDerivativeFeature(const cv::Mat1b& frame,
-                                                      Feature& feature) const {
-    cv::Mat dst;
-    cv::Sobel(frame, dst, CV_32F, 1, 0);
-
-    feature = dst.reshape(0, 1);
+													  cv::Mat1f& feature) const {
+    cv::Sobel(frame, feature, CV_32F, 1, 0);
 }
 
 void LocalFeatureExtractor::extractYDerivativeFeature(const cv::Mat1b& frame,
-                                                      Feature& feature) const {
-    cv::Mat dst;
-    cv::Sobel(frame, dst, CV_32F, 0, 1);
-
-    feature = dst.reshape(0, 1);
+													  cv::Mat1f& feature) const {
+    cv::Sobel(frame, feature, CV_32F, 0, 1);
 }
 
 void LocalFeatureExtractor::extractTDerivativeFeature(const cv::Mat1b& prev, const cv::Mat1b& next,
-                                                      Feature& feature) const {
+													  cv::Mat1f& feature) const {
     cv::Mat floatPrev;
     cv::Mat floatNext;
     prev.convertTo(floatPrev, CV_32F);
     next.convertTo(floatNext, CV_32F);
 
-    cv::Mat diff = floatNext - floatPrev;
-
-    feature = diff.reshape(0, 1);
+    feature = floatNext - floatPrev;
 }
 
 void LocalFeatureExtractor::extractFlowFeature(const cv::Mat1b& prev, const cv::Mat1b& next,
-                                               std::vector<Feature>& features) const {
+                                               std::vector<cv::Mat1f>& features) const {
     auto flow = cv::superres::createOptFlow_Farneback();
 
     cv::Mat1f flowX;
     cv::Mat1f flowY;
     flow->calc(prev, next, flowX, flowY);
 
-    flowX = flowX.reshape(0, 1);
-    flowY = flowY.reshape(0, 1);
     features.push_back(flowX);
     features.push_back(flowY);
 }

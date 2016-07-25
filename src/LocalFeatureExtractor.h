@@ -20,7 +20,7 @@ class LocalFeatureExtractor {
 
    private:
     using Descriptor = std::vector<float>;
-    using Feature = std::vector<float>;
+    using Feature = std::vector<cv::Mat1f>;
     using MultiChannelFeature = std::vector<Feature>;
     using Video = std::vector<cv::Mat1b>;
     using ColorVideo = std::vector<cv::Mat3b>;
@@ -28,7 +28,8 @@ class LocalFeatureExtractor {
     cv::VideoCapture videoCapture_;
     Video colorVideo_;
     std::vector<Video> scaleVideos_;
-    std::vector<MultiChannelFeature> scaleChannelFeatures_;
+	std::vector<MultiChannelFeature> scaleChannelFeatures_;
+	std::vector<MultiChannelFeature> scaleChannelIntegrals_;
     std::vector<double> scales_;
     int localWidth_;
     int localHeight_;
@@ -124,6 +125,7 @@ class LocalFeatureExtractor {
     void makeLocalSizeOdd(int& size) const;
     void readOriginalScaleVideo();
     void generateScaledVideos();
+	void calculateIntegralImages();
     void denseSampling(int scaleIndex, std::vector<cv::Vec3i>& points,
                        std::vector<Descriptor>& descriptors) const;
     void denseSamplingHOG(int scaleIndex, std::vector<cv::Vec3i>& points,
@@ -140,13 +142,13 @@ class LocalFeatureExtractor {
     void extractHOGFeature(std::vector<Feature>& features, int scaleIndex, int beginFrame,
                            int endFrame);
 
-    void extractIntensityFeature(const cv::Mat1b& frame, Feature& feature) const;
-    void extractXDerivativeFeature(const cv::Mat1b& frame, Feature& feature) const;
-    void extractYDerivativeFeature(const cv::Mat1b& frame, Feature& feature) const;
+    void extractIntensityFeature(const cv::Mat1b& frame, cv::Mat1f& feature) const;
+    void extractXDerivativeFeature(const cv::Mat1b& frame, cv::Mat1f& feature) const;
+    void extractYDerivativeFeature(const cv::Mat1b& frame, cv::Mat1f& feature) const;
     void extractTDerivativeFeature(const cv::Mat1b& prev, const cv::Mat1b& next,
-                                   Feature& feature) const;
+                                   cv::Mat1f& feature) const;
     void extractFlowFeature(const cv::Mat1b& prev, const cv::Mat1b& next,
-                            std::vector<Feature>& features) const;
+                            std::vector<cv::Mat1f>& features) const;
     std::vector<Feature> extractHOGFeature(const cv::Mat1b& frame) const;
 
     void getDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width, int height,
