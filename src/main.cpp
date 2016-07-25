@@ -16,28 +16,16 @@
 #include <string>
 #include <vector>
 
-void extractPositiveFeatures() {
+void extractPositiveFeatures(const std::string& videoDirectoryPath,
+                             const std::string& outputDirectoryPath, int localWidth,
+                             int localHeight, int localDuration, int xBlockSize, int yBlockSize,
+                             int tBlockSize, int xStep, int yStep, int tStep, int nSamplesPerStep) {
     using namespace nuisken::houghforests;
 
-    int localWidth = 21;
-    int localHeight = localWidth;
-    int localDuration = 9;
-    int xBlockSize = 7;
-    int yBlockSize = 7;
-    int tBlockSize = 3;
-    int xStep = 10;
-    int yStep = xStep;
-    int tStep = 5;
     std::vector<double> scales = {1.0};
-
-    int nSamplesPerStep = 30;
     int randomSeed = 1;
     std::mt19937 randomEngine(randomSeed);
 
-    // std::string rootDirectoryPath = "D:/UT-Interaction/";
-    std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    std::string videoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale_100/";
-    std::string outputDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half/";
     std::tr2::sys::path directory(videoDirectoryPath);
     std::tr2::sys::directory_iterator end;
     for (std::tr2::sys::directory_iterator itr(directory); itr != end; ++itr) {
@@ -167,29 +155,20 @@ bool contains(const std::vector<cv::Rect>& boxes,
     return false;
 }
 
-void extractNegativeFeatures() {
+void extractNegativeFeatures(const std::string& videoDirectoryPath,
+                             const std::string& labelFilePath,
+                             const std::string& outputDirectoryPath, int localWidth,
+                             int localHeight, int localDuration, int xBlockSize, int yBlockSize,
+                             int tBlockSize, int xStep, int yStep, int tStep,
+                             const std::vector<double>& scales, int nSamplesPerStep,
+                             int beginSequenceIndex, int endSequenceIndex) {
     using namespace nuisken::houghforests;
 
-    int localWidth = 21;
-    int localHeight = localWidth;
-    int localDuration = 9;
-    int xBlockSize = 7;
-    int yBlockSize = 7;
-    int tBlockSize = 3;
-    int xStep = 10;
-    int yStep = xStep;
-    int tStep = 5;
-    std::vector<double> scales = {1.0, 0.707, 0.5};
-
-    int nSamplesPerStep = 3;
     int randomSeed = 1;
     std::mt19937 randomEngine(randomSeed);
 
-    std::vector<std::string> filePaths;
-    std::string videoDirectoryPath = "E:/Hara/UT-Interaction/unsegmented_half/";
-    std::string labelFilePath = "E:/Hara/UT-Interaction/labels.csv";
-    std::string outputDirectoryPath = "E:/Hara/UT-Interaction/feature_hf_pooling_half/";
-    for (int sequenceIndex = 1; sequenceIndex <= 5; ++sequenceIndex) {
+    for (int sequenceIndex = beginSequenceIndex; sequenceIndex <= endSequenceIndex;
+         ++sequenceIndex) {
         std::string filePath =
                 (boost::format("%sseq%d.avi") % videoDirectoryPath % sequenceIndex).str();
         std::vector<cv::Rect> boxes;
@@ -263,7 +242,10 @@ void extractNegativeFeatures() {
     }
 }
 
-void train() {
+void train(const std::string& featureDirectoryPath, const std::string& labelFilePath,
+           const std::string& forestsDirectoryPath, int baseScale, int nTrees,
+           double bootstrapRatio, int maxDepth, int minData, int nSplits, int nThresholds,
+           int beginValidationIndex, int endValidationIndex) {
     using namespace nuisken::storage;
     using namespace nuisken::houghforests;
     using namespace nuisken::randomforests;
@@ -271,18 +253,12 @@ void train() {
     const int N_CHANNELS = 4;
     const int N_CLASSES = 7;
 
-    int baseScale = 100;
-
-    std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    // std::string rootDirectoryPath = "D:/UT-Interaction/";
-    std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half/";
-    std::string labelFilePath = rootDirectoryPath + "labels_half.csv";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half/";
     std::vector<std::vector<int>> validationCombinations = {{19, 5}, {12, 6}, {4, 7},   {16, 17},
                                                             {9, 13}, {11, 8}, {10, 14}, {18, 15},
                                                             {3, 20}, {2, 1}};
 
-    for (int validationIndex = 5; validationIndex < 10; ++validationIndex) {
+    for (int validationIndex = beginValidationIndex; validationIndex < endValidationIndex;
+         ++validationIndex) {
         std::cout << "validation: " << validationIndex << std::endl;
         std::vector<std::shared_ptr<STIPFeature>> trainingData;
         for (int i = 0; i < validationCombinations.size(); ++i) {
@@ -381,12 +357,6 @@ void train() {
         }
         std::cout << "data size: " << trainingData.size() << std::endl;
 
-        int nTrees = 15;
-        double bootstrapRatio = 1.0;
-        int maxDepth = 30;
-        int minData = 5;
-        int nSplits = 30;
-        int nThresholds = 10;
         auto type = TreeParameters::ALL_RATIO;
         bool hasNegatieClass = true;
         TreeParameters treeParameters(N_CLASSES, nTrees, bootstrapRatio, maxDepth, minData, nSplits,
@@ -413,53 +383,26 @@ void train() {
     }
 }
 
-void detect() {
+void detect(const std::string& forestsDirectoryPath, const std::string& outputDirectoryPath,
+            const std::string& videoFilePath, int localWidth, int localHeight, int localDuration,
+            int xBlockSize, int yBlockSize, int tBlockSize, int xStep, int yStep, int tStep,
+            const std::vector<double>& scales, int nThreads, int width, int height, int baseScale,
+            const std::vector<int>& binSizes, int votesDeleteStep, int votesBufferLength,
+            const std::vector<double>& scoreThresholds, double iouThreshold) {
     using namespace nuisken;
     using namespace nuisken::houghforests;
     using namespace nuisken::randomforests;
     using namespace nuisken::storage;
 
-    // std::string rootDirectoryPath = "D:/UT-Interaction/";
-    std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half/2/";
-    std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting/";
-
-    int localWidth = 21;
-    int localHeight = localWidth;
-    int localDuration = 9;
-    int xBlockSize = 7;
-    int yBlockSize = 7;
-    int tBlockSize = 3;
-    int xStep = 10;
-    int yStep = xStep;
-    int tStep = 5;
-    std::vector<double> scales = {1.0, 0.707, 0.5};
-    // std::vector<double> scales = {1.0};
-    // std::vector<double> scales = {0.707};
-
-    std::string videoFilePath = rootDirectoryPath + "unsegmented_half/seq4.avi";
     LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight, localDuration,
                                     xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
 
     int nClasses = 7;
-    int nThreads = 6;
-    int width = 360;
-    int height = 240;
-    // int width = 720;
-    // int height = 480;
-    int baseScale = 100;
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
-    std::vector<int> binSizes = {10, 20, 20};
-    std::vector<int> steps = {20, 10};
-    int votesDeleteStep = 50;
-    int votesBufferLength = 200;
+    std::vector<int> steps = {binSizes.at(1), binSizes.at(0)};
     double votingSpaceDiscretizeRatio = 0.5;
-    // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 2.0);
     std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
     std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
-    double iouThreshold = 0.1;
-    // std::vector<double> scoreThresholds(6, 0.05);
     bool hasNegativeClass = true;
     bool isBackprojection = false;
     TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
@@ -475,30 +418,6 @@ void detect() {
 
     std::vector<std::vector<DetectionResult<4>>> detectionResults;
     houghForests.detect(extractor, detectionResults);
-
-    // std::cout << "output" << std::endl;
-    // for (auto classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
-    //    std::string outputFilePath =
-    //            outputDirectoryPath + std::to_string(classLabel) + "_detection.txt";
-
-    //    std::ofstream outputStream(outputFilePath);
-    //    for (const auto& detectionResult : detectionResults.at(classLabel)) {
-    //        LocalMaximum localMaximum = detectionResult.getLocalMaximum();
-    //        outputStream << "LocalMaximum," << localMaximum.getPoint()(T) << ","
-    //                     << localMaximum.getPoint()(Y) << "," << localMaximum.getPoint()(X) << ","
-    //                     << localMaximum.getValue() << "," << localMaximum.getPoint()(3)
-    //                     << std::endl;
-
-    //        auto contributionPoints = detectionResult.getContributionPoints();
-    //        for (const auto& contributionPoint : contributionPoints) {
-    //            outputStream << contributionPoint.getPoint()(T) << ","
-    //                         << contributionPoint.getPoint()(Y) << ","
-    //                         << contributionPoint.getPoint()(X) << ","
-    //                         << contributionPoint.getValue() << std::endl;
-    //        }
-    //        outputStream << std::endl;
-    //    }
-    //}
 }
 
 std::vector<std::size_t> readDurations(const std::string& filePath) {
@@ -533,53 +452,23 @@ std::vector<double> readAspectRatios(const std::string& filePath) {
     return aspectRatios;
 }
 
-void detectAll() {
+void detectAll(const std::string& forestsDirectoryPath, const std::string& outputDirectoryPath,
+               const std::string& videoDirectoryPath, const std::string& durationDirectoryPath,
+               const std::string& aspectDirectoryPath, int localWidth, int localHeight,
+               int localDuration, int xBlockSize, int yBlockSize, int tBlockSize, int xStep,
+               int yStep, int tStep, const std::vector<double>& scales, int nThreads, int width,
+               int height, int baseScale, const std::vector<int>& binSizes, int votesDeleteStep,
+               int votesBufferLength, const std::vector<double>& scoreThresholds,
+               double iouThreshold, int beginValidationIndex, int endValidationIndex) {
     using namespace nuisken;
     using namespace nuisken::houghforests;
     using namespace nuisken::randomforests;
     using namespace nuisken::storage;
 
-    // std::string rootDirectoryPath = "D:/UT-Interaction/";
-    std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half/";
-    std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting_hist_bin_20_10_fix_old/";
-    std::string durationDirectoryPath = rootDirectoryPath + "average_durations/";
-    std::string aspectDirectoryPath = rootDirectoryPath + "average_aspect_ratios/";
-
-    int localWidth = 21;
-    int localHeight = localWidth;
-    int localDuration = 9;
-    int xBlockSize = 7;
-    int yBlockSize = 7;
-    int tBlockSize = 3;
-    int xStep = 10;
-    int yStep = xStep;
-    int tStep = 5;
-    // std::vector<double> scales = {1.0, 0.707, 0.5};
-    // std::vector<double> scales = {1.0};
-    std::vector<double> scales = {1.0, 0.707, 0.5};
-
     int nClasses = 7;
-    int nThreads = 6;
-    int width = 360;
-    int height = 240;
-    // int width = 720;
-    // int height = 480;
-    int baseScale = 100;
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
-    std::vector<int> steps = {20, 10};
-    // std::vector<int> steps = {10, 5};
-    // std::vector<int> steps = {5, 1};
-    std::vector<int> binSizes = {10, 20, 20};
-    // std::vector<int> binSizes = {5, 10, 10};
-    // std::vector<int> binSizes = {2, 5, 5};
-    int votesDeleteStep = 50;
-    int votesBufferLength = 200;
-    double votingSpaceDiscretizeRatio = 1.0;
-    // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 0.05);
-    double iouThreshold = 0.1;
-    // std::vector<double> scoreThresholds(6, 0.05);
+    std::vector<int> steps = {binSizes.at(1), binSizes.at(0)};
+    double votingSpaceDiscretizeRatio = 0.5;
     bool hasNegativeClass = true;
     bool isBackprojection = false;
     TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
@@ -589,7 +478,8 @@ void detectAll() {
                                                             {9, 13}, {11, 8}, {10, 14}, {18, 15},
                                                             {3, 20}, {2, 1}};
 
-    for (int validationIndex = 0; validationIndex < 10; ++validationIndex) {
+    for (int validationIndex = beginValidationIndex; validationIndex < endValidationIndex;
+         ++validationIndex) {
         std::vector<double> aspectRatios =
                 readAspectRatios(aspectDirectoryPath + std::to_string(validationIndex) + ".csv");
         std::vector<std::size_t> durations =
@@ -606,9 +496,8 @@ void detectAll() {
         std::string forestsDir = forestsDirectoryPath + std::to_string(validationIndex) + "/";
         houghForests.load(forestsDir);
         for (int sequenceIndex : validationCombinations.at(validationIndex)) {
-            std::string videoFilePath = (boost::format("%s/unsegmented_half/seq%d.avi") %
-                                         rootDirectoryPath % sequenceIndex)
-                                                .str();
+            std::string videoFilePath =
+                    (boost::format("%sseq%d.avi") % videoDirectoryPath % sequenceIndex).str();
             LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight,
                                             localDuration, xBlockSize, yBlockSize, tBlockSize,
                                             xStep, yStep, tStep);
@@ -644,203 +533,67 @@ void detectAll() {
     }
 }
 
-void detectAllSTIP() {
-    using namespace nuisken;
-    using namespace nuisken::houghforests;
-    using namespace nuisken::randomforests;
-    using namespace nuisken::storage;
-
-    // std::string rootDirectoryPath = "D:/UT-Interaction/";
+int main() {
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-    std::string forestsDirectoryPath =
-            rootDirectoryPath + "data_fixed_scale/forests_first_layer_allratio/";
-    std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting_stip/";
+    std::string segmentedVideoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale_100/";
+    std::string videoDirectoryPath = rootDirectoryPath + "unsegmented_half/";
+    std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half2/";
+    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2";
+    std::string votingDirectoryPath = rootDirectoryPath + "data_hf/voting_feature2";;
     std::string durationDirectoryPath = rootDirectoryPath + "average_durations/";
     std::string aspectDirectoryPath = rootDirectoryPath + "average_aspect_ratios/";
+    std::string labelFilePath = rootDirectoryPath + "labels.csv";
 
-    std::string featureDirectoryPath = rootDirectoryPath + "feature_stip2_multiscale_first_layer/";
+    int localWidth = 15;
+    int localHeight = localWidth;
+    int localDuration = 9;
+    int xBlockSize = 5;
+    int yBlockSize = 5;
+    int tBlockSize = 3;
+    int xStep = 8;
+    int yStep = xStep;
+    int tStep = 5;
+    std::vector<double> scales = {1.0};
 
-    // std::vector<double> scales = {1.0, 0.707, 0.5};
-    // std::vector<double> scales = {1.0};
-    std::vector<double> scales = {1.0, 0.707, 0.5};
+    int nPositiveSamplesPerStep = 30;
+    int nNegativeSamplesPerStep = 3;
 
-    int nClasses = 7;
-    int nThreads = 1;
+    int baseScale = 100;
+    int nTrees = 15;
+    double bootstrapRatio = 1.0;
+    int maxDepth = 30;
+    int minData = 5;
+    int nSplits = 30;
+    int nThresholds = 10;
+
+    int nThreads = 6;
     int width = 360;
     int height = 240;
-    // int width = 720;
-    // int height = 480;
-    int baseScale = 100;
-    std::vector<double> bandwidths = {10.0, 8.0, 0.5};
-    std::vector<int> binSizes = {5, 10, 10};
+    std::vector<int> binSizes = {10, 20, 20};
     std::vector<int> steps = {20, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
-    double votingSpaceDiscretizeRatio = 0.5;
-    // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 0.1);
+    std::vector<double> scoreThresholds(6, 2.0);
     double iouThreshold = 0.1;
-    // std::vector<double> scoreThresholds(6, 0.05);
-    bool hasNegativeClass = true;
-    bool isBackprojection = false;
-    TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
-                                  hasNegativeClass);
 
-    std::vector<std::vector<int>> validationCombinations = {{19, 5}, {12, 6}, {4, 7},   {16, 17},
-                                                            {9, 13}, {11, 8}, {10, 14}, {18, 15},
-                                                            {3, 20}, {2, 1}};
-
-    for (int validationIndex = 0; validationIndex < 5; ++validationIndex) {
-        std::vector<double> aspectRatios =
-                readAspectRatios(aspectDirectoryPath + std::to_string(validationIndex) + ".csv");
-        std::vector<std::size_t> durations =
-                readDurations(durationDirectoryPath + std::to_string(validationIndex) + ".csv");
-        HoughForestsParameters parameters(
-                width, height, scales, baseScale, nClasses, bandwidths.at(0), bandwidths.at(1),
-                bandwidths.at(2), steps.at(0), steps.at(1), binSizes, votesDeleteStep,
-                votesBufferLength, scoreThresholds, durations, aspectRatios, iouThreshold,
-                hasNegativeClass, isBackprojection, treeParameters);
-
-        std::cout << "validation: " << validationIndex << std::endl;
-        HoughForests houghForests(nThreads);
-        houghForests.setHoughForestsParameters(parameters);
-        std::string forestsDir = forestsDirectoryPath + std::to_string(validationIndex) + "/";
-        houghForests.load(forestsDir);
-        for (int sequenceIndex : validationCombinations.at(validationIndex)) {
-            std::vector<std::string> featureFilePaths;
-            for (int s = 0; s < 3; ++s) {
-                featureFilePaths.push_back(
-                        (boost::format("%sseq%d_s0.txt") % featureDirectoryPath % sequenceIndex)
-                                .str());
-            }
-
-            std::vector<std::vector<DetectionResult<4>>> detectionResults;
-            houghForests.detect(featureFilePaths, detectionResults);
-
-            std::cout << "output" << std::endl;
-            for (auto classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
-                std::string outputFilePath = (boost::format("%s%d_%d_detection.txt") %
-                                              outputDirectoryPath % sequenceIndex % classLabel)
-                                                     .str();
-
-                std::ofstream outputStream(outputFilePath);
-                for (const auto& detectionResult : detectionResults.at(classLabel)) {
-                    LocalMaximum localMaximum = detectionResult.getLocalMaximum();
-                    outputStream << "LocalMaximum," << localMaximum.getPoint()(T) << ","
-                                 << localMaximum.getPoint()(Y) << "," << localMaximum.getPoint()(X)
-                                 << "," << localMaximum.getValue() << ","
-                                 << localMaximum.getPoint()(3) << std::endl;
-
-                    auto contributionPoints = detectionResult.getContributionPoints();
-                    for (const auto& contributionPoint : contributionPoints) {
-                        outputStream << contributionPoint.getPoint()(T) << ","
-                                     << contributionPoint.getPoint()(Y) << ","
-                                     << contributionPoint.getPoint()(X) << ","
-                                     << contributionPoint.getValue() << std::endl;
-                    }
-                    outputStream << std::endl;
-                }
-            }
-        }
-    }
-}
-
-int main() {
-    // extractPositiveFeatures();
-    // extractNegativeFeatures();
-    // train();
+    extractPositiveFeatures(segmentedVideoDirectoryPath, featureDirectoryPath, localWidth,
+                            localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
+                            yStep, tStep, nPositiveSamplesPerStep);
+    int beginIndex = 1;
+    int endIndex = 20;
+    extractNegativeFeatures(videoDirectoryPath, labelFilePath, featureDirectoryPath, localWidth,
+                            localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
+                            yStep, tStep, scales, nNegativeSamplesPerStep, beginIndex, endIndex);
+    int beginValidationIndex = 0;
+    int endValidationIndex = 10;
+    train(featureDirectoryPath, labelFilePath, forestsDirectoryPath, baseScale, nTrees,
+          bootstrapRatio, maxDepth, minData, nSplits, nThresholds, beginValidationIndex,
+          endValidationIndex);
+    detectAll(forestsDirectoryPath, votingDirectoryPath, videoDirectoryPath, durationDirectoryPath,
+              aspectDirectoryPath, localWidth, localHeight, localDuration, xBlockSize, yBlockSize,
+              tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height, baseScale, binSizes,
+              votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold,
+              beginValidationIndex, endValidationIndex);
     // detect();
-    detectAll();
     // detectAllSTIP();
-
-    // using namespace nuisken;
-    // using namespace nuisken::houghforests;
-    // using namespace nuisken::storage;
-
-    // int localWidth = 51;
-    // int localHeight = localWidth;
-    // int localDuration = 31;
-    // int xStep = 25;
-    // int yStep = xStep;
-    // int tStep = 15;
-    // std::vector<double> scales = {1.0, 0.5};
-    // LocalFeatureExtractor lfe("D:/TestData/test_half.avi", localWidth, localHeight,
-    // localDuration,
-    //                          xStep, yStep, tStep, scales);
-    // std::vector<std::vector<cv::Vec3i>> points;
-    // std::vector<std::vector<std::vector<float>>> descs;
-    // lfe.extractLocalFeatures(points, descs);
-    // points.clear();
-    // descs.clear();
-    // lfe.extractLocalFeatures(points, descs);
-    // points.clear();
-    // descs.clear();
-    // lfe.extractLocalFeatures(points, descs);
-
-    // int validationIndex = 0;
-    // int sequenceIndex = 5;
-    // std::string forestsRootDirectoryPath =
-    // "E:/Hara/UT-Interaction/data_fixed_scale/forests_first_layer_allratio/";
-    // std::string featureDirectoryPath =
-    // "E:/Hara/UT-Interaction/feature_stip2_multiscale_first_layer/";
-    // std::vector<std::string> featureFilePaths;
-    // for (int s = 0; s < 3; ++s) {
-    //    featureFilePaths.push_back((boost::format("%sseq%d_s0.txt") % featureDirectoryPath %
-    //    sequenceIndex).str());
-    //}
-    // std::string outputDirectoryPath = "E:/Hara/UT-Interaction/online_results/voting/";
-
-    // std::size_t width = 720;
-    // std::size_t height = 480;
-    // std::vector<double> scales = {1.0, 0.707, 0.5};
-    // int baseScale = 200;
-    // int nClasses = 7;
-    // double sigma = 10.0;
-    // double tau = 8.0;
-    // double scaleBandwidth = 0.5;
-    // int spatialStep = 20;
-    // int temporalStep = 10;
-    // int votesDeleteStep = 50;
-    // int votesBufferLength = 200;
-    // std::vector<double> scoreThresholds = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
-    // bool hasNegativeClass = true;
-    // bool isBackprojection = false;
-    // randomforests::TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0,
-    // randomforests::TreeParameters::ALL_RATIO, hasNegativeClass);
-    // HoughForestsParameters parameters(width, height, scales, baseScale, nClasses, sigma, tau,
-    // scaleBandwidth, spatialStep, temporalStep,
-    //                                  votesDeleteStep, votesBufferLength, scoreThresholds,
-    //                                  hasNegativeClass, isBackprojection, treeParameters);
-
-    // int nThreads = 1;
-    // HoughForests houghForests(nThreads);
-    // houghForests.setHoughForestsParameters(parameters);
-    // houghForests.load(forestsRootDirectoryPath + std::to_string(validationIndex) + "/");
-
-    // std::vector<std::vector<DetectionResult<4>>> detectionResults;
-    // houghForests.detect(featureFilePaths, detectionResults);
-
-    // std::cout << "output" << std::endl;
-    // for (auto classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
-    //    std::string outputFilePath =
-    //        outputDirectoryPath + std::to_string(sequenceIndex) + "_" + std::to_string(classLabel)
-    //        + "_detection.txt";
-
-    //    std::ofstream outputStream(outputFilePath);
-    //    for (const auto& detectionResult : detectionResults.at(classLabel)) {
-    //        LocalMaximum localMaximum = detectionResult.getLocalMaximum();
-    //        outputStream << "LocalMaximum," << localMaximum.getPoint()(T) << ","
-    //            << localMaximum.getPoint()(Y) << "," << localMaximum.getPoint()(X) << ","
-    //            << localMaximum.getValue() << "," << localMaximum.getPoint()(3) << std::endl;
-
-    //        auto contributionPoints = detectionResult.getContributionPoints();
-    //        for (const auto& contributionPoint : contributionPoints) {
-    //            outputStream << contributionPoint.getPoint()(T) << ","
-    //                << contributionPoint.getPoint()(Y) << ","
-    //                << contributionPoint.getPoint()(X) << "," << contributionPoint.getValue()
-    //                << std::endl;
-    //        }
-    //        outputStream << std::endl;
-    //    }
-    //}
 }
