@@ -290,6 +290,25 @@ void LocalFeatureExtractor::extractFlowFeature(const cv::Mat1b& prev, const cv::
     features.push_back(flowY);
 }
 
+void LocalFeatureExtractor::denseSampling(int scaleIndex, std::vector<cv::Vec3i>& points,
+										  std::vector<Descriptor>& descriptors) const {
+	int width = width_ * scales_[scaleIndex];
+	int xEnd = width - localWidth_;
+	int height = height_ * scales_[scaleIndex];
+	int yEnd = height - localHeight_;
+
+	for (int y = 0; y <= yEnd; y += yStep_) {
+		for (int x = 0; x <= xEnd; x += xStep_) {
+			points.emplace_back(storedFeatureBeginT_ + (localDuration_ / 2), y + (localHeight_ / 2),
+								x + (localWidth_ / 2));
+
+			Descriptor neighborhoodFeatures;
+			getDescriptor(scaleIndex, cv::Vec3i(0, y, x), width, height, neighborhoodFeatures);
+			descriptors.push_back(neighborhoodFeatures);
+		}
+	}
+}
+
 void LocalFeatureExtractor::getDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
                                           int height, Descriptor& descriptor) const {
     int nLocalElements = localWidth_ * localHeight_ * localDuration_;
