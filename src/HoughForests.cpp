@@ -451,42 +451,52 @@ void HoughForests::getMinMaxVotingT(
 void HoughForests::updateDetectionCuboids(
         const std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges,
         std::vector<std::vector<Cuboid>>& detectionCuboids) const {
+    using Task = std::function<void()>;
+    std::queue<Task> tasks;
     for (int classLabel = 0; classLabel < minMaxRanges.size(); ++classLabel) {
-        auto s1 = std::chrono::system_clock::now();
-        auto gridPoints = votingSpaces_.at(classLabel).getOriginalGridPoints();
-        auto votingScores = votingSpaces_.at(classLabel).getGridVotingScores();
-        auto s2 = std::chrono::system_clock::now();
-        double threshold = parameters_.getScoreThreshold(classLabel);
-        LocalMaxima overThresholdPoints;
-        for (int pointIndex = 0; pointIndex < gridPoints.size(); ++pointIndex) {
-            if (votingScores.at(pointIndex) > threshold) {
-                overThresholdPoints.push_back(
-                        LocalMaximum(gridPoints.at(pointIndex), votingScores.at(pointIndex)));
-            }
-        }
-        auto s3 = std::chrono::system_clock::now();
-        std::vector<Cuboid> cuboids =
-                calculateCuboids(overThresholdPoints, parameters_.getAverageAspectRatio(classLabel),
-                                 parameters_.getAverageDuration(classLabel));
-        std::copy(std::begin(cuboids), std::end(cuboids),
-                  std::back_inserter(detectionCuboids.at(classLabel)));
-        std::sort(std::begin(detectionCuboids.at(classLabel)),
-                  std::end(detectionCuboids.at(classLabel)), [](const Cuboid& a, const Cuboid& b) {
-                      return a.getLocalMaximum().getValue() < b.getLocalMaximum().getValue();
-                  });
-        auto s4 = std::chrono::system_clock::now();
-        detectionCuboids.at(classLabel) =
-                performNonMaximumSuppression(detectionCuboids.at(classLabel));
-        auto s5 = std::chrono::system_clock::now();
-        // std::cout << "get grids: " << std::chrono::duration_cast<std::chrono::milliseconds>(s2 -
-        // s1).count() << std::endl;
-        // std::cout << "thresholding: " << std::chrono::duration_cast<std::chrono::milliseconds>(s3
-        // - s2).count() << std::endl;
-        // std::cout << "calc cuboids: " << std::chrono::duration_cast<std::chrono::milliseconds>(s4
-        // - s3).count() << std::endl;
-        // std::cout << "nms: " << std::chrono::duration_cast<std::chrono::milliseconds>(s5 -
-        // s4).count() << std::endl;
+        tasks.push([this, classLabel, &minMaxRanges, &detectionCuboids] {
+            updateDetectionCuboids(classLabel, minMaxRanges.at(classLabel),
+                                   detectionCuboids.at(classLabel));
+        });
     }
+    thread::threadProcess(tasks, nThreads_);
+}
+
+void HoughForests::updateDetectionCuboids(int classLabel,
+                                          const std::pair<std::size_t, std::size_t>& minMaxRanges,
+                                          std::vector<Cuboid>& detectionCuboids) const {
+    auto s1 = std::chrono::system_clock::now();
+    auto gridPoints = votingSpaces_.at(classLabel).getOriginalGridPoints();
+    auto votingScores = votingSpaces_.at(classLabel).getGridVotingScores();
+    auto s2 = std::chrono::system_clock::now();
+    double threshold = parameters_.getScoreThreshold(classLabel);
+    LocalMaxima overThresholdPoints;
+    for (int pointIndex = 0; pointIndex < gridPoints.size(); ++pointIndex) {
+        if (votingScores.at(pointIndex) > threshold) {
+            overThresholdPoints.push_back(
+                    LocalMaximum(gridPoints.at(pointIndex), votingScores.at(pointIndex)));
+        }
+    }
+    auto s3 = std::chrono::system_clock::now();
+    std::vector<Cuboid> cuboids =
+            calculateCuboids(overThresholdPoints, parameters_.getAverageAspectRatio(classLabel),
+                             parameters_.getAverageDuration(classLabel));
+    std::copy(std::begin(cuboids), std::end(cuboids), std::back_inserter(detectionCuboids));
+    std::sort(std::begin(detectionCuboids), std::end(detectionCuboids),
+              [](const Cuboid& a, const Cuboid& b) {
+                  return a.getLocalMaximum().getValue() < b.getLocalMaximum().getValue();
+              });
+    auto s4 = std::chrono::system_clock::now();
+    detectionCuboids = performNonMaximumSuppression(detectionCuboids);
+    auto s5 = std::chrono::system_clock::now();
+    // std::cout << "get grids: " << std::chrono::duration_cast<std::chrono::milliseconds>(s2 -
+    // s1).count() << std::endl;
+    // std::cout << "thresholding: " << std::chrono::duration_cast<std::chrono::milliseconds>(s3
+    // - s2).count() << std::endl;
+    // std::cout << "calc cuboids: " << std::chrono::duration_cast<std::chrono::milliseconds>(s4
+    // - s3).count() << std::endl;
+    // std::cout << "nms: " << std::chrono::duration_cast<std::chrono::milliseconds>(s5 -
+    // s4).count() << std::endl;
 }
 
 std::vector<HoughForests::Cuboid> HoughForests::calculateCuboids(const LocalMaxima& localMaxima,
