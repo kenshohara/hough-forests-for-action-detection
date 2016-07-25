@@ -656,7 +656,7 @@ void detectAll() {
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half/";
-    std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting_hist_bin_20_10_parallel/";
+    std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting_hist_bin_20_10_fix_old/";
     std::string durationDirectoryPath = rootDirectoryPath + "average_durations/";
     std::string aspectDirectoryPath = rootDirectoryPath + "average_aspect_ratios/";
 

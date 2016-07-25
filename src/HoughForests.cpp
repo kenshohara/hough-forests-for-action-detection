@@ -212,6 +212,8 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
     // int fps = extractor.getFPS();
     int fps = 20;
     std::size_t videoBeginT = 0;
+    std::vector<std::vector<Cuboid>> fixedDetectionCuboids(
+            parameters_.getNumberOfPositiveClasses());
     std::vector<std::vector<Cuboid>> detectionCuboids(parameters_.getNumberOfPositiveClasses());
     std::vector<std::unordered_map<int, std::vector<Cuboid>>> visualizationDetectionCuboids(
             parameters_.getNumberOfPositiveClasses());
@@ -283,6 +285,8 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
 
         for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
             deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
+            fixOldDetectionCuboids(detectionCuboids.at(classLabel),
+                                   fixedDetectionCuboids.at(classLabel), videoBeginT);
         }
 
         auto end = std::chrono::system_clock::now();
@@ -497,6 +501,23 @@ void HoughForests::updateDetectionCuboids(int classLabel,
     // - s3).count() << std::endl;
     // std::cout << "nms: " << std::chrono::duration_cast<std::chrono::milliseconds>(s5 -
     // s4).count() << std::endl;
+}
+
+void HoughForests::fixOldDetectionCuboids(std::vector<Cuboid>& detectionCuboids,
+                                          std::vector<Cuboid>& fixedDetectionCuboids,
+                                          std::size_t videoBeginT) const {
+    if (videoBeginT < parameters_.getVotesBufferLength()) {
+        return;
+    }
+
+    std::size_t tThreshold = videoBeginT - parameters_.getVotesBufferLength();
+    std::copy_if(std::begin(detectionCuboids), std::end(detectionCuboids),
+                 std::back_inserter(fixedDetectionCuboids),
+                 [tThreshold](const Cuboid& cuboid) { return cuboid.getEndT() < tThreshold; });
+    auto removeIt = std::remove_if(
+            std::begin(detectionCuboids), std::end(detectionCuboids),
+            [tThreshold](const Cuboid& cuboid) { return cuboid.getEndT() < tThreshold; });
+    detectionCuboids.erase(removeIt, std::end(detectionCuboids));
 }
 
 std::vector<HoughForests::Cuboid> HoughForests::calculateCuboids(const LocalMaxima& localMaxima,

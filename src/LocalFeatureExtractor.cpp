@@ -104,13 +104,12 @@ void LocalFeatureExtractor::generateScaledVideos() {
 }
 
 void LocalFeatureExtractor::extractFeatures(int scaleIndex, int beginFrame, int endFrame) {
-     extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0], scaleIndex, beginFrame,
-     endFrame);
-     extractXDerivativeFeature(scaleChannelFeatures_[scaleIndex][1], scaleIndex, beginFrame,
+    extractIntensityFeature(scaleChannelFeatures_[scaleIndex][0], scaleIndex, beginFrame, endFrame);
+    extractXDerivativeFeature(scaleChannelFeatures_[scaleIndex][1], scaleIndex, beginFrame,
                               endFrame);
-     extractYDerivativeFeature(scaleChannelFeatures_[scaleIndex][2], scaleIndex, beginFrame,
+    extractYDerivativeFeature(scaleChannelFeatures_[scaleIndex][2], scaleIndex, beginFrame,
                               endFrame);
-     extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, beginFrame,
+    extractTDerivativeFeature(scaleChannelFeatures_[scaleIndex][3], scaleIndex, beginFrame,
                               endFrame);
     // extractFlowFeature(scaleChannelFeatures_[scaleIndex][4],
     //					scaleChannelFeatures_[scaleIndex][5],

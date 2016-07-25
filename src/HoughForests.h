@@ -108,6 +108,9 @@ class HoughForests {
     void updateDetectionCuboids(int classLabel,
                                 const std::pair<std::size_t, std::size_t>& minMaxRanges,
                                 std::vector<Cuboid>& detectionCuboids) const;
+    void fixOldDetectionCuboids(std::vector<Cuboid>& detectionCuboids,
+                                std::vector<Cuboid>& fixedDetectionCuboids,
+                                std::size_t videoBeginT) const;
     std::vector<Cuboid> calculateCuboids(const LocalMaxima& localMaxima, double averageAspectRatio,
                                          int averageDuration) const;
     std::vector<Cuboid> performNonMaximumSuppression(const std::vector<Cuboid>& cuboids) const;
