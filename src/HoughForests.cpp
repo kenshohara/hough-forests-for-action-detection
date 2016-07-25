@@ -218,10 +218,10 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
     bool isEnded = false;
 
     // std::thread visualizationThread(
-    //        [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
-    //            visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids,
-    //            isEnded);
-    //        });
+    //       [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
+    //           visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids,
+    //           isEnded);
+    //       });
     while (true) {
         auto begin = std::chrono::system_clock::now();
         // std::cout << "read" << std::endl;
@@ -360,28 +360,36 @@ void HoughForests::votingProcess(const std::vector<std::vector<FeaturePtr>>& sca
         if (scaleFeatures.at(scaleIndex).empty()) {
             continue;
         }
+        auto s1 = std::chrono::system_clock::now();
         std::vector<std::vector<VoteInfo>> votesInfo(scaleFeatures.at(scaleIndex).size());
         calculateVotes(scaleFeatures.at(scaleIndex), scaleIndex, votesInfo);
+        auto s2 = std::chrono::system_clock::now();
 
         inputInVotingSpace(votesInfo);
+        auto s3 = std::chrono::system_clock::now();
 
         getMinMaxVotingT(votesInfo, minMaxRanges);
+        auto s4 = std::chrono::system_clock::now();
     }
 }
 
 void HoughForests::calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
                                   std::vector<std::vector<VoteInfo>>& votesInfo) const {
-#pragma omp parallel for
+    using Task = std::function<void()>;
+    std::queue<Task> tasks;
     for (int featureIndex = 0; featureIndex < features.size(); ++featureIndex) {
-        std::vector<LeafPtr> leavesData = randomForests_.match(features.at(featureIndex));
-        votesInfo.at(featureIndex) =
-                calculateVotes(features.at(featureIndex), scaleIndex, leavesData);
+        tasks.push([this, featureIndex, &features, scaleIndex, &votesInfo]() {
+            std::vector<LeafPtr> leavesData = randomForests_.match(features.at(featureIndex));
+            calculateVotes(features.at(featureIndex), scaleIndex, leavesData,
+                           votesInfo.at(featureIndex));
+        });
     }
+    thread::threadProcess(tasks, nThreads_);
 }
 
-std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(
-        const FeaturePtr& feature, int scaleIndex, const std::vector<LeafPtr>& leavesData) const {
-    std::vector<VoteInfo> votesInfo;
+void HoughForests::calculateVotes(const FeaturePtr& feature, int scaleIndex,
+                                  const std::vector<LeafPtr>& leavesData,
+                                  std::vector<VoteInfo>& votesInfo) const {
     for (const auto& leafData : leavesData) {
         auto featuresInfo = leafData->getFeatureInfo();
         if (featuresInfo.size() > 300) {
@@ -399,7 +407,6 @@ std::vector<HoughForests::VoteInfo> HoughForests::calculateVotes(
         }
     }
     // std::cout << "n_votes: " << votesInfo.size() << std::endl;
-    return votesInfo;
 }
 
 cv::Vec3i HoughForests::calculateVotingPoint(

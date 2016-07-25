@@ -94,8 +94,9 @@ class HoughForests {
                        std::vector<std::pair<std::size_t, std::size_t>>& minMaxRanges);
     void calculateVotes(const std::vector<FeaturePtr>& features, int scaleIndex,
                         std::vector<std::vector<VoteInfo>>& votesInfo) const;
-    std::vector<VoteInfo> calculateVotes(const FeaturePtr& feature, int scaleIndex,
-                                         const std::vector<LeafPtr>& leavesData) const;
+    void calculateVotes(const FeaturePtr& feature, int scaleIndex,
+                        const std::vector<LeafPtr>& leavesData,
+                        std::vector<VoteInfo>& votesInfo) const;
     cv::Vec3i calculateVotingPoint(const FeaturePtr& feature, double scale,
                                    const randomforests::STIPLeaf::FeatureInfo& featureInfo) const;
     void inputInVotingSpace(const std::vector<std::vector<VoteInfo>>& votesInfo);

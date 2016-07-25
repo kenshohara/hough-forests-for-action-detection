@@ -563,13 +563,13 @@ void detect() {
     // int height = 480;
     int baseScale = 100;
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
-    std::vector<int> binSizes = {5, 10, 10};
+    std::vector<int> binSizes = {10, 20, 20};
     std::vector<int> steps = {20, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
     double votingSpaceDiscretizeRatio = 0.5;
     // std::vector<double> scoreThresholds = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    std::vector<double> scoreThresholds(6, 0.5);
+    std::vector<double> scoreThresholds(6, 2.0);
     std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
     std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
     double iouThreshold = 0.1;
@@ -656,7 +656,7 @@ void detectAll() {
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half/";
-    std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting_hist/";
+    std::string outputDirectoryPath = rootDirectoryPath + "data_hf/voting_hist_bin_20_10_noomp/";
     std::string durationDirectoryPath = rootDirectoryPath + "average_durations/";
     std::string aspectDirectoryPath = rootDirectoryPath + "average_aspect_ratios/";
 
@@ -682,7 +682,11 @@ void detectAll() {
     int baseScale = 100;
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
     std::vector<int> steps = {20, 10};
-    std::vector<int> binSizes = {5, 10, 10};
+    // std::vector<int> steps = {10, 5};
+    // std::vector<int> steps = {5, 1};
+    std::vector<int> binSizes = {10, 20, 20};
+    // std::vector<int> binSizes = {5, 10, 10};
+    // std::vector<int> binSizes = {2, 5, 5};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
     double votingSpaceDiscretizeRatio = 1.0;
@@ -921,8 +925,8 @@ int main() {
     // extractPositiveFeatures();
     // extractNegativeFeatures();
     // train();
-    // detect();
-    detectAll();
+    detect();
+    // detectAll();
     // detectAllSTIP();
     // train1data();
     // classify();
