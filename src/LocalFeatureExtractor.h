@@ -51,8 +51,8 @@ class LocalFeatureExtractor {
                           int yBlockSize, int tBlockSize, int xStep, int yStep, int tStep)
             : videoCapture_(videoFilePath),
               scaleVideos_(scales.size()),
-			  scaleChannelFeatures_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
-			  scaleChannelIntegrals_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
+              scaleChannelFeatures_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
+              scaleChannelIntegrals_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
               scales_(scales),
               localWidth_(localWidth),
               localHeight_(localHeight),
@@ -78,8 +78,8 @@ class LocalFeatureExtractor {
             : videoCapture_(videoCapture),
               scaleVideos_(scales.size()),
               scaleChannelFeatures_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
-			  scaleChannelIntegrals_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
-			  scales_(scales),
+              scaleChannelIntegrals_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
+              scales_(scales),
               localWidth_(localWidth),
               localHeight_(localHeight),
               localDuration_(localDuration),
@@ -147,7 +147,7 @@ class LocalFeatureExtractor {
 
     void getDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width, int height,
                        Descriptor& descriptor) const;
-    void pooling(int scaleIndex, int blockIndex, int nPooledElements, int nLocalElements,
+    void pooling(int scaleIndex, int blockIndex, int nPooledElements, int nBlockElements,
                  int xBegin, int xEnd, int yBegin, int yEnd, int tBegin, int tEnd,
                  Descriptor& pooledDescriptor) const;
 };

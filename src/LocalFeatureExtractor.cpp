@@ -291,27 +291,27 @@ void LocalFeatureExtractor::extractFlowFeature(const cv::Mat1b& prev, const cv::
 }
 
 void LocalFeatureExtractor::denseSampling(int scaleIndex, std::vector<cv::Vec3i>& points,
-										  std::vector<Descriptor>& descriptors) const {
-	int width = width_ * scales_[scaleIndex];
-	int xEnd = width - localWidth_;
-	int height = height_ * scales_[scaleIndex];
-	int yEnd = height - localHeight_;
+                                          std::vector<Descriptor>& descriptors) const {
+    int width = width_ * scales_[scaleIndex];
+    int xEnd = width - localWidth_;
+    int height = height_ * scales_[scaleIndex];
+    int yEnd = height - localHeight_;
 
-	for (int y = 0; y <= yEnd; y += yStep_) {
-		for (int x = 0; x <= xEnd; x += xStep_) {
-			points.emplace_back(storedFeatureBeginT_ + (localDuration_ / 2), y + (localHeight_ / 2),
-								x + (localWidth_ / 2));
+    for (int y = 0; y <= yEnd; y += yStep_) {
+        for (int x = 0; x <= xEnd; x += xStep_) {
+            points.emplace_back(storedFeatureBeginT_ + (localDuration_ / 2), y + (localHeight_ / 2),
+                                x + (localWidth_ / 2));
 
-			Descriptor neighborhoodFeatures;
-			getDescriptor(scaleIndex, cv::Vec3i(0, y, x), width, height, neighborhoodFeatures);
-			descriptors.push_back(neighborhoodFeatures);
-		}
-	}
+            Descriptor neighborhoodFeatures;
+            getDescriptor(scaleIndex, cv::Vec3i(0, y, x), width, height, neighborhoodFeatures);
+            descriptors.push_back(neighborhoodFeatures);
+        }
+    }
 }
 
 void LocalFeatureExtractor::getDescriptor(int scaleIndex, const cv::Vec3i& topLeftPoint, int width,
                                           int height, Descriptor& descriptor) const {
-    int nLocalElements = localWidth_ * localHeight_ * localDuration_;
+    int nBlockElements = xBlockSize_ * yBlockSize_ * tBlockSize_;
     int nXBlocks = localWidth_ / xBlockSize_;
     int nYBlocks = localHeight_ / yBlockSize_;
     int nTBlocks = localDuration_ / tBlockSize_;
@@ -328,7 +328,7 @@ void LocalFeatureExtractor::getDescriptor(int scaleIndex, const cv::Vec3i& topLe
                 int xBegin = topLeftPoint(X) + xBlockSize_ * xBlockIndex;
                 int xEnd = xBegin + xBlockSize_;
 
-                pooling(scaleIndex, blockIndex, nPooledElements, nLocalElements, xBegin, xEnd,
+                pooling(scaleIndex, blockIndex, nPooledElements, nBlockElements, xBegin, xEnd,
                         yBegin, yEnd, tBegin, tEnd, descriptor);
                 blockIndex++;
             }
@@ -337,15 +337,16 @@ void LocalFeatureExtractor::getDescriptor(int scaleIndex, const cv::Vec3i& topLe
 }
 
 void LocalFeatureExtractor::pooling(int scaleIndex, int blockIndex, int nPooledElements,
-                                    int nLocalElements, int xBegin, int xEnd, int yBegin, int yEnd,
+                                    int nBlockElements, int xBegin, int xEnd, int yBegin, int yEnd,
                                     int tBegin, int tEnd, Descriptor& pooledDescriptor) const {
     for (int channelIndex = 0; channelIndex < N_CHANNELS_; ++channelIndex) {
+        double sumPooling = 0.0;
         for (int t = tBegin; t < tEnd; ++t) {
             cv::Mat1f integralMat = scaleChannelIntegrals_[scaleIndex][channelIndex][t];
-            double sum = integralMat(yEnd, xEnd) - integralMat(yBegin, xEnd) -
-                         integralMat(yEnd, xBegin) + integralMat(yBegin, xBegin);
-            pooledDescriptor[channelIndex * nPooledElements + blockIndex] = sum / nLocalElements;
+            sumPooling += integralMat(yEnd, xEnd) - integralMat(yBegin, xEnd) -
+                          integralMat(yEnd, xBegin) + integralMat(yBegin, xBegin);
         }
+        pooledDescriptor[channelIndex * nPooledElements + blockIndex] = sumPooling / nBlockElements;
     }
 }
 
