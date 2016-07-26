@@ -120,6 +120,7 @@ class HoughForests {
     std::vector<float> getVotingSpace(int classLabel) const;
     void videoHandler(
             cv::VideoCapture& capture, std::deque<cv::Mat3b>& video, int fps,
+            bool isVisualizationEnabled,
             const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
             bool& isEnded);
     void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,

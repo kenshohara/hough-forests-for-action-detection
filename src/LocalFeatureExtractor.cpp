@@ -64,8 +64,9 @@ void LocalFeatureExtractor::readOriginalScaleVideo() {
 
 void LocalFeatureExtractor::inputNewScaleVideo(const ColorVideo& video) {
     for (const auto& frame : video) {
-        cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
-        scaleVideos_.front().push_back(frame);
+        cv::Mat grayFrame;
+        cv::cvtColor(frame, grayFrame, cv::COLOR_BGR2GRAY);
+        scaleVideos_.front().push_back(grayFrame);
     }
 }
 

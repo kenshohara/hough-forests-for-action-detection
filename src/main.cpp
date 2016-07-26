@@ -506,7 +506,7 @@ void detectAll(const std::string& forestsDirectoryPath, const std::string& outpu
             cv::VideoCapture capture(videoFilePath);
 
             std::vector<std::vector<DetectionResult<4>>> detectionResults;
-            houghForests.detect(extractor, capture, 1, false, detectionResults);
+            houghForests.detect(extractor, capture, 30, false, detectionResults);
 
             std::cout << "output" << std::endl;
             for (auto classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
@@ -537,13 +537,14 @@ void detectAll(const std::string& forestsDirectoryPath, const std::string& outpu
 }
 
 int main() {
-    // std::string rootDirectoryPath = "D:/UT-Interaction/";
+    //std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string segmentedVideoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale_100/";
     std::string videoDirectoryPath = rootDirectoryPath + "unsegmented_half/";
     std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half2/";
-    std::string forestsDirectoryPath =
-            rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/";
+    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/";
+    // std::string forestsDirectoryPath =
+    //        rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/";
     std::string votingDirectoryPath = rootDirectoryPath + "data_hf/voting_feature3/";
     std::string durationDirectoryPath = rootDirectoryPath + "average_durations/";
     std::string aspectDirectoryPath = rootDirectoryPath + "average_aspect_ratios/";

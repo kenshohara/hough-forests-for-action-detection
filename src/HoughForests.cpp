@@ -137,33 +137,38 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
     bool isEnded = false;
     bool isFirstRead = true;
 
-    std::thread videoHandlerThread;
-    if (isVisualizationEnabled) {
-        videoHandlerThread = std::thread(
-                [this, &capture, &video, fps, &visualizationDetectionCuboids, &isEnded]() {
-                    videoHandler(capture, video, fps, visualizationDetectionCuboids, isEnded);
-                });
-    }
+    std::thread videoHandlerThread =
+            std::thread([this, &capture, &video, fps, isVisualizationEnabled,
+                         &visualizationDetectionCuboids, &isEnded]() {
+                videoHandler(capture, video, fps, isVisualizationEnabled,
+                             visualizationDetectionCuboids, isEnded);
+            });
     while (!isEnded) {
         auto begin = std::chrono::system_clock::now();
         // std::cout << "read" << std::endl;
-        std::vector<std::vector<cv::Vec3i>> scalePoints;
-        std::vector<std::vector<std::vector<float>>> scaleDescriptors;
+        int nFrames = isFirstRead ? extractor.getLocalDuration() : extractor.getTStep();
+        while (true) {
+            std::lock_guard<std::mutex> lock(videoLock_);
+            if (video.size() >= nFrames) {
+                break;
+            }
+        }
+        std::vector<cv::Mat3b> inputVideo;
         {
             std::lock_guard<std::mutex> lock(videoLock_);
 
-            std::vector<cv::Mat3b> inputVideo;
             int nFrames = extractor.getTStep();
             if (isFirstRead) {
-                nFrames = extractor.getLocalDuration();
                 inputVideo.push_back(video.front().clone());
             }
             for (int i = 0; i < nFrames; ++i) {
                 inputVideo.push_back(video.front().clone());
                 video.pop_front();
             }
-            extractor.extractLocalFeatures(inputVideo, scalePoints, scaleDescriptors);
         }
+        std::vector<std::vector<cv::Vec3i>> scalePoints;
+        std::vector<std::vector<std::vector<float>>> scaleDescriptors;
+        extractor.extractLocalFeatures(inputVideo, scalePoints, scaleDescriptors);
         auto featEnd = std::chrono::system_clock::now();
         std::cout << "extract features: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(featEnd - begin).count()
@@ -223,9 +228,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
                   << std::endl
                   << std::endl;
     }
-    if (isVisualizationEnabled) {
-        videoHandlerThread.join();
-    }
+    videoHandlerThread.join();
 
     std::cout << "output process" << std::endl;
     detectionResults.resize(detectionCuboids.size());
@@ -506,12 +509,15 @@ void HoughForests::deleteOldVotes(int classLabel, std::size_t voteMaxT) {
 
 void HoughForests::videoHandler(
         cv::VideoCapture& capture, std::deque<cv::Mat3b>& video, int fps,
+        bool isVisualizationEnabled,
         const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
         bool& isEnded) {
     using namespace std::chrono;
     double millisecPerFrame = 1.0 / fps * 1000;
     std::size_t t = 0;
     while (!isEnded) {
+		std::cout << "t: " << t << std::endl;
+
         auto begin = system_clock::now();
 
         cv::Mat frame;
@@ -527,25 +533,27 @@ void HoughForests::videoHandler(
             video.push_back(frame.clone());
         }
 
-        for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
-            std::lock_guard<std::mutex> lock(detectionLock_);
+        if (isVisualizationEnabled) {
+            for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
+                std::lock_guard<std::mutex> lock(detectionLock_);
 
-            int duration = parameters_.getAverageDuration(classLabel);
-            for (int t2 = t - duration; t2 < t + duration; ++t2) {
-                if (detectionCuboids.at(classLabel).count(t2) == 0) {
-                    continue;
-                }
+                int duration = parameters_.getAverageDuration(classLabel);
+                for (int t2 = t - duration; t2 < t + duration; ++t2) {
+                    if (detectionCuboids.at(classLabel).count(t2) == 0) {
+                        continue;
+                    }
 
-                for (const auto& cuboid : detectionCuboids.at(classLabel).at(t2)) {
-                    cv::rectangle(frame, cuboid.getRect(), cv::Scalar(0, 0, 255), 3);
-                    cv::putText(frame, std::to_string(classLabel), cuboid.getRect().tl(),
-                                cv::FONT_HERSHEY_PLAIN, 2.5, cv::Scalar(0, 0, 255));
+                    for (const auto& cuboid : detectionCuboids.at(classLabel).at(t2)) {
+                        cv::rectangle(frame, cuboid.getRect(), cv::Scalar(0, 0, 255), 3);
+                        cv::putText(frame, std::to_string(classLabel), cuboid.getRect().tl(),
+                                    cv::FONT_HERSHEY_PLAIN, 2.5, cv::Scalar(0, 0, 255));
+                    }
                 }
             }
-        }
 
-        cv::imshow("Action Detection", frame);
-        cv::waitKey(1);
+            cv::imshow("Action Detection", frame);
+            cv::waitKey(1);
+        }
 
         auto afterWaitKey = system_clock::now();
 
