@@ -394,8 +394,9 @@ void detect(const std::string& forestsDirectoryPath, const std::string& outputDi
     using namespace nuisken::randomforests;
     using namespace nuisken::storage;
 
-    LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight, localDuration,
-                                    xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep);
+    LocalFeatureExtractor extractor(scales, localWidth, localHeight, localDuration, xBlockSize,
+                                    yBlockSize, tBlockSize, xStep, yStep, tStep);
+    cv::VideoCapture capture(videoFilePath);
 
     int nClasses = 7;
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
@@ -416,8 +417,9 @@ void detect(const std::string& forestsDirectoryPath, const std::string& outputDi
     houghForests.setHoughForestsParameters(parameters);
     houghForests.load(forestsDirectoryPath);
 
+    int fps = 30;
     std::vector<std::vector<DetectionResult<4>>> detectionResults;
-    houghForests.detect(extractor, detectionResults);
+    houghForests.detect(extractor, capture, fps, true, detectionResults);
 }
 
 std::vector<std::size_t> readDurations(const std::string& filePath) {
@@ -498,12 +500,13 @@ void detectAll(const std::string& forestsDirectoryPath, const std::string& outpu
         for (int sequenceIndex : validationCombinations.at(validationIndex)) {
             std::string videoFilePath =
                     (boost::format("%sseq%d.avi") % videoDirectoryPath % sequenceIndex).str();
-            LocalFeatureExtractor extractor(videoFilePath, scales, localWidth, localHeight,
-                                            localDuration, xBlockSize, yBlockSize, tBlockSize,
-                                            xStep, yStep, tStep);
+            LocalFeatureExtractor extractor(scales, localWidth, localHeight, localDuration,
+                                            xBlockSize, yBlockSize, tBlockSize, xStep, yStep,
+                                            tStep);
+            cv::VideoCapture capture(videoFilePath);
 
             std::vector<std::vector<DetectionResult<4>>> detectionResults;
-            houghForests.detect(extractor, detectionResults);
+            houghForests.detect(extractor, capture, 1, false, detectionResults);
 
             std::cout << "output" << std::endl;
             for (auto classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
@@ -534,7 +537,7 @@ void detectAll(const std::string& forestsDirectoryPath, const std::string& outpu
 }
 
 int main() {
-    //std::string rootDirectoryPath = "D:/UT-Interaction/";
+    // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string segmentedVideoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale_100/";
     std::string videoDirectoryPath = rootDirectoryPath + "unsegmented_half/";
@@ -578,17 +581,17 @@ int main() {
     std::vector<double> scoreThresholds(6, 0.01);
     double iouThreshold = 0.1;
 
-    //extractPositiveFeatures(segmentedVideoDirectoryPath, featureDirectoryPath, localWidth,
+    // extractPositiveFeatures(segmentedVideoDirectoryPath, featureDirectoryPath, localWidth,
     //                        localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
     //                        yStep, tStep, nPositiveSamplesPerStep);
     int beginIndex = 1;
     int endIndex = 20;
-    //extractNegativeFeatures(videoDirectoryPath, labelFilePath, featureDirectoryPath, localWidth,
+    // extractNegativeFeatures(videoDirectoryPath, labelFilePath, featureDirectoryPath, localWidth,
     //                        localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
     //                        yStep, tStep, scales, nNegativeSamplesPerStep, beginIndex, endIndex);
     int beginValidationIndex = 0;
     int endValidationIndex = 10;
-    //train(featureDirectoryPath, labelFilePath, forestsDirectoryPath, baseScale, nTrees,
+    // train(featureDirectoryPath, labelFilePath, forestsDirectoryPath, baseScale, nTrees,
     //      bootstrapRatio, maxDepth, minData, nSplits, nThresholds, beginValidationIndex,
     //      endValidationIndex);
     detectAll(forestsDirectoryPath, votingDirectoryPath, videoDirectoryPath, durationDirectoryPath,

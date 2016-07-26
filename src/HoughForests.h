@@ -14,6 +14,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <array>
+#include <deque>
 #include <map>
 #include <memory>
 #include <tuple>
@@ -45,7 +46,8 @@ class HoughForests {
 
     int nThreads_;
 
-    std::mutex m_;
+    std::mutex videoLock_;
+    std::mutex detectionLock_;
 
    private:
     randomforests::STIPNode stipNode_;
@@ -62,7 +64,8 @@ class HoughForests {
 
     void HoughForests::train(const std::vector<FeaturePtr>& features);
 
-    void detect(LocalFeatureExtractor& extractor,
+    void detect(LocalFeatureExtractor& extractor, cv::VideoCapture& capture, int fps,
+                bool isVisualizationEnabled,
                 std::vector<std::vector<DetectionResult>>& detectionResults);
     void detect(const std::vector<std::string>& featureFilePaths,
                 std::vector<std::vector<DetectionResult>>& detectionResults);
@@ -115,10 +118,10 @@ class HoughForests {
     std::vector<Cuboid> performNonMaximumSuppression(const std::vector<Cuboid>& cuboids) const;
     void deleteOldVotes(int classLabel, std::size_t voteMaxT);
     std::vector<float> getVotingSpace(int classLabel) const;
-    void visualizeParallel(
-            std::vector<cv::Mat3b>& video, int fps, const std::size_t& videoBeginT,
+    void videoHandler(
+            cv::VideoCapture& capture, std::deque<cv::Mat3b>& video, int fps,
             const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
-            const bool& isEnded);
+            bool& isEnded);
     void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,
                    const std::vector<std::vector<Cuboid>>& detectionCuboids) const;
     void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,

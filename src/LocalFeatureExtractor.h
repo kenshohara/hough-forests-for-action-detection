@@ -22,7 +22,6 @@ class LocalFeatureExtractor {
     using ColorVideo = std::vector<cv::Mat3b>;
 
     cv::VideoCapture videoCapture_;
-    Video colorVideo_;
     std::vector<Video> scaleVideos_;
     std::vector<MultiChannelFeature> scaleChannelFeatures_;
     std::vector<MultiChannelFeature> scaleChannelIntegrals_;
@@ -38,7 +37,6 @@ class LocalFeatureExtractor {
     int tStep_;
     int width_;
     int height_;
-    std::size_t storedColorVideoBeginT_;
     std::size_t storedFeatureBeginT_;
     int nStoredFeatureFrames_;
     bool isEnded_;
@@ -46,7 +44,7 @@ class LocalFeatureExtractor {
    public:
     LocalFeatureExtractor(){};
 
-    LocalFeatureExtractor(const std::string& videoFilePath, std::vector<double> scales,
+    LocalFeatureExtractor(const std::string& videoFilePath, const std::vector<double>& scales,
                           int localWidth, int localHeight, int localDuration, int xBlockSize,
                           int yBlockSize, int tBlockSize, int xStep, int yStep, int tStep)
             : videoCapture_(videoFilePath),
@@ -63,7 +61,6 @@ class LocalFeatureExtractor {
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
-              storedColorVideoBeginT_(0),
               storedFeatureBeginT_(0),
               nStoredFeatureFrames_(0),
               isEnded_(false) {
@@ -72,11 +69,10 @@ class LocalFeatureExtractor {
         makeLocalSizeOdd(localDuration_);
     }
 
-    LocalFeatureExtractor(const cv::VideoCapture& videoCapture, std::vector<double> scales,
-                          int localWidth, int localHeight, int localDuration, int xBlockSize,
-                          int yBlockSize, int tBlockSize, int xStep, int yStep, int tStep)
-            : videoCapture_(videoCapture),
-              scaleVideos_(scales.size()),
+    LocalFeatureExtractor(const std::vector<double>& scales, int localWidth, int localHeight,
+                          int localDuration, int xBlockSize, int yBlockSize, int tBlockSize,
+                          int xStep, int yStep, int tStep)
+            : scaleVideos_(scales.size()),
               scaleChannelFeatures_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
               scaleChannelIntegrals_(scales.size(), MultiChannelFeature(N_CHANNELS_)),
               scales_(scales),
@@ -89,7 +85,6 @@ class LocalFeatureExtractor {
               xStep_(xStep),
               yStep_(yStep),
               tStep_(tStep),
-              storedColorVideoBeginT_(0),
               storedFeatureBeginT_(0),
               nStoredFeatureFrames_(0),
               isEnded_(false) {
@@ -100,14 +95,14 @@ class LocalFeatureExtractor {
 
     void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
                               std::vector<std::vector<Descriptor>>& scaleDescriptors);
-    void extractLocalFeatures(std::vector<std::vector<cv::Vec3i>>& scalePoints,
-                              std::vector<std::vector<Descriptor>>& scaleDescriptors,
-                              ColorVideo& usedVideo, std::size_t& usedVideoBeginT);
+    void extractLocalFeatures(const ColorVideo& video,
+                              std::vector<std::vector<cv::Vec3i>>& scalePoints,
+                              std::vector<std::vector<Descriptor>>& scaleDescriptors);
 
-    int getFPS() const { return videoCapture_.get(cv::CAP_PROP_FPS); }
     bool isEnded() const { return isEnded_; }
-    std::size_t getStoredColorVideoBeginT() const { return storedColorVideoBeginT_; }
     std::size_t getStoredFeatureBeginT() const { return storedFeatureBeginT_; }
+    std::size_t getTStep() const { return tStep_; }
+    std::size_t getLocalDuration() const { return localDuration_; }
 
     void visualizeDenseFeature(const std::vector<cv::Vec3i>& points,
                                const std::vector<Descriptor>& features, int width, int height,
@@ -120,6 +115,9 @@ class LocalFeatureExtractor {
    private:
     void makeLocalSizeOdd(int& size) const;
     void readOriginalScaleVideo();
+    void inputNewScaleVideo(const ColorVideo& video);
+    void extraction(std::vector<std::vector<cv::Vec3i>>& scalePoints,
+                    std::vector<std::vector<Descriptor>>& scaleDescriptors);
     void generateScaledVideos();
     void denseSampling(int scaleIndex, std::vector<cv::Vec3i>& points,
                        std::vector<Descriptor>& descriptors) const;

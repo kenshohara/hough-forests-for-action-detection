@@ -23,15 +23,54 @@ void LocalFeatureExtractor::makeLocalSizeOdd(int& size) const {
 void LocalFeatureExtractor::extractLocalFeatures(
         std::vector<std::vector<cv::Vec3i>>& scalePoints,
         std::vector<std::vector<Descriptor>>& scaleDescriptors) {
-    std::size_t t;
-    extractLocalFeatures(scalePoints, scaleDescriptors, ColorVideo{}, t);
+    readOriginalScaleVideo();
+    extraction(scalePoints, scaleDescriptors);
 }
 
 void LocalFeatureExtractor::extractLocalFeatures(
-        std::vector<std::vector<cv::Vec3i>>& scalePoints,
-        std::vector<std::vector<Descriptor>>& scaleDescriptors, ColorVideo& usedVideo,
-        std::size_t& usedVideoBeginT) {
-    readOriginalScaleVideo();
+        const ColorVideo& video, std::vector<std::vector<cv::Vec3i>>& scalePoints,
+        std::vector<std::vector<Descriptor>>& scaleDescriptors) {
+    inputNewScaleVideo(video);
+    extraction(scalePoints, scaleDescriptors);
+}
+
+void LocalFeatureExtractor::readOriginalScaleVideo() {
+    int nFrames = tStep_;
+    if (scaleVideos_.front().empty()) {
+        cv::Mat firstFrame;
+        videoCapture_ >> firstFrame;
+        cv::cvtColor(firstFrame, firstFrame, cv::COLOR_BGR2GRAY);
+        scaleVideos_.front().push_back(
+                firstFrame);  // add dummy frame for t_derivative and optical flow
+        scaleVideos_.front().push_back(firstFrame);
+
+        nFrames = localDuration_ - 1;
+
+        width_ = firstFrame.cols;
+        height_ = firstFrame.rows;
+    }
+
+    for (int i = 0; i < nFrames; ++i) {
+        cv::Mat frame;
+        videoCapture_ >> frame;
+        if (frame.empty()) {
+            isEnded_ = true;
+            break;
+        }
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
+        scaleVideos_.front().push_back(frame);
+    }
+}
+
+void LocalFeatureExtractor::inputNewScaleVideo(const ColorVideo& video) {
+    for (const auto& frame : video) {
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
+        scaleVideos_.front().push_back(frame);
+    }
+}
+
+void LocalFeatureExtractor::extraction(std::vector<std::vector<cv::Vec3i>>& scalePoints,
+                                       std::vector<std::vector<Descriptor>>& scaleDescriptors) {
     generateScaledVideos();
     for (int scaleIndex = 0; scaleIndex < scales_.size(); ++scaleIndex) {
         int beginFrame = 1;
@@ -52,42 +91,7 @@ void LocalFeatureExtractor::extractLocalFeatures(
         scaleDescriptors.push_back(descriptors);
     }
 
-    for (const auto& frame : colorVideo_) {
-        usedVideo.push_back(frame.clone());
-    }
-    usedVideoBeginT = storedColorVideoBeginT_;
-
     deleteOldData();
-}
-
-void LocalFeatureExtractor::readOriginalScaleVideo() {
-    int nFrames = tStep_;
-    if (scaleVideos_.front().empty()) {
-        cv::Mat firstFrame;
-        videoCapture_ >> firstFrame;
-        colorVideo_.push_back(firstFrame.clone());
-        cv::cvtColor(firstFrame, firstFrame, cv::COLOR_BGR2GRAY);
-        scaleVideos_.front().push_back(
-                firstFrame);  // add dummy frame for t_derivative and optical flow
-        scaleVideos_.front().push_back(firstFrame);
-
-        nFrames = localDuration_ - 1;
-
-        width_ = firstFrame.cols;
-        height_ = firstFrame.rows;
-    }
-
-    for (int i = 0; i < nFrames; ++i) {
-        cv::Mat frame;
-        videoCapture_ >> frame;
-        if (frame.empty()) {
-            isEnded_ = true;
-            break;
-        }
-        colorVideo_.push_back(frame.clone());
-        cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
-        scaleVideos_.front().push_back(frame);
-    }
 }
 
 void LocalFeatureExtractor::generateScaledVideos() {
@@ -125,15 +129,12 @@ void LocalFeatureExtractor::deleteOldData() {
         scaleVideos_ = std::vector<Video>(scales_.size());
         scaleChannelFeatures_ =
                 std::vector<MultiChannelFeature>(scales_.size(), MultiChannelFeature(N_CHANNELS_));
-        storedColorVideoBeginT_ += tStep_;
         storedFeatureBeginT_ += tStep_;
         nStoredFeatureFrames_ = 0;
 
         return;
     }
 
-    storedColorVideoBeginT_ += colorVideo_.size();
-    colorVideo_.clear();
     for (auto& video : scaleVideos_) {
         video = {video.back()};
     }

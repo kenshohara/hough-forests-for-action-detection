@@ -122,44 +122,52 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
     }
 }
 
-void HoughForests::detect(LocalFeatureExtractor& extractor,
+void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& capture, int fps,
+                          bool isVisualizationEnabled,
                           std::vector<std::vector<DetectionResult>>& detectionResults) {
     std::cout << "initialize" << std::endl;
     initialize();
 
-    std::vector<cv::Mat3b> video;
-    // int fps = extractor.getFPS();
-    int fps = 20;
-    std::size_t videoBeginT = 0;
+    std::deque<cv::Mat3b> video;
     std::vector<std::vector<Cuboid>> fixedDetectionCuboids(
             parameters_.getNumberOfPositiveClasses());
     std::vector<std::vector<Cuboid>> detectionCuboids(parameters_.getNumberOfPositiveClasses());
     std::vector<std::unordered_map<int, std::vector<Cuboid>>> visualizationDetectionCuboids(
             parameters_.getNumberOfPositiveClasses());
     bool isEnded = false;
+    bool isFirstRead = true;
 
-    // std::thread visualizationThread(
-    //       [this, &video, fps, &videoBeginT, &visualizationDetectionCuboids, &isEnded]() {
-    //           visualizeParallel(video, fps, videoBeginT, visualizationDetectionCuboids,
-    //           isEnded);
-    //       });
-    while (true) {
+    std::thread videoHandlerThread;
+    if (isVisualizationEnabled) {
+        videoHandlerThread = std::thread(
+                [this, &capture, &video, fps, &visualizationDetectionCuboids, &isEnded]() {
+                    videoHandler(capture, video, fps, visualizationDetectionCuboids, isEnded);
+                });
+    }
+    while (!isEnded) {
         auto begin = std::chrono::system_clock::now();
         // std::cout << "read" << std::endl;
         std::vector<std::vector<cv::Vec3i>> scalePoints;
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
         {
-            std::lock_guard<std::mutex> lock(m_);
-            extractor.extractLocalFeatures(scalePoints, scaleDescriptors, video, videoBeginT);
+            std::lock_guard<std::mutex> lock(videoLock_);
+
+            std::vector<cv::Mat3b> inputVideo;
+            int nFrames = extractor.getTStep();
+            if (isFirstRead) {
+                nFrames = extractor.getLocalDuration();
+                inputVideo.push_back(video.front().clone());
+            }
+            for (int i = 0; i < nFrames; ++i) {
+                inputVideo.push_back(video.front().clone());
+                video.pop_front();
+            }
+            extractor.extractLocalFeatures(inputVideo, scalePoints, scaleDescriptors);
         }
         auto featEnd = std::chrono::system_clock::now();
         std::cout << "extract features: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(featEnd - begin).count()
                   << std::endl;
-        if (extractor.isEnded()) {
-            isEnded = true;
-            break;
-        }
 
         // std::cout << "convert type" << std::endl;
         std::vector<std::vector<FeaturePtr>> scaleFeatures;
@@ -188,7 +196,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         updateDetectionCuboids(minMaxRanges, detectionCuboids);
         for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
             {
-                std::lock_guard<std::mutex> lock(m_);
+                std::lock_guard<std::mutex> lock(detectionLock_);
                 visualizationDetectionCuboids.at(classLabel).clear();
                 for (const auto& cuboid : detectionCuboids.at(classLabel)) {
                     int beginT = cuboid.getBeginT();
@@ -205,7 +213,8 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
         for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
             deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
             fixOldDetectionCuboids(detectionCuboids.at(classLabel),
-                                   fixedDetectionCuboids.at(classLabel), videoBeginT);
+                                   fixedDetectionCuboids.at(classLabel),
+                                   extractor.getStoredFeatureBeginT());
         }
 
         auto end = std::chrono::system_clock::now();
@@ -214,7 +223,9 @@ void HoughForests::detect(LocalFeatureExtractor& extractor,
                   << std::endl
                   << std::endl;
     }
-    // visualizationThread.join();
+    if (isVisualizationEnabled) {
+        videoHandlerThread.join();
+    }
 
     std::cout << "output process" << std::endl;
     detectionResults.resize(detectionCuboids.size());
@@ -493,55 +504,56 @@ void HoughForests::deleteOldVotes(int classLabel, std::size_t voteMaxT) {
     votingSpaces_.at(classLabel).deleteOldVotes();
 }
 
-void HoughForests::visualizeParallel(
-        std::vector<cv::Mat3b>& video, int fps, const std::size_t& videoBeginT,
+void HoughForests::videoHandler(
+        cv::VideoCapture& capture, std::deque<cv::Mat3b>& video, int fps,
         const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
-        const bool& isEnded) {
+        bool& isEnded) {
     using namespace std::chrono;
     double millisecPerFrame = 1.0 / fps * 1000;
-    double opencvWaitKeyTime = 15;
+    std::size_t t = 0;
     while (!isEnded) {
-        if (!video.empty()) {
-            // auto start = system_clock::now();
-            std::vector<cv::Mat3b> visVideo;
-            visVideo.reserve(video.size());
-            {
-                std::lock_guard<std::mutex> lock(m_);
-                for (int t = 0; t < video.size(); ++t) {
-                    cv::Mat3b visFrame = video.at(t).clone();
-                    int visT = t + videoBeginT;
-                    for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
-                        int duration = parameters_.getAverageDuration(classLabel);
-                        for (int t2 = visT - duration; t2 < visT; ++t2) {
-                            if (detectionCuboids.at(classLabel).count(t2) == 0) {
-                                continue;
-                            }
+        auto begin = system_clock::now();
 
-                            for (const auto& cuboid : detectionCuboids.at(classLabel).at(t2)) {
-                                cv::rectangle(visFrame, cuboid.getRect(), cv::Scalar(0, 0, 255), 3);
-                                cv::putText(visFrame, std::to_string(classLabel),
-                                            cuboid.getRect().tl(), cv::FONT_HERSHEY_PLAIN, 2.5,
-                                            cv::Scalar(0, 0, 255));
-                            }
-                        }
-                    }
-                    visVideo.push_back(visFrame);
+        cv::Mat frame;
+        capture >> frame;
+
+        if (frame.empty()) {
+            isEnded = true;
+            break;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(videoLock_);
+            video.push_back(frame.clone());
+        }
+
+        for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
+            std::lock_guard<std::mutex> lock(detectionLock_);
+
+            int duration = parameters_.getAverageDuration(classLabel);
+            for (int t2 = t - duration; t2 < t + duration; ++t2) {
+                if (detectionCuboids.at(classLabel).count(t2) == 0) {
+                    continue;
                 }
-                video.clear();
-            }
-            // auto end = system_clock::now();
-            // std::cout << "calc vis: " <<
-            // std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() <<
-            // std::endl;
 
-            for (const auto& frame : visVideo) {
-                double sleepTime = std::max(0.0, millisecPerFrame - opencvWaitKeyTime);
-                std::this_thread::sleep_for(milliseconds(static_cast<long>(sleepTime)));
-
-                cv::imshow("result", frame);
-                cv::waitKey(1);
+                for (const auto& cuboid : detectionCuboids.at(classLabel).at(t2)) {
+                    cv::rectangle(frame, cuboid.getRect(), cv::Scalar(0, 0, 255), 3);
+                    cv::putText(frame, std::to_string(classLabel), cuboid.getRect().tl(),
+                                cv::FONT_HERSHEY_PLAIN, 2.5, cv::Scalar(0, 0, 255));
+                }
             }
         }
+
+        cv::imshow("Action Detection", frame);
+        cv::waitKey(1);
+
+        auto afterWaitKey = system_clock::now();
+
+        auto readTime = duration_cast<milliseconds>(afterWaitKey - begin).count();
+        double sleepTime = std::max(0.0, millisecPerFrame - readTime);
+        std::this_thread::sleep_for(milliseconds(static_cast<long>(sleepTime)));
+
+        ++t;
     }
 }
 
