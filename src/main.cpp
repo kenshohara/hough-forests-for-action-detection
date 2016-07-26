@@ -538,10 +538,10 @@ int main() {
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string segmentedVideoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale_100/";
     std::string videoDirectoryPath = rootDirectoryPath + "unsegmented_half/";
-    std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half2_integral/";
+    std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half2/";
     std::string forestsDirectoryPath =
             rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/";
-    std::string votingDirectoryPath = rootDirectoryPath + "data_hf/voting_feature2_integral/";
+    std::string votingDirectoryPath = rootDirectoryPath + "data_hf/voting_feature3/";
     std::string durationDirectoryPath = rootDirectoryPath + "average_durations/";
     std::string aspectDirectoryPath = rootDirectoryPath + "average_aspect_ratios/";
     std::string labelFilePath = rootDirectoryPath + "labels.csv";
@@ -575,22 +575,22 @@ int main() {
     std::vector<int> steps = {20, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
-    std::vector<double> scoreThresholds(6, 2.0);
+    std::vector<double> scoreThresholds(6, 0.01);
     double iouThreshold = 0.1;
 
-    extractPositiveFeatures(segmentedVideoDirectoryPath, featureDirectoryPath, localWidth,
-                            localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
-                            yStep, tStep, nPositiveSamplesPerStep);
+    //extractPositiveFeatures(segmentedVideoDirectoryPath, featureDirectoryPath, localWidth,
+    //                        localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
+    //                        yStep, tStep, nPositiveSamplesPerStep);
     int beginIndex = 1;
     int endIndex = 20;
-    extractNegativeFeatures(videoDirectoryPath, labelFilePath, featureDirectoryPath, localWidth,
-                            localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
-                            yStep, tStep, scales, nNegativeSamplesPerStep, beginIndex, endIndex);
+    //extractNegativeFeatures(videoDirectoryPath, labelFilePath, featureDirectoryPath, localWidth,
+    //                        localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
+    //                        yStep, tStep, scales, nNegativeSamplesPerStep, beginIndex, endIndex);
     int beginValidationIndex = 0;
     int endValidationIndex = 10;
-    train(featureDirectoryPath, labelFilePath, forestsDirectoryPath, baseScale, nTrees,
-          bootstrapRatio, maxDepth, minData, nSplits, nThresholds, beginValidationIndex,
-          endValidationIndex);
+    //train(featureDirectoryPath, labelFilePath, forestsDirectoryPath, baseScale, nTrees,
+    //      bootstrapRatio, maxDepth, minData, nSplits, nThresholds, beginValidationIndex,
+    //      endValidationIndex);
     detectAll(forestsDirectoryPath, votingDirectoryPath, videoDirectoryPath, durationDirectoryPath,
               aspectDirectoryPath, localWidth, localHeight, localDuration, xBlockSize, yBlockSize,
               tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height, baseScale, binSizes,
