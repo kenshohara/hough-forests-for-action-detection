@@ -144,7 +144,9 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
                              visualizationDetectionCuboids, isEnded);
             });
     while (true) {
-        auto begin = std::chrono::system_clock::now();
+        std::cout << "t feature: " << extractor.getStoredFeatureBeginT() << std::endl;
+
+        // auto begin = std::chrono::system_clock::now();
         // std::cout << "read" << std::endl;
         int nFrames = isFirstRead ? extractor.getLocalDuration() : extractor.getTStep();
         if (!waitReading(video, isEnded, nFrames)) {
@@ -165,15 +167,20 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
                 video.pop_front();
             }
         }
+        // auto readEnd = std::chrono::system_clock::now();
+        // std::cout << "read: "
+        //	<< std::chrono::duration_cast<std::chrono::milliseconds>(readEnd - begin).count()
+        //	<< std::endl;
+
         std::vector<std::vector<cv::Vec3i>> scalePoints;
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
         extractor.extractLocalFeatures(inputVideo, scalePoints, scaleDescriptors);
-        auto featEnd = std::chrono::system_clock::now();
-        std::cout << "extract features: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(featEnd - begin).count()
-                  << std::endl;
+        // auto featEnd = std::chrono::system_clock::now();
+        // std::cout << "extract features: "
+        //          << std::chrono::duration_cast<std::chrono::milliseconds>(featEnd -
+        //          readEnd).count()
+        //          << std::endl;
 
-        // std::cout << "convert type" << std::endl;
         std::vector<std::vector<FeaturePtr>> scaleFeatures;
         scaleFeatures.reserve(scalePoints.size());
         for (int scaleIndex = 0; scaleIndex < scalePoints.size(); ++scaleIndex) {
@@ -181,22 +188,17 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
                                                           scaleDescriptors.at(scaleIndex),
                                                           extractor.N_CHANNELS_));
         }
-        auto convertEnd = std::chrono::system_clock::now();
-        std::cout << "convert features: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(convertEnd - featEnd)
-                             .count()
-                  << std::endl;
 
-        auto voteBegin = std::chrono::system_clock::now();
+        // auto voteBegin = std::chrono::system_clock::now();
         std::vector<std::pair<std::size_t, std::size_t>> minMaxRanges;
         votingProcess(scaleFeatures, minMaxRanges);
-        auto voteEnd = std::chrono::system_clock::now();
-        std::cout << "voting process: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(voteEnd - voteBegin)
-                             .count()
-                  << std::endl;
+        // auto voteEnd = std::chrono::system_clock::now();
+        // std::cout << "voting process: "
+        //          << std::chrono::duration_cast<std::chrono::milliseconds>(voteEnd - voteBegin)
+        //                     .count()
+        //          << std::endl;
 
-        auto postStart = std::chrono::system_clock::now();
+        // auto postStart = std::chrono::system_clock::now();
         updateDetectionCuboids(minMaxRanges, detectionCuboids);
         for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
             {
@@ -208,11 +210,11 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
                 }
             }
         }
-        auto postEnd = std::chrono::system_clock::now();
-        std::cout << "post: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(postEnd - postStart)
-                             .count()
-                  << std::endl;
+        // auto postEnd = std::chrono::system_clock::now();
+        // std::cout << "post: "
+        //          << std::chrono::duration_cast<std::chrono::milliseconds>(postEnd - postStart)
+        //                     .count()
+        //          << std::endl;
 
         for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
             deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
@@ -221,11 +223,11 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
                                    extractor.getStoredFeatureBeginT());
         }
 
-        auto end = std::chrono::system_clock::now();
-        std::cout << "one cycle: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
-                  << std::endl
-                  << std::endl;
+        // auto end = std::chrono::system_clock::now();
+        // std::cout << "one cycle: "
+        //          << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
+        //          << std::endl
+        //          << std::endl;
     }
     videoHandlerThread.join();
 
@@ -525,14 +527,20 @@ void HoughForests::videoHandler(
         const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
         bool& isEnded) {
     using namespace std::chrono;
-    double millisecPerFrame = 1.0 / fps * 1000;
+    const int STEP = 20;
+
+    milliseconds perFrame(static_cast<long long>(1000.0 / fps));
     std::size_t t = 0;
+    milliseconds sec(0);
     while (!isEnded) {
-        if ((t % 20) == 0) {
-            std::cout << "t: " << t << std::endl;
+        if ((t % STEP) == 0) {
+            std::cout << "t: " << t
+                      << ", fps: " << 1000.0 / (static_cast<double>(sec.count()) / STEP)
+                      << std::endl;
+            sec = milliseconds(0);
         }
 
-        auto begin = system_clock::now();
+        auto begin = high_resolution_clock::now();
 
         cv::Mat frame;
         capture >> frame;
@@ -570,13 +578,14 @@ void HoughForests::videoHandler(
             cv::waitKey(1);
         }
 
-        auto afterWaitKey = system_clock::now();
+        auto afterWaitKey = high_resolution_clock::now();
 
-        auto readTime = duration_cast<milliseconds>(afterWaitKey - begin).count();
-        double sleepTime = std::max(0.0, millisecPerFrame - readTime);
-        std::this_thread::sleep_for(milliseconds(static_cast<long>(sleepTime)));
+        auto readTime = duration_cast<milliseconds>(afterWaitKey - begin);
+        std::this_thread::sleep_for(perFrame - readTime);
 
+        auto end = high_resolution_clock::now();
         ++t;
+        sec += duration_cast<milliseconds>(end - begin);
     }
 }
 
