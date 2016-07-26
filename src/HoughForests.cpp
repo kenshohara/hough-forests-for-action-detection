@@ -516,7 +516,9 @@ void HoughForests::videoHandler(
     double millisecPerFrame = 1.0 / fps * 1000;
     std::size_t t = 0;
     while (!isEnded) {
-		std::cout << "t: " << t << std::endl;
+		if ((t % 20) == 0) {
+			std::cout << "t: " << t << std::endl;
+		}
 
         auto begin = system_clock::now();
 
