@@ -143,23 +143,22 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
                 videoHandler(capture, video, fps, isVisualizationEnabled,
                              visualizationDetectionCuboids, isEnded);
             });
-    while (!isEnded) {
+    while (true) {
         auto begin = std::chrono::system_clock::now();
         // std::cout << "read" << std::endl;
         int nFrames = isFirstRead ? extractor.getLocalDuration() : extractor.getTStep();
-        while (true) {
-            std::lock_guard<std::mutex> lock(videoLock_);
-            if (video.size() >= nFrames) {
-                break;
-            }
+        if (!waitReading(video, isEnded, nFrames)) {
+            break;
         }
         std::vector<cv::Mat3b> inputVideo;
         {
             std::lock_guard<std::mutex> lock(videoLock_);
 
-            int nFrames = extractor.getTStep();
             if (isFirstRead) {
                 inputVideo.push_back(video.front().clone());
+                extractor.setWidth(inputVideo.front().cols);
+                extractor.setHeight(inputVideo.front().rows);
+                isFirstRead = false;
             }
             for (int i = 0; i < nFrames; ++i) {
                 inputVideo.push_back(video.front().clone());
@@ -252,6 +251,19 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
             detectionResults.at(classLabel)
                     .emplace_back(
                             LocalMaximum(localMaximumPoint, cuboid.getLocalMaximum().getValue()));
+        }
+    }
+}
+
+bool HoughForests::waitReading(const std::deque<cv::Mat3b>& video, const bool& isEnded,
+                               int nFrames) {
+    while (true) {
+        std::lock_guard<std::mutex> lock(videoLock_);
+        if (video.size() >= nFrames) {
+            return true;
+        }
+        if (isEnded) {
+            return false;
         }
     }
 }
@@ -516,9 +528,9 @@ void HoughForests::videoHandler(
     double millisecPerFrame = 1.0 / fps * 1000;
     std::size_t t = 0;
     while (!isEnded) {
-		if ((t % 20) == 0) {
-			std::cout << "t: " << t << std::endl;
-		}
+        if ((t % 20) == 0) {
+            std::cout << "t: " << t << std::endl;
+        }
 
         auto begin = system_clock::now();
 
@@ -526,6 +538,7 @@ void HoughForests::videoHandler(
         capture >> frame;
 
         if (frame.empty()) {
+            std::lock_guard<std::mutex> lock(videoLock_);
             isEnded = true;
             break;
         }

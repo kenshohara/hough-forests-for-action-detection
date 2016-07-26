@@ -118,6 +118,7 @@ class HoughForests {
     std::vector<Cuboid> performNonMaximumSuppression(const std::vector<Cuboid>& cuboids) const;
     void deleteOldVotes(int classLabel, std::size_t voteMaxT);
     std::vector<float> getVotingSpace(int classLabel) const;
+    bool waitReading(const std::deque<cv::Mat3b>& video, const bool& isEnded, int nFrames);
     void videoHandler(
             cv::VideoCapture& capture, std::deque<cv::Mat3b>& video, int fps,
             bool isVisualizationEnabled,

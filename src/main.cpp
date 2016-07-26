@@ -536,13 +536,54 @@ void detectAll(const std::string& forestsDirectoryPath, const std::string& outpu
     }
 }
 
+void detectWebCamera(const std::string& forestsDirectoryPath, int localWidth, int localHeight,
+                     int localDuration, int xBlockSize, int yBlockSize, int tBlockSize, int xStep,
+                     int yStep, int tStep, const std::vector<double>& scales, int nThreads,
+                     int width, int height, int baseScale, const std::vector<int>& binSizes,
+                     int votesDeleteStep, int votesBufferLength,
+                     const std::vector<double>& scoreThresholds, double iouThreshold) {
+    using namespace nuisken;
+    using namespace nuisken::houghforests;
+    using namespace nuisken::randomforests;
+    using namespace nuisken::storage;
+
+    LocalFeatureExtractor extractor(scales, localWidth, localHeight, localDuration, xBlockSize,
+                                    yBlockSize, tBlockSize, xStep, yStep, tStep);
+    cv::VideoCapture capture(1);
+    capture.set(cv::CAP_PROP_FRAME_WIDTH, width);
+    capture.set(cv::CAP_PROP_FRAME_HEIGHT, height);
+
+    int nClasses = 7;
+    std::vector<double> bandwidths = {10.0, 8.0, 0.5};
+    std::vector<int> steps = {binSizes.at(1), binSizes.at(0)};
+    std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
+    std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
+    bool hasNegativeClass = true;
+    bool isBackprojection = false;
+    TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
+                                  hasNegativeClass);
+    HoughForestsParameters parameters(width, height, scales, baseScale, nClasses, bandwidths.at(0),
+                                      bandwidths.at(1), bandwidths.at(2), steps.at(0), steps.at(1),
+                                      binSizes, votesDeleteStep, votesBufferLength, scoreThresholds,
+                                      durations, aspectRatios, iouThreshold, hasNegativeClass,
+                                      isBackprojection, treeParameters);
+    HoughForests houghForests(nThreads);
+    houghForests.setHoughForestsParameters(parameters);
+    houghForests.load(forestsDirectoryPath);
+
+    int fps = 30;
+    std::vector<std::vector<DetectionResult<4>>> detectionResults;
+    houghForests.detect(extractor, capture, fps, true, detectionResults);
+}
+
 int main() {
-    //std::string rootDirectoryPath = "D:/UT-Interaction/";
+    // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string segmentedVideoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale_100/";
     std::string videoDirectoryPath = rootDirectoryPath + "unsegmented_half/";
     std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half2/";
-    std::string forestsDirectoryPath = rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/";
+    std::string forestsDirectoryPath =
+            rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/";
     // std::string forestsDirectoryPath =
     //        rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/";
     std::string votingDirectoryPath = rootDirectoryPath + "data_hf/voting_feature3/";
@@ -601,5 +642,21 @@ int main() {
               votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold,
               beginValidationIndex, endValidationIndex);
     // detect();
-    // detectAllSTIP();
+
+    // std::string forestPath = rootDirectoryPath +
+    // "data_hf/forests_hf_pooling_half_feature2_integral/0/";
+    // int nThreads = 3;
+    // int width = 360;
+    // int height = 240;
+    // std::vector<int> binSizes = {10, 20, 20};
+    // std::vector<int> steps = {20, 10};
+    // int votesDeleteStep = 50;
+    // int votesBufferLength = 200;
+    // std::vector<double> scoreThresholds(6, 0.01);
+    // double iouThreshold = 0.1;
+    // detectWebCamera(forestPath, localWidth, localHeight, localDuration, xBlockSize, yBlockSize,
+    //				tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height,
+    //baseScale,
+    // binSizes,
+    //				votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold);
 }

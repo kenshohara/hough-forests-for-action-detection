@@ -103,6 +103,8 @@ class LocalFeatureExtractor {
     std::size_t getStoredFeatureBeginT() const { return storedFeatureBeginT_; }
     std::size_t getTStep() const { return tStep_; }
     std::size_t getLocalDuration() const { return localDuration_; }
+    void setWidth(std::size_t width) { width_ = width; }
+    void setHeight(std::size_t height) { height_ = height; }
 
     void visualizeDenseFeature(const std::vector<cv::Vec3i>& points,
                                const std::vector<Descriptor>& features, int width, int height,
