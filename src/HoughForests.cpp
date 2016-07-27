@@ -576,7 +576,11 @@ void HoughForests::videoHandler(
             cv::Mat resizedFrame;
             cv::resize(frame, resizedFrame, visualizationSize);
             cv::imshow("Action Detection", resizedFrame);
-            cv::waitKey(1);
+            auto key = cv::waitKey(1);
+            if (key == 'q') {
+                std::lock_guard<std::mutex> lock(videoLock_);
+                isEnded = true;
+            }
         }
 
         auto end = begin + milliseconds(perFrame);

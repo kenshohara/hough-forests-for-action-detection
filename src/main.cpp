@@ -549,7 +549,7 @@ void detectWebCamera(const std::string& forestsDirectoryPath, int localWidth, in
 
     LocalFeatureExtractor extractor(scales, localWidth, localHeight, localDuration, xBlockSize,
                                     yBlockSize, tBlockSize, xStep, yStep, tStep);
-    cv::VideoCapture capture(1);
+    cv::VideoCapture capture(0);
     capture.set(cv::CAP_PROP_FRAME_WIDTH, width);
     capture.set(cv::CAP_PROP_FRAME_HEIGHT, height);
 
@@ -576,7 +576,7 @@ void detectWebCamera(const std::string& forestsDirectoryPath, int localWidth, in
                         detectionResults);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
     std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
     std::string segmentedVideoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale_100/";
@@ -645,18 +645,25 @@ int main() {
     //          beginValidationIndex, endValidationIndex);
     // detect();
 
+    const cv::String keys =
+            "{s scoreth||score threshold}"
+            "{f fps||fps}"
+            "{w width||width}"
+            "{h height||height}";
+    cv::CommandLineParser parser(argc, argv, keys);
+
     std::string forestPath =
             rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/0/";
     int nThreads = 6;
-    int width = 360;
-    int height = 240;
+    int width = parser.get<int>("w");
+    int height = parser.get<int>("h");
     std::vector<int> binSizes = {10, 20, 20};
     std::vector<int> steps = {20, 10};
     int votesDeleteStep = 50;
     int votesBufferLength = 200;
-    std::vector<double> scoreThresholds(6, 5.0);
+    std::vector<double> scoreThresholds(6, parser.get<double>("s"));
     double iouThreshold = 0.1;
-    int fps = 10;
+    int fps = parser.get<int>("f");
     detectWebCamera(forestPath, localWidth, localHeight, localDuration, xBlockSize, yBlockSize,
                     tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height, baseScale,
                     binSizes, votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold,
