@@ -419,7 +419,7 @@ void detect(const std::string& forestsDirectoryPath, const std::string& outputDi
 
     int fps = 30;
     std::vector<std::vector<DetectionResult<4>>> detectionResults;
-    houghForests.detect(extractor, capture, fps, true, detectionResults);
+    houghForests.detect(extractor, capture, fps, true, cv::Size(width, height), detectionResults);
 }
 
 std::vector<std::size_t> readDurations(const std::string& filePath) {
@@ -506,7 +506,7 @@ void detectAll(const std::string& forestsDirectoryPath, const std::string& outpu
             cv::VideoCapture capture(videoFilePath);
 
             std::vector<std::vector<DetectionResult<4>>> detectionResults;
-            houghForests.detect(extractor, capture, 40, false, detectionResults);
+            houghForests.detect(extractor, capture, 40, false, cv::Size(), detectionResults);
 
             std::cout << "output" << std::endl;
             for (auto classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
@@ -572,7 +572,8 @@ void detectWebCamera(const std::string& forestsDirectoryPath, int localWidth, in
     houghForests.load(forestsDirectoryPath);
 
     std::vector<std::vector<DetectionResult<4>>> detectionResults;
-    houghForests.detect(extractor, capture, fps, true, detectionResults);
+    houghForests.detect(extractor, capture, fps, true, cv::Size(width * 3, height * 3),
+                        detectionResults);
 }
 
 int main() {
@@ -612,15 +613,15 @@ int main() {
     int nSplits = 30;
     int nThresholds = 10;
 
-    int nThreads = 6;
-    int width = 360;
-    int height = 240;
-    std::vector<int> binSizes = {10, 20, 20};
-    std::vector<int> steps = {20, 10};
-    int votesDeleteStep = 50;
-    int votesBufferLength = 200;
-    std::vector<double> scoreThresholds(6, 0.01);
-    double iouThreshold = 0.1;
+    // int nThreads = 6;
+    // int width = 360;
+    // int height = 240;
+    // std::vector<int> binSizes = {10, 20, 20};
+    // std::vector<int> steps = {20, 10};
+    // int votesDeleteStep = 50;
+    // int votesBufferLength = 200;
+    // std::vector<double> scoreThresholds(6, 0.01);
+    // double iouThreshold = 0.1;
 
     // extractPositiveFeatures(segmentedVideoDirectoryPath, featureDirectoryPath, localWidth,
     //                        localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
@@ -635,30 +636,29 @@ int main() {
     // train(featureDirectoryPath, labelFilePath, forestsDirectoryPath, baseScale, nTrees,
     //      bootstrapRatio, maxDepth, minData, nSplits, nThresholds, beginValidationIndex,
     //      endValidationIndex);
-    detectAll(forestsDirectoryPath, votingDirectoryPath, videoDirectoryPath, durationDirectoryPath,
-              aspectDirectoryPath, localWidth, localHeight, localDuration, xBlockSize, yBlockSize,
-              tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height, baseScale, binSizes,
-              votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold,
-              beginValidationIndex, endValidationIndex);
+    // detectAll(forestsDirectoryPath, votingDirectoryPath, videoDirectoryPath,
+    // durationDirectoryPath,
+    //          aspectDirectoryPath, localWidth, localHeight, localDuration, xBlockSize, yBlockSize,
+    //          tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height, baseScale,
+    //          binSizes,
+    //          votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold,
+    //          beginValidationIndex, endValidationIndex);
     // detect();
 
-    //   std::string forestPath = rootDirectoryPath +
-    //   "data_hf/forests_hf_pooling_half_feature2_integral/0/";
-    //   int nThreads = 3;
-    //   int width = 360;
-    //   int height = 240;
-    //   std::vector<int> binSizes = {10, 20, 20};
-    //   std::vector<int> steps = {20, 10};
-    //   int votesDeleteStep = 50;
-    //   int votesBufferLength = 200;
-    //   std::vector<double> scoreThresholds(6, 5.0);
-    //   double iouThreshold = 0.1;
-    // int fps = 10;
-    // detectWebCamera(forestPath, localWidth, localHeight, localDuration, xBlockSize, yBlockSize,
-    //  				tBlockSize, xStep, yStep, tStep, scales, nThreads, width,
-    //  height,
-    //  baseScale,
-    //   binSizes,
-    //  				votesDeleteStep, votesBufferLength, scoreThresholds,
-    //  iouThreshold, fps);
+    std::string forestPath =
+            rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/0/";
+    int nThreads = 6;
+    int width = 360;
+    int height = 240;
+    std::vector<int> binSizes = {10, 20, 20};
+    std::vector<int> steps = {20, 10};
+    int votesDeleteStep = 50;
+    int votesBufferLength = 200;
+    std::vector<double> scoreThresholds(6, 5.0);
+    double iouThreshold = 0.1;
+    int fps = 10;
+    detectWebCamera(forestPath, localWidth, localHeight, localDuration, xBlockSize, yBlockSize,
+                    tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height, baseScale,
+                    binSizes, votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold,
+                    fps);
 }

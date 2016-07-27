@@ -123,7 +123,7 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
 }
 
 void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& capture, int fps,
-                          bool isVisualizationEnabled,
+                          bool isVisualizationEnabled, const cv::Size& visualizationSize,
                           std::vector<std::vector<DetectionResult>>& detectionResults) {
     std::cout << "initialize" << std::endl;
     initialize();
@@ -138,9 +138,9 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
     bool isFirstRead = true;
 
     std::thread videoHandlerThread =
-            std::thread([this, &capture, &video, fps, isVisualizationEnabled,
+            std::thread([this, &capture, &video, fps, isVisualizationEnabled, &visualizationSize,
                          &visualizationDetectionCuboids, &isEnded]() {
-                videoHandler(capture, video, fps, isVisualizationEnabled,
+                videoHandler(capture, video, fps, isVisualizationEnabled, visualizationSize,
                              visualizationDetectionCuboids, isEnded);
             });
     while (true) {
@@ -523,7 +523,7 @@ void HoughForests::deleteOldVotes(int classLabel, std::size_t voteMaxT) {
 
 void HoughForests::videoHandler(
         cv::VideoCapture& capture, std::deque<cv::Mat3b>& video, int fps,
-        bool isVisualizationEnabled,
+        bool isVisualizationEnabled, const cv::Size& visualizationSize,
         const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
         bool& isEnded) {
     using namespace std::chrono;
@@ -533,14 +533,13 @@ void HoughForests::videoHandler(
     std::size_t t = 0;
     milliseconds sec(0);
     while (!isEnded) {
+        auto begin = high_resolution_clock::now();
         if ((t % STEP) == 0) {
             std::cout << "t: " << t
                       << ", fps: " << 1000.0 / (static_cast<double>(sec.count()) / STEP)
                       << std::endl;
             sec = milliseconds(0);
         }
-
-        auto begin = high_resolution_clock::now();
 
         cv::Mat frame;
         capture >> frame;
@@ -574,18 +573,18 @@ void HoughForests::videoHandler(
                 }
             }
 
-            cv::imshow("Action Detection", frame);
+            cv::Mat resizedFrame;
+            cv::resize(frame, resizedFrame, visualizationSize);
+            cv::imshow("Action Detection", resizedFrame);
             cv::waitKey(1);
         }
 
-        auto afterWaitKey = high_resolution_clock::now();
+        auto end = begin + milliseconds(perFrame);
+        std::this_thread::sleep_until(end);
 
-        auto readTime = duration_cast<milliseconds>(afterWaitKey - begin);
-        std::this_thread::sleep_for(perFrame - readTime);
-
-        auto end = high_resolution_clock::now();
         ++t;
-        sec += duration_cast<milliseconds>(end - begin);
+        auto trueEnd = high_resolution_clock::now();
+        sec += duration_cast<milliseconds>(trueEnd - begin);
     }
 }
 
