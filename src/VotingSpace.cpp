@@ -88,5 +88,15 @@ void VotingSpace::initializeGridPoints() {
         }
     }
 }
+
+cv::Mat1f VotingSpace::getVotingSpace(int t) const {
+    int binnedT = binT(t) - minT_;
+    std::vector<cv::Range> ranges = {cv::Range(binnedT, binnedT + 1),
+                                     cv::Range(0, votingSpace_.size[Y]),
+                                     cv::Range(0, votingSpace_.size[X]), cv::Range(0, 1)};
+    cv::Mat1f output(votingSpace_.size[Y], votingSpace_.size[X]);
+    output.data = votingSpace_(ranges.data()).data;
+    return output.clone();
+}
 }
 }

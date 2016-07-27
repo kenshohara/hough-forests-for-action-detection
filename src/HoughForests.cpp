@@ -571,11 +571,18 @@ void HoughForests::videoHandler(
                                     cv::FONT_HERSHEY_PLAIN, 2.5, cv::Scalar(0, 0, 255));
                     }
                 }
+
+                cv::Mat1f smallSpace = votingSpaces_.at(classLabel).getVotingSpace(t);
+                cv::Mat1f originalSpace;
+                cv::resize(smallSpace, originalSpace, frame.size(), 0.0, 0.0, cv::INTER_NEAREST);
+                originalSpace /= parameters_.getScoreThreshold(classLabel);
+                cv::imshow("class: " + std::to_string(classLabel), originalSpace);
             }
 
+            cv::imshow("Original Size", frame);
             cv::Mat resizedFrame;
             cv::resize(frame, resizedFrame, visualizationSize);
-            cv::imshow("Action Detection", resizedFrame);
+            cv::imshow("Large Size", resizedFrame);
             auto key = cv::waitKey(1);
             if (key == 'q') {
                 std::lock_guard<std::mutex> lock(videoLock_);
