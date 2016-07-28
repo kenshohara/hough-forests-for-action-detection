@@ -1,4 +1,5 @@
 #include "Trainer.h"
+#include "HoughForests.h"
 #include "LocalFeatureExtractor.h"
 
 #include <numpy.hpp>
@@ -26,9 +27,9 @@ void Trainer::extractTrainingFeatures(const std::string& positiveVideoDirectoryP
     extractPositiveFeatures(positiveVideoDirectoryPath, dstDirectoryPath, localWidth, localHeight,
                             localDuration, xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep,
                             nPositiveSamplesPerStep);
-	extractNegativeFeatures(negativeVideoDirectoryPath, labelFilePath, dstDirectoryPath,
-							localWidth, localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize,
-							xStep, yStep, tStep, negativeScales, nNegativeSamplesPerStep);
+    extractNegativeFeatures(negativeVideoDirectoryPath, labelFilePath, dstDirectoryPath, localWidth,
+                            localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
+                            yStep, tStep, negativeScales, nNegativeSamplesPerStep);
 }
 
 void Trainer::extractPositiveFeatures(const std::string& videoDirectoryPath,
@@ -232,5 +233,198 @@ bool Trainer::contains(const std::vector<cv::Rect>& boxes,
         }
     }
     return false;
+}
+
+void Trainer::train(const std::string& featureDirectoryPath, const std::string& labelFilePath,
+                    const std::string& forestsDirectoryPath,
+                    const std::vector<int> trainingDataIndices, int nClasses, int baseScale,
+                    int nTrees, double bootstrapRatio, int maxDepth, int minData, int nSplits,
+                    int nThresholds) {
+    using namespace nuisken;
+    using namespace nuisken::houghforests;
+    using namespace nuisken::randomforests;
+    using namespace nuisken::storage;
+
+    const int N_CHANNELS = 4;
+
+    std::vector<std::shared_ptr<STIPFeature>> trainingData;
+    for (int dataIndex : trainingDataIndices) {
+        std::cout << "read " << dataIndex << std::endl;
+
+        std::vector<cv::Rect> boxes;
+        std::vector<std::pair<int, int>> ranges;
+        readLabelsInfo(labelFilePath, dataIndex, std::vector<int>(), boxes, ranges);
+
+        std::vector<cv::Vec3i> positiveActionPositions(boxes.size());
+        for (int labelIndex = 0; labelIndex < boxes.size(); ++labelIndex) {
+            cv::Vec3i position;
+            position(T) = (ranges.at(labelIndex).second - ranges.at(labelIndex).first) / 2;
+            int width = boxes.at(labelIndex).width;
+            int height = boxes.at(labelIndex).height;
+            double aspectRatio = width / height;
+            position(Y) = baseScale / 2;
+            position(X) = (baseScale * aspectRatio) / 2;
+            positiveActionPositions.at(labelIndex) = position;
+        }
+
+        int negativeLabel = nClasses - 1;
+
+        auto tmpData =
+                readData(featureDirectoryPath, dataIndex, positiveActionPositions, negativeLabel);
+        std::copy(std::begin(tmpData), std::end(tmpData), std::back_inserter(trainingData));
+    }
+
+    auto type = TreeParameters::ALL_RATIO;
+    bool hasNegatieClass = true;
+    TreeParameters treeParameters(nClasses, nTrees, bootstrapRatio, maxDepth, minData, nSplits,
+                                  nThresholds, type, hasNegatieClass);
+    std::vector<int> numberOfFeatureDimensions(N_CHANNELS);
+    for (auto i = 0; i < N_CHANNELS; ++i) {
+        numberOfFeatureDimensions.at(i) = trainingData.front()->getNumberOfFeatureDimensions(i);
+    }
+    STIPNode stipNode(nClasses, N_CHANNELS, numberOfFeatureDimensions);
+    HoughForestsParameters houghParameters;
+    houghParameters.setTreeParameters(treeParameters);
+    int nThreads = 6;
+    HoughForests houghForests(stipNode, houghParameters, nThreads);
+    houghForests.train(trainingData);
+
+    std::tr2::sys::path directory(forestsDirectoryPath);
+    if (!std::tr2::sys::exists(directory)) {
+        std::tr2::sys::create_directory(directory);
+    }
+
+    houghForests.save(forestsDirectoryPath);
+}
+
+std::vector<Trainer::FeaturePtr> Trainer::readData(
+        const std::string& directoryPath, int dataIndex,
+        const std::vector<cv::Vec3i>& positiveActionPositions, int negativeLabel) const {
+    std::tr2::sys::path directory(directoryPath);
+    std::tr2::sys::directory_iterator end;
+    std::vector<int> usedLabelIndices;
+    bool isNegativeRead = false;
+    std::vector<FeaturePtr> trainingData;
+    for (std::tr2::sys::directory_iterator itr(directory); itr != end; ++itr) {
+        std::string filePath = itr->path().string();
+        std::string fileName = itr->path().filename().string();
+
+        boost::char_separator<char> separator("_");
+        boost::tokenizer<boost::char_separator<char>> tokenizer(fileName, separator);
+        std::vector<std::string> tokens;
+        std::copy(std::begin(tokenizer), std::end(tokenizer), std::back_inserter(tokens));
+        int fileDataIndex = std::stoi(tokens.at(0));
+        if (fileDataIndex != dataIndex) {
+            continue;
+        }
+
+        if (tokens.size() != 2) {
+            int labelIndex = std::stoi(tokens.at(2));
+            if (std::find(std::begin(usedLabelIndices), std::end(usedLabelIndices), labelIndex) !=
+                std::end(usedLabelIndices)) {
+                continue;
+            }
+
+            int classLabel = std::stoi(tokens.at(3));
+            auto positives = readPositiveData(directoryPath, dataIndex, tokens.at(1), labelIndex,
+                                              classLabel, positiveActionPositions.at(labelIndex));
+            std::copy(std::begin(positives), std::end(positives), std::back_inserter(trainingData));
+
+            usedLabelIndices.push_back(labelIndex);
+        } else {
+            if (isNegativeRead) {
+                continue;
+            }
+            auto negatives =
+                    readNegativeData(directoryPath, dataIndex, tokens.at(1), negativeLabel);
+            std::copy(std::begin(negatives), std::end(negatives), std::back_inserter(trainingData));
+        }
+    }
+
+    return trainingData;
+}
+
+std::vector<Trainer::FeaturePtr> Trainer::readPositiveData(const std::string& directoryPath,
+                                                           int dataIndex,
+                                                           const std::string& dataName,
+                                                           int labelIndex, int classLabel,
+                                                           const cv::Vec3i& actionPosition) const {
+    std::string pointFilePath = (boost::format("%s%d_%s_%d_%d_pt.npy") % directoryPath % dataIndex %
+                                 dataName % labelIndex % classLabel)
+                                        .str();
+    std::string descriptorFilePath = (boost::format("%s%d_%s_%d_%d_desc.npy") % directoryPath %
+                                      dataIndex % dataName % labelIndex % classLabel)
+                                             .str();
+    auto tmpFeatures =
+            readLocalFeatures(pointFilePath, descriptorFilePath, classLabel, actionPosition);
+
+    std::string flippedPointFilePath = (boost::format("%s%d_%s_%d_%d_flip_pt.npy") % directoryPath %
+                                        dataIndex % dataName % labelIndex % classLabel)
+                                               .str();
+    std::string flippedDescriptorFilePath =
+            (boost::format("%s%d_%s_%d_%d_flip_desc.npy") % directoryPath % dataIndex % dataName %
+             labelIndex % classLabel)
+                    .str();
+    auto tmpFlippedFeatures = readLocalFeatures(flippedPointFilePath, flippedDescriptorFilePath,
+                                                classLabel, actionPosition);
+
+    std::vector<FeaturePtr> trainingData;
+    std::copy(std::begin(tmpFeatures), std::end(tmpFeatures), std::back_inserter(trainingData));
+    std::copy(std::begin(tmpFlippedFeatures), std::end(tmpFlippedFeatures),
+              std::back_inserter(trainingData));
+    return trainingData;
+}
+
+std::vector<Trainer::FeaturePtr> Trainer::readNegativeData(const std::string& directoryPath,
+                                                           int dataIndex,
+                                                           const std::string& dataName,
+                                                           int negativeLabel) const {
+    std::string pointFilePath =
+            (boost::format("%s%d_%s_pt.npy") % directoryPath % dataIndex % dataName).str();
+    std::string descriptorFilePath =
+            (boost::format("%s%d_%s_desc.npy") % directoryPath % dataIndex % dataName).str();
+    return readLocalFeatures(pointFilePath, descriptorFilePath, negativeLabel, cv::Vec3i());
+}
+
+std::vector<Trainer::FeaturePtr> Trainer::readLocalFeatures(const std::string& pointFilePath,
+                                                            const std::string& descriptorFilePath,
+                                                            int classLabel,
+                                                            const cv::Vec3i& actionPosition) const {
+    using namespace storage;
+    using namespace houghforests;
+
+    const int N_CHANNELS = LocalFeatureExtractor::N_CHANNELS_;
+
+    std::vector<int> pointShape;
+    std::vector<int> points;
+    aoba::LoadArrayFromNumpy<int>(pointFilePath, pointShape, points);
+
+    std::vector<int> descShape;
+    std::vector<float> descriptors;
+    aoba::LoadArrayFromNumpy<float>(descriptorFilePath, descShape, descriptors);
+
+    int nChannelFeatures = descShape[1] / N_CHANNELS;
+    std::vector<FeaturePtr> localFeatures;
+    for (int localIndex = 0; localIndex < pointShape[0]; ++localIndex) {
+        int pointIndex = localIndex * 3;
+        cv::Vec3i point(points[pointIndex], points[pointIndex + 1], points[pointIndex + 2]);
+        std::vector<Eigen::MatrixXf> features(N_CHANNELS);
+        for (int channelIndex = 0; channelIndex < N_CHANNELS; ++channelIndex) {
+            Eigen::MatrixXf feature(1, nChannelFeatures);
+            for (int featureIndex = 0; featureIndex < nChannelFeatures; ++featureIndex) {
+                int index =
+                        localIndex * descShape[1] + channelIndex * nChannelFeatures + featureIndex;
+                feature.coeffRef(0, featureIndex) = descriptors[index];
+            }
+            features.at(channelIndex) = feature;
+        }
+
+        cv::Vec3i offset = actionPosition - point;
+        auto data = std::make_shared<STIPFeature>(features, point, offset, std::make_pair(0.0, 0.0),
+                                                  classLabel);
+        data->setIndex(-1);
+        localFeatures.push_back(data);
+    }
+    return localFeatures;
 }
 }

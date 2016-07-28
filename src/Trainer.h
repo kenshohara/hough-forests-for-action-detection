@@ -1,14 +1,20 @@
 #ifndef TRAINER
 #define TRAINER
 
+#include "STIPFeature.h"
+
 #include <opencv2/core.hpp>
 
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace nuisken {
 
 class Trainer {
+   private:
+    using FeaturePtr = std::shared_ptr<storage::STIPFeature>;
+
    public:
     Trainer(){};
     ~Trainer(){};
@@ -22,7 +28,10 @@ class Trainer {
                                  const std::vector<double>& negativeScales,
                                  int nPositiveSamplesPerStep, int nNegativeSamplesPerStep) const;
 
-    void outputTrainingData(const std::vector<std::string>&);
+    void train(const std::string& featureDirectoryPath, const std::string& labelFilePath,
+               const std::string& forestsDirectoryPath, const std::vector<int> trainingDataIndices,
+               int nClasses, int baseScale, int nTrees, double bootstrapRatio, int maxDepth,
+               int minData, int nSplits, int nThresholds);
 
    private:
     void extractPositiveFeatures(const std::string& videoDirectoryPath,
@@ -43,10 +52,21 @@ class Trainer {
 
     bool contains(const cv::Rect& box, const std::pair<int, int>& temporalRange,
                   const cv::Vec3i& point) const;
-
     bool contains(const std::vector<cv::Rect>& boxes,
                   const std::vector<std::pair<int, int>>& temporalRanges,
                   const cv::Vec3i& point) const;
+
+    std::vector<FeaturePtr> readData(const std::string& directoryPath, int dataIndex,
+                                     const std::vector<cv::Vec3i>& positiveActionPositions,
+                                     int negativeLabel) const;
+    std::vector<FeaturePtr> readPositiveData(const std::string& directoryPath, int dataIndex,
+                                             const std::string& dataName, int labelIndex,
+                                             int classLabel, const cv::Vec3i& actionPosition) const;
+    std::vector<FeaturePtr> readNegativeData(const std::string& directoryPath, int dataIndex,
+                                             const std::string& dataName, int negativeLabel) const;
+    std::vector<FeaturePtr> readLocalFeatures(const std::string& pointFilePath,
+                                              const std::string& descriptorFilePath, int classLabel,
+                                              const cv::Vec3i& actionPosition) const;
 };
 }
 
