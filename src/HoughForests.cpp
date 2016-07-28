@@ -169,17 +169,17 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
         }
         // auto readEnd = std::chrono::system_clock::now();
         // std::cout << "read: "
-        //	<< std::chrono::duration_cast<std::chrono::milliseconds>(readEnd - begin).count()
-        //	<< std::endl;
+        //<< std::chrono::duration_cast<std::chrono::milliseconds>(readEnd - begin).count()
+        //<< std::endl;
 
         std::vector<std::vector<cv::Vec3i>> scalePoints;
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
         extractor.extractLocalFeatures(inputVideo, scalePoints, scaleDescriptors);
         // auto featEnd = std::chrono::system_clock::now();
         // std::cout << "extract features: "
-        //          << std::chrono::duration_cast<std::chrono::milliseconds>(featEnd -
-        //          readEnd).count()
-        //          << std::endl;
+        //         << std::chrono::duration_cast<std::chrono::milliseconds>(featEnd -
+        //         readEnd).count()
+        //         << std::endl;
 
         std::vector<std::vector<FeaturePtr>> scaleFeatures;
         scaleFeatures.reserve(scalePoints.size());
@@ -194,9 +194,9 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
         votingProcess(scaleFeatures, minMaxRanges);
         // auto voteEnd = std::chrono::system_clock::now();
         // std::cout << "voting process: "
-        //          << std::chrono::duration_cast<std::chrono::milliseconds>(voteEnd - voteBegin)
-        //                     .count()
-        //          << std::endl;
+        //         << std::chrono::duration_cast<std::chrono::milliseconds>(voteEnd - voteBegin)
+        //                    .count()
+        //         << std::endl;
 
         // auto postStart = std::chrono::system_clock::now();
         updateDetectionCuboids(minMaxRanges, detectionCuboids);
@@ -212,9 +212,9 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
         }
         // auto postEnd = std::chrono::system_clock::now();
         // std::cout << "post: "
-        //          << std::chrono::duration_cast<std::chrono::milliseconds>(postEnd - postStart)
-        //                     .count()
-        //          << std::endl;
+        //         << std::chrono::duration_cast<std::chrono::milliseconds>(postEnd - postStart)
+        //                    .count()
+        //         << std::endl;
 
         for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
             deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);
@@ -225,9 +225,9 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
 
         // auto end = std::chrono::system_clock::now();
         // std::cout << "one cycle: "
-        //          << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
-        //          << std::endl
-        //          << std::endl;
+        //         << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
+        //         << std::endl
+        //         << std::endl;
     }
     videoHandlerThread.join();
 
@@ -560,20 +560,23 @@ void HoughForests::videoHandler(
                 std::lock_guard<std::mutex> lock(detectionLock_);
 
                 int duration = parameters_.getAverageDuration(classLabel);
-                for (int t2 = t - duration; t2 < t + duration; ++t2) {
+                for (int t2 = t - duration; t2 < t; ++t2) {
                     if (detectionCuboids.at(classLabel).count(t2) == 0) {
                         continue;
                     }
-
+                    cv::Mat1b tMat(1, 1);
+                    tMat = static_cast<double>(t2 - (t - duration)) / duration * 255;
+                    cv::Mat3b color;
+                    cv::applyColorMap(tMat, color, cv::COLORMAP_JET);
                     for (const auto& cuboid : detectionCuboids.at(classLabel).at(t2)) {
-                        cv::rectangle(frame, cuboid.getRect(), cv::Scalar(0, 0, 255), 3);
+                        cv::rectangle(frame, cuboid.getRect(), color(0, 0), 3);
                         cv::putText(frame, std::to_string(classLabel), cuboid.getRect().tl(),
-                                    cv::FONT_HERSHEY_PLAIN, 2.5, cv::Scalar(0, 0, 255));
+                                    cv::FONT_HERSHEY_PLAIN, 2.5, color(0, 0));
                     }
                 }
 
                 cv::Mat1f smallSpace =
-                        votingSpaces_.at(classLabel).getVotingSpace(std::max(0, int(t - 10)));
+                        votingSpaces_.at(classLabel).getVotingSpace(std::max(0, int(t)));
                 cv::Mat1f originalSpace;
                 cv::resize(smallSpace, originalSpace, frame.size(), 0.0, 0.0, cv::INTER_NEAREST);
                 originalSpace /= parameters_.getScoreThreshold(classLabel);

@@ -537,11 +537,13 @@ void detectAll(const std::string& forestsDirectoryPath, const std::string& outpu
     }
 }
 
-void detectWebCamera(const std::string& forestsDirectoryPath, int localWidth, int localHeight,
+void detectWebCamera(const std::string& forestsDirectoryPath,
+                     const std::vector<double>& aspectRatios,
+                     const std::vector<std::size_t>& durations, int localWidth, int localHeight,
                      int localDuration, int xBlockSize, int yBlockSize, int tBlockSize, int xStep,
-                     int yStep, int tStep, const std::vector<double>& scales, int nThreads,
-                     int width, int height, int baseScale, const std::vector<int>& binSizes,
-                     int votesDeleteStep, int votesBufferLength,
+                     int yStep, int tStep, const std::vector<double>& scales, int nClasses,
+                     int nThreads, int width, int height, int baseScale,
+                     const std::vector<int>& binSizes, int votesDeleteStep, int votesBufferLength,
                      const std::vector<double>& scoreThresholds, double iouThreshold, int fps) {
     using namespace nuisken;
     using namespace nuisken::houghforests;
@@ -554,11 +556,8 @@ void detectWebCamera(const std::string& forestsDirectoryPath, int localWidth, in
     capture.set(cv::CAP_PROP_FRAME_WIDTH, width);
     capture.set(cv::CAP_PROP_FRAME_HEIGHT, height);
 
-    int nClasses = 7;
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
     std::vector<int> steps = {binSizes.at(1), binSizes.at(0)};
-    std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
-    std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
     bool hasNegativeClass = true;
     bool isBackprojection = false;
     TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
@@ -609,29 +608,29 @@ void trainMIRU2016(const std::string& featureDirectoryPath, const std::string& l
 }
 
 int main(int argc, char* argv[]) {
-    //{
-    //    std::string positiveVideoDirectoryPath = "D:/miru2016/segmented/";
-    //    std::string negativeVideoDirectoryPath = "D:/miru2016/unsegmented/";
-    //    std::string labelFilePath = "D:/miru2016/sub1_labels.csv";
-    //    std::string dstDirectoryPath = "D:/miru2016/feature/";
-    //    int localWidth = 21;
-    //    int localHeight = localWidth;
-    //    int localDuration = 9;
-    //    int xBlockSize = 7;
-    //    int yBlockSize = xBlockSize;
-    //    int tBlockSize = 3;
-    //    int xStep = 11;
-    //    int yStep = xStep;
-    //    int tStep = 5;
-    //    std::vector<double> negativeScales = {1.0, 0.707, 0.5};
-    //    int nPositiveSamplesPerStep = 30;
-    //    int nNegativeSamplesPerStep = 3;
-    //    int baseScale = 200;
-    //    extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
-    //                    dstDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
-    //                    yBlockSize, tBlockSize, xStep, yStep, tStep, negativeScales,
-    //                    nPositiveSamplesPerStep, nNegativeSamplesPerStep);
-    //}
+    {
+        std::string positiveVideoDirectoryPath = "D:/miru2016/segmented/";
+        std::string negativeVideoDirectoryPath = "D:/miru2016/unsegmented/";
+        std::string labelFilePath = "D:/miru2016/sub1_labels.csv";
+        std::string dstDirectoryPath = "D:/miru2016/feature/";
+        int localWidth = 21;
+        int localHeight = localWidth;
+        int localDuration = 9;
+        int xBlockSize = 7;
+        int yBlockSize = xBlockSize;
+        int tBlockSize = 3;
+        int xStep = 11;
+        int yStep = xStep;
+        int tStep = 5;
+        std::vector<double> negativeScales = {1.0, 0.707, 0.5};
+        int nPositiveSamplesPerStep = 30;
+        int nNegativeSamplesPerStep = 30;
+        int baseScale = 200;
+        extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
+                        dstDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
+                        yBlockSize, tBlockSize, xStep, yStep, tStep, negativeScales,
+                        nPositiveSamplesPerStep, nNegativeSamplesPerStep);
+    }
 
     {
         std::string rootDirectoryPath = "D:/miru2016/";
@@ -652,115 +651,157 @@ int main(int argc, char* argv[]) {
                       minData, nSplits, nThresholds);
     }
 
-// std::string rootDirectoryPath = "D:/UT-Interaction/";
-//   std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
-//   std::string segmentedVideoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale_100/";
-//   std::string videoDirectoryPath = rootDirectoryPath + "unsegmented_half/";
-//   std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half2/";
-//   std::string forestsDirectoryPath =
-//           rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/";
-//   std::string votingDirectoryPath = rootDirectoryPath + "data_hf/voting_feature3/";
-//   std::string durationDirectoryPath = rootDirectoryPath + "average_durations/";
-//   std::string aspectDirectoryPath = rootDirectoryPath + "average_aspect_ratios/";
-//   std::string labelFilePath = rootDirectoryPath + "labels.csv";
+    {
+        std::string rootDirectoryPath = "E:/Hara/miru2016/";
+        const cv::String keys =
+                "{s scoreth||score threshold}"
+                "{f fps||fps}"
+                "{w width||width}"
+                "{h height||height}";
+        cv::CommandLineParser parser(argc, argv, keys);
 
-//   int localWidth = 15;
-//   int localHeight = localWidth;
-//   int localDuration = 9;
-//   int xBlockSize = 5;
-//   int yBlockSize = 5;
-//   int tBlockSize = 3;
-//   int xStep = 8;
-//   int yStep = xStep;
-//   int tStep = 5;
-//   std::vector<double> scales = {1.0};
+        int localWidth = 21;
+        int localHeight = localWidth;
+        int localDuration = 9;
+        int xBlockSize = 7;
+        int yBlockSize = xBlockSize;
+        int tBlockSize = 3;
+        int xStep = 11;
+        int yStep = xStep;
+        int tStep = 5;
+        std::vector<double> scales = {1.0};
+        int baseScale = 200;
 
-//   int nPositiveSamplesPerStep = 30;
-//   int nNegativeSamplesPerStep = 3;
+        std::string forestPath = rootDirectoryPath + "forests/0/";
+        std::vector<double> aspectRatios = {0.727, 1.01};
+        std::vector<std::size_t> durations = {56, 59};
+        int nClasses = 3;
+        int nThreads = 1;
+        int width = parser.get<int>("w");
+        int height = parser.get<int>("h");
+        std::vector<int> binSizes = {10, 20, 20};
+        int votesDeleteStep = 50;
+        int votesBufferLength = 200;
+        std::vector<double> scoreThresholds(nClasses - 1, parser.get<double>("s"));
+        double iouThreshold = 0.3;
+        int fps = parser.get<int>("f");
+        // detectWebCamera(forestPath, aspectRatios, durations, localWidth, localHeight,
+        // localDuration, xBlockSize, yBlockSize,
+        //                tBlockSize, xStep, yStep, tStep, scales, nClasses, nThreads, width,
+        //                height,
+        //                baseScale, binSizes, votesDeleteStep, votesBufferLength, scoreThresholds,
+        //                iouThreshold, fps);
+    }
 
-//   int baseScale = 100;
-//   int nTrees = 15;
-//   double bootstrapRatio = 1.0;
-//   int maxDepth = 30;
-//   int minData = 5;
-//   int nSplits = 30;
-//   int nThresholds = 10;
+    // std::string rootDirectoryPath = "D:/UT-Interaction/";
+    //   std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
+    //   std::string segmentedVideoDirectoryPath = rootDirectoryPath + "segmented_fixed_scale_100/";
+    //   std::string videoDirectoryPath = rootDirectoryPath + "unsegmented_half/";
+    //   std::string featureDirectoryPath = rootDirectoryPath + "feature_hf_pooling_half2/";
+    //   std::string forestsDirectoryPath =
+    //           rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/";
+    //   std::string votingDirectoryPath = rootDirectoryPath + "data_hf/voting_feature3/";
+    //   std::string durationDirectoryPath = rootDirectoryPath + "average_durations/";
+    //   std::string aspectDirectoryPath = rootDirectoryPath + "average_aspect_ratios/";
+    //   std::string labelFilePath = rootDirectoryPath + "labels.csv";
 
-//    int nThreads = 6;
-//    int width = 360;
-//    int height = 240;
-//    std::vector<int> binSizes = {10, 20, 20};
-//    std::vector<int> steps = {20, 10};
-//    int votesDeleteStep = 50;
-//    int votesBufferLength = 200;
-//    std::vector<double> scoreThresholds(6, 0.01);
-//    double iouThreshold = 0.1;
+    //   int localWidth = 15;
+    //   int localHeight = localWidth;
+    //   int localDuration = 9;
+    //   int xBlockSize = 5;
+    //   int yBlockSize = 5;
+    //   int tBlockSize = 3;
+    //   int xStep = 8;
+    //   int yStep = xStep;
+    //   int tStep = 5;
+    //   std::vector<double> scales = {1.0};
 
-//   // extractPositiveFeatures(segmentedVideoDirectoryPath, featureDirectoryPath, localWidth,
-//   //                        localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize,
-//   xStep,
-//   //                        yStep, tStep, nPositiveSamplesPerStep);
-//   int beginIndex = 1;
-//   int endIndex = 20;
-//   // extractNegativeFeatures(videoDirectoryPath, labelFilePath, featureDirectoryPath,
-//   localWidth,
-//   //                        localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize,
-//   xStep,
-//   //                        yStep, tStep, scales, nNegativeSamplesPerStep, beginIndex,
-//   endIndex);
-//   int beginValidationIndex = 0;
-//   int endValidationIndex = 10;
-//   // train(featureDirectoryPath, labelFilePath, forestsDirectoryPath, baseScale, nTrees,
-//   //      bootstrapRatio, maxDepth, minData, nSplits, nThresholds, beginValidationIndex,
-//   //      endValidationIndex);
-//   // detectAll(forestsDirectoryPath, votingDirectoryPath, videoDirectoryPath,
-//   // durationDirectoryPath,
-//   //          aspectDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
-//   yBlockSize,
-//   //          tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height, baseScale,
-//   //          binSizes,
-//   //          votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold,
-//   //          beginValidationIndex, endValidationIndex);
+    //   int nPositiveSamplesPerStep = 30;
+    //   int nNegativeSamplesPerStep = 3;
 
-////const cv::String keys =
-////        "{s scoreth||score threshold}"
-////        "{i seq||sequence index}"
-////        "{v val||validation index}";
-////cv::CommandLineParser parser(argc, argv, keys);
-////std::string forestPath =
-////        rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/" +
-/// parser.get<std::string>("v") + "/";
-////std::string videoPath = rootDirectoryPath + "unsegmented_half/seq" +
-/// parser.get<std::string>("i") + ".avi";
-////scoreThresholds = std::vector<double>(6, parser.get<double>("s"));
-////detect(forestPath, videoPath, localWidth, localHeight, localDuration, xBlockSize,
-/// yBlockSize,
-////	   tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height, baseScale,
-////	   binSizes, votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold);
+    //   int baseScale = 100;
+    //   int nTrees = 15;
+    //   double bootstrapRatio = 1.0;
+    //   int maxDepth = 30;
+    //   int minData = 5;
+    //   int nSplits = 30;
+    //   int nThresholds = 10;
 
-//   const cv::String keys =
-//           "{s scoreth||score threshold}"
-//           "{f fps||fps}"
-//           "{w width||width}"
-//           "{h height||height}";
-//   cv::CommandLineParser parser(argc, argv, keys);
+    //    int nThreads = 6;
+    //    int width = 360;
+    //    int height = 240;
+    //    std::vector<int> binSizes = {10, 20, 20};
+    //    std::vector<int> steps = {20, 10};
+    //    int votesDeleteStep = 50;
+    //    int votesBufferLength = 200;
+    //    std::vector<double> scoreThresholds(6, 0.01);
+    //    double iouThreshold = 0.1;
 
-//   std::string forestPath =
-//           rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/0/";
-//   nThreads = 6;
-//   width = parser.get<int>("w");
-//   height = parser.get<int>("h");
-//   binSizes = {10, 20, 20};
-//   steps = {20, 10};
-//   votesDeleteStep = 50;
-//   votesBufferLength = 200;
-//   scoreThresholds = std::vector<double>(6, parser.get<double>("s"));
-//   iouThreshold = 0.1;
-//   int fps = parser.get<int>("f");
-//   detectWebCamera(forestPath, localWidth, localHeight, localDuration, xBlockSize, yBlockSize,
-//                   tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height,
-//                   baseScale,
-//                   binSizes, votesDeleteStep, votesBufferLength, scoreThresholds,
-//                   iouThreshold,
-//                   fps);
+    //   // extractPositiveFeatures(segmentedVideoDirectoryPath, featureDirectoryPath, localWidth,
+    //   //                        localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize,
+    //   xStep,
+    //   //                        yStep, tStep, nPositiveSamplesPerStep);
+    //   int beginIndex = 1;
+    //   int endIndex = 20;
+    //   // extractNegativeFeatures(videoDirectoryPath, labelFilePath, featureDirectoryPath,
+    //   localWidth,
+    //   //                        localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize,
+    //   xStep,
+    //   //                        yStep, tStep, scales, nNegativeSamplesPerStep, beginIndex,
+    //   endIndex);
+    //   int beginValidationIndex = 0;
+    //   int endValidationIndex = 10;
+    //   // train(featureDirectoryPath, labelFilePath, forestsDirectoryPath, baseScale, nTrees,
+    //   //      bootstrapRatio, maxDepth, minData, nSplits, nThresholds, beginValidationIndex,
+    //   //      endValidationIndex);
+    //   // detectAll(forestsDirectoryPath, votingDirectoryPath, videoDirectoryPath,
+    //   // durationDirectoryPath,
+    //   //          aspectDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
+    //   yBlockSize,
+    //   //          tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height, baseScale,
+    //   //          binSizes,
+    //   //          votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold,
+    //   //          beginValidationIndex, endValidationIndex);
+
+    ////const cv::String keys =
+    ////        "{s scoreth||score threshold}"
+    ////        "{i seq||sequence index}"
+    ////        "{v val||validation index}";
+    ////cv::CommandLineParser parser(argc, argv, keys);
+    ////std::string forestPath =
+    ////        rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/" +
+    /// parser.get<std::string>("v") + "/";
+    ////std::string videoPath = rootDirectoryPath + "unsegmented_half/seq" +
+    /// parser.get<std::string>("i") + ".avi";
+    ////scoreThresholds = std::vector<double>(6, parser.get<double>("s"));
+    ////detect(forestPath, videoPath, localWidth, localHeight, localDuration, xBlockSize,
+    /// yBlockSize,
+    ////	   tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height, baseScale,
+    ////	   binSizes, votesDeleteStep, votesBufferLength, scoreThresholds, iouThreshold);
+
+    //   const cv::String keys =
+    //           "{s scoreth||score threshold}"
+    //           "{f fps||fps}"
+    //           "{w width||width}"
+    //           "{h height||height}";
+    //   cv::CommandLineParser parser(argc, argv, keys);
+
+    //   std::string forestPath =
+    //           rootDirectoryPath + "data_hf/forests_hf_pooling_half_feature2_integral/0/";
+    //   nThreads = 6;
+    //   width = parser.get<int>("w");
+    //   height = parser.get<int>("h");
+    //   binSizes = {10, 20, 20};
+    //   steps = {20, 10};
+    //   votesDeleteStep = 50;
+    //   votesBufferLength = 200;
+    //   scoreThresholds = std::vector<double>(6, parser.get<double>("s"));
+    //   iouThreshold = 0.1;
+    //   int fps = parser.get<int>("f");
+    //   detectWebCamera(forestPath, localWidth, localHeight, localDuration, xBlockSize, yBlockSize,
+    //                   tBlockSize, xStep, yStep, tStep, scales, nThreads, width, height,
+    //                   baseScale,
+    //                   binSizes, votesDeleteStep, votesBufferLength, scoreThresholds,
+    //                   iouThreshold,
+    //                   fps);
 }

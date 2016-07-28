@@ -339,7 +339,7 @@ std::vector<Trainer::FeaturePtr> Trainer::readData(
                     readNegativeData(directoryPath, dataIndex, tokens.at(1), negativeLabel);
             std::copy(std::begin(negatives), std::end(negatives), std::back_inserter(trainingData));
 
-			isNegativeRead = true;
+            isNegativeRead = true;
         }
     }
 
