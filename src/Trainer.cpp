@@ -26,6 +26,9 @@ void Trainer::extractTrainingFeatures(const std::string& positiveVideoDirectoryP
     extractPositiveFeatures(positiveVideoDirectoryPath, dstDirectoryPath, localWidth, localHeight,
                             localDuration, xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep,
                             nPositiveSamplesPerStep);
+	extractNegativeFeatures(negativeVideoDirectoryPath, labelFilePath, dstDirectoryPath,
+							localWidth, localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize,
+							xStep, yStep, tStep, negativeScales, nNegativeSamplesPerStep);
 }
 
 void Trainer::extractPositiveFeatures(const std::string& videoDirectoryPath,
