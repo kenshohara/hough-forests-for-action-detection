@@ -609,29 +609,29 @@ void trainMIRU2016(const std::string& featureDirectoryPath, const std::string& l
 }
 
 int main(int argc, char* argv[]) {
-    {
-        std::string positiveVideoDirectoryPath = "D:/miru2016/segmented/";
-        std::string negativeVideoDirectoryPath = "D:/miru2016/unsegmented/";
-        std::string labelFilePath = "D:/miru2016/sub1_labels.csv";
-        std::string dstDirectoryPath = "D:/miru2016/feature/";
-        int localWidth = 21;
-        int localHeight = localWidth;
-        int localDuration = 9;
-        int xBlockSize = 7;
-        int yBlockSize = xBlockSize;
-        int tBlockSize = 3;
-        int xStep = 11;
-        int yStep = xStep;
-        int tStep = 5;
-        std::vector<double> negativeScales = {1.0, 0.707, 0.5};
-        int nPositiveSamplesPerStep = 30;
-        int nNegativeSamplesPerStep = 3;
-        int baseScale = 200;
-        extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
-                        dstDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
-                        yBlockSize, tBlockSize, xStep, yStep, tStep, negativeScales,
-                        nPositiveSamplesPerStep, nNegativeSamplesPerStep);
-    }
+    //{
+    //    std::string positiveVideoDirectoryPath = "D:/miru2016/segmented/";
+    //    std::string negativeVideoDirectoryPath = "D:/miru2016/unsegmented/";
+    //    std::string labelFilePath = "D:/miru2016/sub1_labels.csv";
+    //    std::string dstDirectoryPath = "D:/miru2016/feature/";
+    //    int localWidth = 21;
+    //    int localHeight = localWidth;
+    //    int localDuration = 9;
+    //    int xBlockSize = 7;
+    //    int yBlockSize = xBlockSize;
+    //    int tBlockSize = 3;
+    //    int xStep = 11;
+    //    int yStep = xStep;
+    //    int tStep = 5;
+    //    std::vector<double> negativeScales = {1.0, 0.707, 0.5};
+    //    int nPositiveSamplesPerStep = 30;
+    //    int nNegativeSamplesPerStep = 3;
+    //    int baseScale = 200;
+    //    extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
+    //                    dstDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
+    //                    yBlockSize, tBlockSize, xStep, yStep, tStep, negativeScales,
+    //                    nPositiveSamplesPerStep, nNegativeSamplesPerStep);
+    //}
 
     {
         std::string rootDirectoryPath = "D:/miru2016/";

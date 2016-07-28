@@ -318,7 +318,7 @@ std::vector<Trainer::FeaturePtr> Trainer::readData(
             continue;
         }
 
-        if (tokens.size() != 2) {
+        if (tokens.size() != 3) {
             int labelIndex = std::stoi(tokens.at(2));
             if (std::find(std::begin(usedLabelIndices), std::end(usedLabelIndices), labelIndex) !=
                 std::end(usedLabelIndices)) {
@@ -338,6 +338,8 @@ std::vector<Trainer::FeaturePtr> Trainer::readData(
             auto negatives =
                     readNegativeData(directoryPath, dataIndex, tokens.at(1), negativeLabel);
             std::copy(std::begin(negatives), std::end(negatives), std::back_inserter(trainingData));
+
+			isNegativeRead = true;
         }
     }
 
