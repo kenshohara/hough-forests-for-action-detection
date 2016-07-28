@@ -572,7 +572,8 @@ void HoughForests::videoHandler(
                     }
                 }
 
-                cv::Mat1f smallSpace = votingSpaces_.at(classLabel).getVotingSpace(t);
+                cv::Mat1f smallSpace =
+                        votingSpaces_.at(classLabel).getVotingSpace(std::max(0, int(t - 10)));
                 cv::Mat1f originalSpace;
                 cv::resize(smallSpace, originalSpace, frame.size(), 0.0, 0.0, cv::INTER_NEAREST);
                 originalSpace /= parameters_.getScoreThreshold(classLabel);
