@@ -559,7 +559,8 @@ void HoughForests::videoHandler(
             for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
                 std::lock_guard<std::mutex> lock(detectionLock_);
 
-                int duration = parameters_.getAverageDuration(classLabel);
+                int visualizationOffset = fps / 2;
+                int duration = parameters_.getAverageDuration(classLabel) + visualizationOffset;
                 for (int t2 = t - duration; t2 < t; ++t2) {
                     if (detectionCuboids.at(classLabel).count(t2) == 0) {
                         continue;

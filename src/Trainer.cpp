@@ -261,7 +261,7 @@ void Trainer::train(const std::string& featureDirectoryPath, const std::string& 
             position(T) = (ranges.at(labelIndex).second - ranges.at(labelIndex).first) / 2;
             int width = boxes.at(labelIndex).width;
             int height = boxes.at(labelIndex).height;
-            double aspectRatio = width / height;
+            double aspectRatio = static_cast<double>(width) / height;
             position(Y) = baseScale / 2;
             position(X) = (baseScale * aspectRatio) / 2;
             positiveActionPositions.at(labelIndex) = position;

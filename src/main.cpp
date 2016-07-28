@@ -568,7 +568,7 @@ void detectWebCamera(const std::string& forestsDirectoryPath,
     HoughForestsParameters parameters(
             width, height, scales, baseScale, nClasses, bandwidths.at(0), bandwidths.at(1),
             bandwidths.at(2), steps.at(0), steps.at(1), binSizes, votesDeleteStep,
-            invalidLeafSizeThreshold, votesBufferLength, scoreThresholds, durations, aspectRatios,
+            votesBufferLength, invalidLeafSizeThreshold, scoreThresholds, durations, aspectRatios,
             iouThreshold, hasNegativeClass, isBackprojection, treeParameters);
     HoughForests houghForests(nThreads);
     houghForests.setHoughForestsParameters(parameters);
@@ -649,9 +649,9 @@ int main(int argc, char* argv[]) {
         int minData = 10;
         int nSplits = 30;
         int nThresholds = 10;
-        // trainMIRU2016(featureDirectoryPath, labelFilePath, forestsDirectoryPath,
-        //              trainingDataIndices, nClasses, baseScale, nTrees, bootstrapRatio, maxDepth,
-        //              minData, nSplits, nThresholds);
+        trainMIRU2016(featureDirectoryPath, labelFilePath, forestsDirectoryPath,
+                      trainingDataIndices, nClasses, baseScale, nTrees, bootstrapRatio, maxDepth,
+                      minData, nSplits, nThresholds);
     }
 
     {
@@ -661,7 +661,7 @@ int main(int argc, char* argv[]) {
                 "{f fps||fps}"
                 "{w width||width}"
                 "{h height||height}"
-                "{l leaf||leaf size threshold";
+                "{l leaf||leaf size threshold}";
         cv::CommandLineParser parser(argc, argv, keys);
 
         int localWidth = 21;
