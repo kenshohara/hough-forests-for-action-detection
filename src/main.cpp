@@ -403,17 +403,18 @@ void detect(const std::string& forestsDirectoryPath, const std::string& videoFil
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
     std::vector<int> steps = {binSizes.at(1), binSizes.at(0)};
     double votingSpaceDiscretizeRatio = 0.5;
+    int invalidLeafSizeThreshold = 300;
     std::vector<double> aspectRatios = {1.23, 1.22, 1.42, 0.69, 1.46, 1.72};
     std::vector<std::size_t> durations = {100, 116, 66, 83, 62, 85};
     bool hasNegativeClass = true;
     bool isBackprojection = false;
     TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
                                   hasNegativeClass);
-    HoughForestsParameters parameters(width, height, scales, baseScale, nClasses, bandwidths.at(0),
-                                      bandwidths.at(1), bandwidths.at(2), steps.at(0), steps.at(1),
-                                      binSizes, votesDeleteStep, votesBufferLength, scoreThresholds,
-                                      durations, aspectRatios, iouThreshold, hasNegativeClass,
-                                      isBackprojection, treeParameters);
+    HoughForestsParameters parameters(
+            width, height, scales, baseScale, nClasses, bandwidths.at(0), bandwidths.at(1),
+            bandwidths.at(2), steps.at(0), steps.at(1), binSizes, votesDeleteStep,
+            votesBufferLength, invalidLeafSizeThreshold, scoreThresholds, durations, aspectRatios,
+            iouThreshold, hasNegativeClass, isBackprojection, treeParameters);
     HoughForests houghForests(nThreads);
     houghForests.setHoughForestsParameters(parameters);
     houghForests.load(forestsDirectoryPath);
@@ -472,6 +473,7 @@ void detectAll(const std::string& forestsDirectoryPath, const std::string& outpu
     std::vector<double> bandwidths = {10.0, 8.0, 0.5};
     std::vector<int> steps = {binSizes.at(1), binSizes.at(0)};
     double votingSpaceDiscretizeRatio = 0.5;
+    int invalidLeafSizeThreshold = 300;
     bool hasNegativeClass = true;
     bool isBackprojection = false;
     TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
@@ -490,8 +492,8 @@ void detectAll(const std::string& forestsDirectoryPath, const std::string& outpu
         HoughForestsParameters parameters(
                 width, height, scales, baseScale, nClasses, bandwidths.at(0), bandwidths.at(1),
                 bandwidths.at(2), steps.at(0), steps.at(1), binSizes, votesDeleteStep,
-                votesBufferLength, scoreThresholds, durations, aspectRatios, iouThreshold,
-                hasNegativeClass, isBackprojection, treeParameters);
+                votesBufferLength, invalidLeafSizeThreshold, scoreThresholds, durations,
+                aspectRatios, iouThreshold, hasNegativeClass, isBackprojection, treeParameters);
 
         std::cout << "validation: " << validationIndex << std::endl;
         HoughForests houghForests(nThreads);
@@ -544,7 +546,8 @@ void detectWebCamera(const std::string& forestsDirectoryPath,
                      int yStep, int tStep, const std::vector<double>& scales, int nClasses,
                      int nThreads, int width, int height, int baseScale,
                      const std::vector<int>& binSizes, int votesDeleteStep, int votesBufferLength,
-                     const std::vector<double>& scoreThresholds, double iouThreshold, int fps) {
+                     int invalidLeafSizeThreshold, const std::vector<double>& scoreThresholds,
+                     double iouThreshold, int fps) {
     using namespace nuisken;
     using namespace nuisken::houghforests;
     using namespace nuisken::randomforests;
@@ -562,11 +565,11 @@ void detectWebCamera(const std::string& forestsDirectoryPath,
     bool isBackprojection = false;
     TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
                                   hasNegativeClass);
-    HoughForestsParameters parameters(width, height, scales, baseScale, nClasses, bandwidths.at(0),
-                                      bandwidths.at(1), bandwidths.at(2), steps.at(0), steps.at(1),
-                                      binSizes, votesDeleteStep, votesBufferLength, scoreThresholds,
-                                      durations, aspectRatios, iouThreshold, hasNegativeClass,
-                                      isBackprojection, treeParameters);
+    HoughForestsParameters parameters(
+            width, height, scales, baseScale, nClasses, bandwidths.at(0), bandwidths.at(1),
+            bandwidths.at(2), steps.at(0), steps.at(1), binSizes, votesDeleteStep,
+            invalidLeafSizeThreshold, votesBufferLength, scoreThresholds, durations, aspectRatios,
+            iouThreshold, hasNegativeClass, isBackprojection, treeParameters);
     HoughForests houghForests(nThreads);
     houghForests.setHoughForestsParameters(parameters);
     houghForests.load(forestsDirectoryPath);
@@ -626,10 +629,10 @@ int main(int argc, char* argv[]) {
         int nPositiveSamplesPerStep = 30;
         int nNegativeSamplesPerStep = 30;
         int baseScale = 200;
-        extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
-                        dstDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
-                        yBlockSize, tBlockSize, xStep, yStep, tStep, negativeScales,
-                        nPositiveSamplesPerStep, nNegativeSamplesPerStep);
+        // extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
+        //                dstDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
+        //                yBlockSize, tBlockSize, xStep, yStep, tStep, negativeScales,
+        //                nPositiveSamplesPerStep, nNegativeSamplesPerStep);
     }
 
     {
@@ -646,9 +649,9 @@ int main(int argc, char* argv[]) {
         int minData = 10;
         int nSplits = 30;
         int nThresholds = 10;
-        trainMIRU2016(featureDirectoryPath, labelFilePath, forestsDirectoryPath,
-                      trainingDataIndices, nClasses, baseScale, nTrees, bootstrapRatio, maxDepth,
-                      minData, nSplits, nThresholds);
+        // trainMIRU2016(featureDirectoryPath, labelFilePath, forestsDirectoryPath,
+        //              trainingDataIndices, nClasses, baseScale, nTrees, bootstrapRatio, maxDepth,
+        //              minData, nSplits, nThresholds);
     }
 
     {
@@ -657,7 +660,8 @@ int main(int argc, char* argv[]) {
                 "{s scoreth||score threshold}"
                 "{f fps||fps}"
                 "{w width||width}"
-                "{h height||height}";
+                "{h height||height}"
+                "{l leaf||leaf size threshold";
         cv::CommandLineParser parser(argc, argv, keys);
 
         int localWidth = 21;
@@ -682,15 +686,15 @@ int main(int argc, char* argv[]) {
         std::vector<int> binSizes = {10, 20, 20};
         int votesDeleteStep = 50;
         int votesBufferLength = 200;
+        int invalidLeafSizeThreshold = parser.get<int>("l");
         std::vector<double> scoreThresholds(nClasses - 1, parser.get<double>("s"));
         double iouThreshold = 0.3;
         int fps = parser.get<int>("f");
-        // detectWebCamera(forestPath, aspectRatios, durations, localWidth, localHeight,
-        // localDuration, xBlockSize, yBlockSize,
-        //                tBlockSize, xStep, yStep, tStep, scales, nClasses, nThreads, width,
-        //                height,
-        //                baseScale, binSizes, votesDeleteStep, votesBufferLength, scoreThresholds,
-        //                iouThreshold, fps);
+        detectWebCamera(forestPath, aspectRatios, durations, localWidth, localHeight, localDuration,
+                        xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep, scales, nClasses,
+                        nThreads, width, height, baseScale, binSizes, votesDeleteStep,
+                        votesBufferLength, invalidLeafSizeThreshold, scoreThresholds, iouThreshold,
+                        fps);
     }
 
     // std::string rootDirectoryPath = "D:/UT-Interaction/";

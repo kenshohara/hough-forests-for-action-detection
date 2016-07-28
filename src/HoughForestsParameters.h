@@ -31,7 +31,8 @@ class HoughForestsParameters {
 
     int votesDeleteStep_;
     int votesBufferLength_;
-    double votingSpaceDiscretizeRatio_;
+
+    int invalidLeafSizeThreshold_;
 
     std::vector<double> scoreThresholds_;
 
@@ -52,7 +53,8 @@ class HoughForestsParameters {
                            int baseScale, int nClasses, double sigma, double tau,
                            double scaleBandwidth, int spatialStep, int temporalStep,
                            const std::vector<int>& binSizes, int votesDeleteStep,
-                           int votesBufferLength, const std::vector<double>& scoreThresholds,
+                           int votesBufferLength, int invalidLeafSizeThreshold,
+                           const std::vector<double>& scoreThresholds,
                            const std::vector<std::size_t>& averageDurations,
                            const std::vector<double>& averageAspectRatios, double iouThreshold,
                            bool hasNegativeClass, bool isBackprojection,
@@ -70,6 +72,7 @@ class HoughForestsParameters {
               temporalStep_(temporalStep),
               votesDeleteStep_(votesDeleteStep),
               votesBufferLength_(votesBufferLength),
+              invalidLeafSizeThreshold_(invalidLeafSizeThreshold),
               scoreThresholds_(scoreThresholds),
               averageDurations_(averageDurations),
               averageAspectRatios_(averageAspectRatios),
@@ -104,7 +107,7 @@ class HoughForestsParameters {
 
     int getVotesBufferLength() const { return votesBufferLength_; }
 
-    double getVotingSpaceDiscretizeRatio() const { return votingSpaceDiscretizeRatio_; }
+    int getInvalidLeafSizeThreshold() const { return invalidLeafSizeThreshold_; }
 
     double getScoreThreshold(int classLabel) const { return scoreThresholds_.at(classLabel); };
 

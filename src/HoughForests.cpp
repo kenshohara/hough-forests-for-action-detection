@@ -353,7 +353,7 @@ void HoughForests::calculateVotes(const FeaturePtr& feature, int scaleIndex,
                                   std::vector<VoteInfo>& votesInfo) const {
     for (const auto& leafData : leavesData) {
         auto featuresInfo = leafData->getFeatureInfo();
-        if (featuresInfo.size() > 300) {
+        if (featuresInfo.size() > parameters_.getInvalidLeafSizeThreshold()) {
             continue;
         }
         // std::cout << featuresInfo.size() << std::endl;
