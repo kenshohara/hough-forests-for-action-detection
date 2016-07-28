@@ -651,7 +651,6 @@ int main(int argc, char* argv[]) {
                       trainingDataIndices, nClasses, baseScale, nTrees, bootstrapRatio, maxDepth,
                       minData, nSplits, nThresholds);
     }
-}
 
 // std::string rootDirectoryPath = "D:/UT-Interaction/";
 //   std::string rootDirectoryPath = "E:/Hara/UT-Interaction/";
