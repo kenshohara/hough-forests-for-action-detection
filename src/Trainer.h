@@ -60,12 +60,16 @@ class Trainer {
                                      const std::vector<cv::Vec3i>& positiveActionPositions,
                                      int negativeLabel) const;
     std::vector<FeaturePtr> readPositiveData(const std::string& directoryPath, int dataIndex,
-                                             const std::string& dataName, int labelIndex,
-                                             int classLabel, const cv::Vec3i& actionPosition) const;
+                                             int labelIndex, int classLabel,
+                                             const cv::Vec3i& actionPosition) const;
     std::vector<FeaturePtr> readNegativeData(const std::string& directoryPath, int dataIndex,
-                                             const std::string& dataName, int negativeLabel) const;
+                                             int negativeLabel) const;
     std::vector<FeaturePtr> readLocalFeatures(const std::string& pointFilePath,
                                               const std::string& descriptorFilePath, int classLabel,
+                                              const cv::Vec3i& actionPosition) const;
+    std::vector<FeaturePtr> readLocalFeatures(const std::string& pointFilePath,
+                                              const std::string& descriptorFilePath,
+                                              const std::string& foregroundFilePath, int classLabel,
                                               const cv::Vec3i& actionPosition) const;
 };
 }

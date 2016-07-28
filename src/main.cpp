@@ -629,7 +629,7 @@ int main(int argc, char* argv[]) {
         int nPositiveSamplesPerStep = 30;
         int nNegativeSamplesPerStep = 30;
         int baseScale = 200;
-        // extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
+        //extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
         //                dstDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
         //                yBlockSize, tBlockSize, xStep, yStep, tStep, negativeScales,
         //                nPositiveSamplesPerStep, nNegativeSamplesPerStep);
@@ -690,11 +690,13 @@ int main(int argc, char* argv[]) {
         std::vector<double> scoreThresholds(nClasses - 1, parser.get<double>("s"));
         double iouThreshold = 0.3;
         int fps = parser.get<int>("f");
-        detectWebCamera(forestPath, aspectRatios, durations, localWidth, localHeight, localDuration,
-                        xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep, scales, nClasses,
-                        nThreads, width, height, baseScale, binSizes, votesDeleteStep,
-                        votesBufferLength, invalidLeafSizeThreshold, scoreThresholds, iouThreshold,
-                        fps);
+        // detectWebCamera(forestPath, aspectRatios, durations, localWidth, localHeight,
+        // localDuration,
+        //                xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep, scales, nClasses,
+        //                nThreads, width, height, baseScale, binSizes, votesDeleteStep,
+        //                votesBufferLength, invalidLeafSizeThreshold, scoreThresholds,
+        //                iouThreshold,
+        //                fps);
     }
 
     // std::string rootDirectoryPath = "D:/UT-Interaction/";
