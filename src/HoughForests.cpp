@@ -123,8 +123,9 @@ void HoughForests::detect(const std::vector<std::string>& featureFilePaths,
 }
 
 void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& capture, int fps,
+                          std::vector<std::vector<DetectionResult>>& detectionResults,
                           bool isVisualizationEnabled, const cv::Size& visualizationSize,
-                          std::vector<std::vector<DetectionResult>>& detectionResults) {
+                          const std::vector<cv::Vec3i>& visualizationColors) {
     std::cout << "initialize" << std::endl;
     initialize();
 
@@ -139,9 +140,9 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
 
     std::thread videoHandlerThread =
             std::thread([this, &capture, &video, fps, isVisualizationEnabled, &visualizationSize,
-                         &visualizationDetectionCuboids, &isEnded]() {
+                         &visualizationColors, &visualizationDetectionCuboids, &isEnded]() {
                 videoHandler(capture, video, fps, isVisualizationEnabled, visualizationSize,
-                             visualizationDetectionCuboids, isEnded);
+                             visualizationColors, visualizationDetectionCuboids, isEnded);
             });
     while (true) {
         std::cout << "t feature: " << extractor.getStoredFeatureBeginT() << std::endl;
@@ -524,6 +525,7 @@ void HoughForests::deleteOldVotes(int classLabel, std::size_t voteMaxT) {
 void HoughForests::videoHandler(
         cv::VideoCapture& capture, std::deque<cv::Mat3b>& video, int fps,
         bool isVisualizationEnabled, const cv::Size& visualizationSize,
+        const std::vector<cv::Vec3i>& visualizationColors,
         const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
         bool& isEnded) {
     using namespace std::chrono;
@@ -565,14 +567,9 @@ void HoughForests::videoHandler(
                     if (detectionCuboids.at(classLabel).count(t2) == 0) {
                         continue;
                     }
-                    cv::Mat1b tMat(1, 1);
-                    tMat = static_cast<double>(t2 - (t - duration)) / duration * 255;
-                    cv::Mat3b color;
-                    cv::applyColorMap(tMat, color, cv::COLORMAP_JET);
                     for (const auto& cuboid : detectionCuboids.at(classLabel).at(t2)) {
-                        cv::rectangle(frame, cuboid.getRect(), color(0, 0), 3);
-                        cv::putText(frame, std::to_string(classLabel), cuboid.getRect().tl(),
-                                    cv::FONT_HERSHEY_PLAIN, 2.5, color(0, 0));
+                        cv::rectangle(frame, cuboid.getRect(), visualizationColors.at(classLabel),
+                                      3);
                     }
                 }
 

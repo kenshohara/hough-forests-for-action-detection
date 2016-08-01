@@ -65,8 +65,9 @@ class HoughForests {
     void HoughForests::train(const std::vector<FeaturePtr>& features);
 
     void detect(LocalFeatureExtractor& extractor, cv::VideoCapture& capture, int fps,
-                bool isVisualizationEnabled, const cv::Size& visualizationSize,
-                std::vector<std::vector<DetectionResult>>& detectionResults);
+                std::vector<std::vector<DetectionResult>>& detectionResults,
+                bool isVisualizationEnabled = false, const cv::Size& visualizationSize = cv::Size(),
+                const std::vector<cv::Vec3i>& visualizationColors = std::vector<cv::Vec3i>());
     void detect(const std::vector<std::string>& featureFilePaths,
                 std::vector<std::vector<DetectionResult>>& detectionResults);
 
@@ -122,6 +123,7 @@ class HoughForests {
     void videoHandler(
             cv::VideoCapture& capture, std::deque<cv::Mat3b>& video, int fps,
             bool isVisualizationEnabled, const cv::Size& visualizationSize,
+            const std::vector<cv::Vec3i>& visualizationColors,
             const std::vector<std::unordered_map<int, std::vector<Cuboid>>>& detectionCuboids,
             bool& isEnded);
     void visualize(const std::vector<cv::Mat3b>& video, std::size_t videoBeginT,

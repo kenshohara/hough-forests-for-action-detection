@@ -421,7 +421,8 @@ void detect(const std::string& forestsDirectoryPath, const std::string& videoFil
 
     int fps = 30;
     std::vector<std::vector<DetectionResult<4>>> detectionResults;
-    houghForests.detect(extractor, capture, fps, true, cv::Size(width, height), detectionResults);
+    houghForests.detect(extractor, capture, fps, detectionResults, true, cv::Size(width, height),
+                        std::vector<cv::Vec3i>(nClasses, cv::Vec3i(255, 0, 0)));
 }
 
 std::vector<std::size_t> readDurations(const std::string& filePath) {
@@ -509,7 +510,7 @@ void detectAll(const std::string& forestsDirectoryPath, const std::string& outpu
             cv::VideoCapture capture(videoFilePath);
 
             std::vector<std::vector<DetectionResult<4>>> detectionResults;
-            houghForests.detect(extractor, capture, 40, false, cv::Size(), detectionResults);
+            houghForests.detect(extractor, capture, 40, detectionResults);
 
             std::cout << "output" << std::endl;
             for (auto classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
@@ -547,7 +548,8 @@ void detectWebCamera(const std::string& forestsDirectoryPath,
                      int nThreads, int width, int height, int baseScale,
                      const std::vector<int>& binSizes, int votesDeleteStep, int votesBufferLength,
                      int invalidLeafSizeThreshold, const std::vector<double>& scoreThresholds,
-                     double iouThreshold, int fps) {
+                     double iouThreshold, int fps,
+                     const std::vector<cv::Vec3i>& visualizationColors) {
     using namespace nuisken;
     using namespace nuisken::houghforests;
     using namespace nuisken::randomforests;
@@ -575,8 +577,8 @@ void detectWebCamera(const std::string& forestsDirectoryPath,
     houghForests.load(forestsDirectoryPath);
 
     std::vector<std::vector<DetectionResult<4>>> detectionResults;
-    houghForests.detect(extractor, capture, fps, true, cv::Size(width * 3, height * 3),
-                        detectionResults);
+    houghForests.detect(extractor, capture, fps, detectionResults, true,
+                        cv::Size(width * 3, height * 3), visualizationColors);
 }
 
 void extractMIRU2016(const std::string& positiveVideoDirectoryPath,
@@ -668,7 +670,7 @@ void detectMIRU2016CV(const std::string& forestsDirectoryPath,
             cv::VideoCapture capture(videoFilePath);
 
             std::vector<std::vector<DetectionResult<4>>> detectionResults;
-            houghForests.detect(extractor, capture, 40, false, cv::Size(), detectionResults);
+            houghForests.detect(extractor, capture, 40, detectionResults);
 
             std::cout << "output" << std::endl;
             for (auto classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
@@ -868,7 +870,7 @@ int main(int argc, char* argv[]) {
         int nThresholds = 10;
         // trainMIRU2016(featureDirectoryPath, labelFilePath, forestsDirectoryPath,
         //			  trainingDataIndices, nClasses, baseScale, nTrees, bootstrapRatio,
-        //maxDepth,
+        // maxDepth,
         //			  minData, nSplits, nThresholds);
     }
 
@@ -927,8 +929,8 @@ int main(int argc, char* argv[]) {
                 "{x xb||x block size}"
                 "{t tb||t block size}"
                 "{a xs||x step size}"
-                "{c ts||y step size}";
-        "{s sb||base scale}";
+                "{c ts||y step size}"
+                "{s sb||base scale}";
         cv::CommandLineParser parser(argc, argv, keys);
 
         // std::string rootDirectoryPath = "D:/miru2016/";
