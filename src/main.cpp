@@ -598,7 +598,7 @@ void trainMIRU2016(const std::string& featureDirectoryPath, const std::string& l
                    const std::string& forestsDirectoryPath,
                    const std::vector<std::vector<int>> trainingDataIndices, int nClasses,
                    int baseScale, int nTrees, double bootstrapRatio, int maxDepth, int minData,
-                   int nSplits, int nThresholds) {
+                   int nSplits, int nThresholds, bool isMaskUsed) {
     using namespace nuisken;
     Trainer trainer;
     for (int i = 0; i < trainingDataIndices.size(); ++i) {
@@ -606,56 +606,275 @@ void trainMIRU2016(const std::string& featureDirectoryPath, const std::string& l
                 (boost::format("%s%d/") % forestsDirectoryPath % i).str();
         trainer.train(featureDirectoryPath, labelFilePath, currentForestsDirectoryPath,
                       trainingDataIndices.at(i), nClasses, baseScale, nTrees, bootstrapRatio,
-                      maxDepth, minData, nSplits, nThresholds);
+                      maxDepth, minData, nSplits, nThresholds, isMaskUsed);
+    }
+}
+
+void detectMIRU2016CV(const std::string& forestsDirectoryPath,
+                      const std::string& outputDirectoryPath, const std::string& videoDirectoryPath,
+                      const std::string& durationDirectoryPath,
+                      const std::string& aspectDirectoryPath, int localWidth, int localHeight,
+                      int localDuration, int xBlockSize, int yBlockSize, int tBlockSize, int xStep,
+                      int yStep, int tStep, const std::vector<double>& scales, int nThreads,
+                      int width, int height, int baseScale, const std::vector<int>& binSizes,
+                      int votesDeleteStep, int votesBufferLength,
+                      const std::vector<double>& scoreThresholds, double iouThreshold,
+                      int beginValidationIndex, int endValidationIndex) {
+    using namespace nuisken;
+    using namespace nuisken::houghforests;
+    using namespace nuisken::randomforests;
+    using namespace nuisken::storage;
+
+    int nClasses = 7;
+    std::vector<double> bandwidths = {10.0, 8.0, 0.5};
+    std::vector<int> steps = {binSizes.at(1), binSizes.at(0)};
+    double votingSpaceDiscretizeRatio = 0.5;
+    int invalidLeafSizeThreshold = 200;
+    bool hasNegativeClass = true;
+    bool isBackprojection = false;
+    TreeParameters treeParameters(nClasses, 0, 0, 0, 0, 0, 0, TreeParameters::ALL_RATIO,
+                                  hasNegativeClass);
+
+    std::vector<std::vector<int>> validationCombinations(10);
+    for (int i = 0; i < validationCombinations.size(); ++i) {
+        for (int j = 0; j < 2; ++j) {
+            validationCombinations.at(i).push_back(i * 2 + j);
+        }
+    }
+
+    for (int validationIndex = beginValidationIndex; validationIndex < endValidationIndex;
+         ++validationIndex) {
+        std::vector<double> aspectRatios =
+                readAspectRatios(aspectDirectoryPath + std::to_string(validationIndex) + ".csv");
+        std::vector<std::size_t> durations =
+                readDurations(durationDirectoryPath + std::to_string(validationIndex) + ".csv");
+        HoughForestsParameters parameters(
+                width, height, scales, baseScale, nClasses, bandwidths.at(0), bandwidths.at(1),
+                bandwidths.at(2), steps.at(0), steps.at(1), binSizes, votesDeleteStep,
+                votesBufferLength, invalidLeafSizeThreshold, scoreThresholds, durations,
+                aspectRatios, iouThreshold, hasNegativeClass, isBackprojection, treeParameters);
+
+        std::cout << "validation: " << validationIndex << std::endl;
+        HoughForests houghForests(nThreads);
+        houghForests.setHoughForestsParameters(parameters);
+        std::string forestsDir = forestsDirectoryPath + std::to_string(validationIndex) + "/";
+        houghForests.load(forestsDir);
+        for (int sequenceIndex : validationCombinations.at(validationIndex)) {
+            std::string videoFilePath =
+                    (boost::format("%s%d.avi") % videoDirectoryPath % sequenceIndex).str();
+            LocalFeatureExtractor extractor(scales, localWidth, localHeight, localDuration,
+                                            xBlockSize, yBlockSize, tBlockSize, xStep, yStep,
+                                            tStep);
+            cv::VideoCapture capture(videoFilePath);
+
+            std::vector<std::vector<DetectionResult<4>>> detectionResults;
+            houghForests.detect(extractor, capture, 40, false, cv::Size(), detectionResults);
+
+            std::cout << "output" << std::endl;
+            for (auto classLabel = 0; classLabel < detectionResults.size(); ++classLabel) {
+                std::string outputFilePath = (boost::format("%s%d_%d_detection.txt") %
+                                              outputDirectoryPath % sequenceIndex % classLabel)
+                                                     .str();
+                std::ofstream outputStream(outputFilePath);
+                for (const auto& detectionResult : detectionResults.at(classLabel)) {
+                    LocalMaximum localMaximum = detectionResult.getLocalMaximum();
+                    outputStream << "LocalMaximum," << localMaximum.getPoint()(T) << ","
+                                 << localMaximum.getPoint()(Y) << "," << localMaximum.getPoint()(X)
+                                 << "," << localMaximum.getValue() << ","
+                                 << localMaximum.getPoint()(3) << std::endl;
+
+                    auto contributionPoints = detectionResult.getContributionPoints();
+                    for (const auto& contributionPoint : contributionPoints) {
+                        outputStream << contributionPoint.getPoint()(T) << ","
+                                     << contributionPoint.getPoint()(Y) << ","
+                                     << contributionPoint.getPoint()(X) << ","
+                                     << contributionPoint.getValue() << std::endl;
+                    }
+                    outputStream << std::endl;
+                }
+            }
+        }
     }
 }
 
 int main(int argc, char* argv[]) {
-    {
-        std::string positiveVideoDirectoryPath = "D:/miru2016/segmented/";
-        std::string negativeVideoDirectoryPath = "D:/miru2016/unsegmented/";
-        std::string labelFilePath = "D:/miru2016/sub1_labels.csv";
-        std::string dstDirectoryPath = "D:/miru2016/feature/";
-        int localWidth = 21;
+    const cv::String keys = "{m mode||mode}";
+    cv::CommandLineParser parser(argc, argv, keys);
+    int mode = parser.get<int>("m");
+
+    //{
+    //	const cv::String keys =
+    //		"{p posvid||positive video dir}"
+    //		"{n negvid||negative video dir}"
+    //		"{f feat||dst feat dir}"
+    //		"{w lw||local width}"
+    //		"{h lh||local height}"
+    //		"{d ld||local duration}"
+    //		"{x xb||x block size}"
+    //		"{y yb||y block size}"
+    //		"{t tb||t block size}"
+    //		"{a xs||x step size}"
+    //		"{b ys||y step size}"
+    //		"{c ts||y step size}";
+    //	"{s sb||base scale}";
+
+    //	cv::CommandLineParser parser(argc, argv, keys);
+
+    //	//std::string rootDirectoryPath = "D:/miru2016/";
+    //	std::string rootDirectoryPath = "F:/Hara/miru2016/";
+    //	std::string positiveVideoDirectoryPath = rootDirectoryPath + "segmented_300/";
+    //	std::string negativeVideoDirectoryPath = rootDirectoryPath + "unsegmented/";
+    //	std::string labelFilePath = rootDirectoryPath + "labels.csv";
+    //	std::string dstDirectoryPath = rootDirectoryPath + "feature_300/";
+    //	int localWidth = 21;
+    //	int localHeight = localWidth;
+    //	int localDuration = 9;
+    //	int xBlockSize = 7;
+    //	int yBlockSize = xBlockSize;
+    //	int tBlockSize = 3;
+    //	int xStep = 11;
+    //	int yStep = xStep;
+    //	int tStep = 5;
+    //	std::vector<double> negativeScales = {1.0, 0.707, 0.5};
+    //	int nPositiveSamplesPerStep = 10;
+    //	int nNegativeSamplesPerStep = 10;
+    //	int baseScale = 300;
+    //	//extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
+    //	//                dstDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
+    //	//                yBlockSize, tBlockSize, xStep, yStep, tStep, negativeScales,
+    //	//                nPositiveSamplesPerStep, nNegativeSamplesPerStep);
+    //}
+
+    if (mode == 0) {
+        const cv::String keys =
+                "{p posvid||positive video dir}"
+                "{n negvid||negative video dir}"
+                "{f feat||dst feat dir}"
+                "{w lw||local width}"
+                "{d ld||local duration}"
+                "{x xb||x block size}"
+                "{t tb||t block size}"
+                "{a xs||x step size}"
+                "{c ts||y step size}"
+                "{s sb||base scale}";
+        cv::CommandLineParser parser(argc, argv, keys);
+
+        // std::string rootDirectoryPath = "D:/miru2016/";
+        std::string rootDirectoryPath = "F:/Hara/miru2016/";
+        std::string positiveVideoDirectoryPath = rootDirectoryPath + parser.get<std::string>("p");
+        std::string negativeVideoDirectoryPath = rootDirectoryPath + parser.get<std::string>("n");
+        std::string labelFilePath = rootDirectoryPath + "labels.csv";
+        std::string dstDirectoryPath = rootDirectoryPath + parser.get<std::string>("f");
+        ;
+        int localWidth = parser.get<int>("w");
         int localHeight = localWidth;
-        int localDuration = 9;
-        int xBlockSize = 7;
+        int localDuration = parser.get<int>("d");
+        int xBlockSize = parser.get<int>("x");
         int yBlockSize = xBlockSize;
-        int tBlockSize = 3;
-        int xStep = 11;
+        int tBlockSize = parser.get<int>("t");
+        int xStep = parser.get<int>("a");
         int yStep = xStep;
-        int tStep = 5;
+        int tStep = parser.get<int>("c");
         std::vector<double> negativeScales = {1.0, 0.707, 0.5};
-        int nPositiveSamplesPerStep = 30;
-        int nNegativeSamplesPerStep = 30;
-        int baseScale = 200;
-        //extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
-        //                dstDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
-        //                yBlockSize, tBlockSize, xStep, yStep, tStep, negativeScales,
-        //                nPositiveSamplesPerStep, nNegativeSamplesPerStep);
+        int nPositiveSamplesPerStep = 10;
+        int nNegativeSamplesPerStep = 10;
+        int baseScale = parser.get<int>("s");
+        extractMIRU2016(positiveVideoDirectoryPath, negativeVideoDirectoryPath, labelFilePath,
+                        dstDirectoryPath, localWidth, localHeight, localDuration, xBlockSize,
+                        yBlockSize, tBlockSize, xStep, yStep, tStep, negativeScales,
+                        nPositiveSamplesPerStep, nNegativeSamplesPerStep);
     }
 
-    {
-        std::string rootDirectoryPath = "D:/miru2016/";
-        std::string featureDirectoryPath = rootDirectoryPath + "feature/";
-        std::string labelFilePath = rootDirectoryPath + "sub1_labels.csv";
-        std::string forestsDirectoryPath = rootDirectoryPath + "forests/";
-        std::vector<std::vector<int>> trainingDataIndices = {{0}};
-        int nClasses = 3;
-        int baseScale = 200;
-        int nTrees = 15;
+    //  {
+    ////std::string rootDirectoryPath = "D:/miru2016/";
+    // std::string rootDirectoryPath = "F:/Hara/miru2016/";
+    //      std::string featureDirectoryPath = rootDirectoryPath + "feature/";
+    //      std::string labelFilePath = rootDirectoryPath + "labels.csv";
+    //      std::string forestsDirectoryPath = rootDirectoryPath + "forests/";
+    //      std::vector<std::vector<int>> trainingDataIndices(1);
+    // trainingDataIndices.at(0).resize(20);
+    // std::iota(std::begin(trainingDataIndices.at(0)), std::end(trainingDataIndices.at(0)), 0);
+    //      int nClasses = 7;
+    //      int baseScale = 150;
+    //      int nTrees = 15;
+    //      double bootstrapRatio = 1.0;
+    //      int maxDepth = 25;
+    //      int minData = 10;
+    //      int nSplits = 30;
+    //      int nThresholds = 10;
+    //      //trainMIRU2016(featureDirectoryPath, labelFilePath, forestsDirectoryPath,
+    //      //              trainingDataIndices, nClasses, baseScale, nTrees, bootstrapRatio,
+    //      maxDepth,
+    //      //              minData, nSplits, nThresholds);
+    //  }
+
+    if (mode == 1) {
+        const cv::String keys =
+                "{f feat||feat dir}"
+                "{d dst||dst forests dir}"
+                "{t nt||ntrees}"
+                "{s sb||base scale}"
+                "{b bm||bool mask used}";
+        cv::CommandLineParser parser(argc, argv, keys);
+
+        // std::string rootDirectoryPath = "D:/miru2016/";
+        std::string rootDirectoryPath = "F:/Hara/miru2016/";
+        std::string featureDirectoryPath = rootDirectoryPath + parser.get<std::string>("f");
+        std::string labelFilePath = rootDirectoryPath + "labels.csv";
+        std::string forestsDirectoryPath = rootDirectoryPath + parser.get<std::string>("d");
+        std::vector<std::vector<int>> trainingDataIndices(10);
+        for (int i = 0; i < 10; ++i) {
+            for (int j = 0; j < 20; ++j) {
+                if (j != (i * 2) && j != (i * 2 + 1)) {
+                    trainingDataIndices.at(i).push_back(j);
+                }
+            }
+        }
+        int nClasses = 7;
+        int baseScale = parser.get<int>("s");
+        int nTrees = parser.get<int>("t");
         double bootstrapRatio = 1.0;
-        int maxDepth = 20;
+        int maxDepth = 25;
         int minData = 10;
         int nSplits = 30;
         int nThresholds = 10;
+        bool isMaskUsed = parser.get<bool>("b");
         trainMIRU2016(featureDirectoryPath, labelFilePath, forestsDirectoryPath,
                       trainingDataIndices, nClasses, baseScale, nTrees, bootstrapRatio, maxDepth,
-                      minData, nSplits, nThresholds);
+                      minData, nSplits, nThresholds, isMaskUsed);
     }
 
     {
-        std::string rootDirectoryPath = "E:/Hara/miru2016/";
+        // std::string rootDirectoryPath = "D:/miru2016/";
+        std::string rootDirectoryPath = "F:/Hara/miru2016/";
+        std::string featureDirectoryPath = rootDirectoryPath + "feature_300/";
+        std::string labelFilePath = rootDirectoryPath + "labels.csv";
+        std::string forestsDirectoryPath = rootDirectoryPath + "forests_300_t30/";
+        std::vector<std::vector<int>> trainingDataIndices(10);
+        for (int i = 0; i < 10; ++i) {
+            for (int j = 0; j < 20; ++j) {
+                if (j != (i * 2) && j != (i * 2 + 1)) {
+                    trainingDataIndices.at(i).push_back(j);
+                }
+            }
+        }
+        int nClasses = 7;
+        int baseScale = 300;
+        int nTrees = 30;
+        double bootstrapRatio = 1.0;
+        int maxDepth = 25;
+        int minData = 10;
+        int nSplits = 30;
+        int nThresholds = 10;
+        // trainMIRU2016(featureDirectoryPath, labelFilePath, forestsDirectoryPath,
+        //			  trainingDataIndices, nClasses, baseScale, nTrees, bootstrapRatio,
+        //maxDepth,
+        //			  minData, nSplits, nThresholds);
+    }
+
+    if (mode == 3) {
+        std::string rootDirectoryPath = "F:/Hara/miru2016/";
+        // std::string rootDirectoryPath = "E:/Hara/miru2016/";
         const cv::String keys =
                 "{s scoreth||score threshold}"
                 "{f fps||fps}"
@@ -674,13 +893,13 @@ int main(int argc, char* argv[]) {
         int yStep = xStep;
         int tStep = 5;
         std::vector<double> scales = {1.0};
-        int baseScale = 200;
+        int baseScale = 300;
 
-        std::string forestPath = rootDirectoryPath + "forests/0/";
-        std::vector<double> aspectRatios = {0.727, 1.01};
-        std::vector<std::size_t> durations = {56, 59};
-        int nClasses = 3;
-        int nThreads = 1;
+        std::string forestPath = rootDirectoryPath + "forests_300/0/";
+        std::vector<double> aspectRatios = {0.559, 0.811, 0.570, 0.623, 0.932, 0.994};
+        std::vector<std::size_t> durations = {67, 66, 70, 68, 83, 66};
+        int nClasses = 7;
+        int nThreads = 6;
         int width = parser.get<int>("w");
         int height = parser.get<int>("h");
         std::vector<int> binSizes = {10, 20, 20};
@@ -690,13 +909,58 @@ int main(int argc, char* argv[]) {
         std::vector<double> scoreThresholds(nClasses - 1, parser.get<double>("s"));
         double iouThreshold = 0.3;
         int fps = parser.get<int>("f");
-        // detectWebCamera(forestPath, aspectRatios, durations, localWidth, localHeight,
-        // localDuration,
-        //                xBlockSize, yBlockSize, tBlockSize, xStep, yStep, tStep, scales, nClasses,
-        //                nThreads, width, height, baseScale, binSizes, votesDeleteStep,
-        //                votesBufferLength, invalidLeafSizeThreshold, scoreThresholds,
-        //                iouThreshold,
-        //                fps);
+        //  detectWebCamera(forestPath, aspectRatios, durations, localWidth, localHeight,
+        // localDuration, xBlockSize, yBlockSize, tBlockSize,
+        // xStep, yStep, tStep, scales, nClasses,
+        // nThreads, width, height, baseScale, binSizes, votesDeleteStep,
+        // votesBufferLength, invalidLeafSizeThreshold, scoreThresholds,
+        //                  iouThreshold, fps);
+    }
+
+    if (mode == 2) {
+        const cv::String keys =
+                "{f forests||forests dir}"
+                "{o output||output dir}"
+                "{v vid||video dir}"
+                "{w lw||local width}"
+                "{d ld||local duration}"
+                "{x xb||x block size}"
+                "{t tb||t block size}"
+                "{a xs||x step size}"
+                "{c ts||y step size}";
+        "{s sb||base scale}";
+        cv::CommandLineParser parser(argc, argv, keys);
+
+        // std::string rootDirectoryPath = "D:/miru2016/";
+        std::string rootDirectoryPath = "F:/Hara/miru2016/";
+        int localWidth = parser.get<int>("w");
+        int localHeight = localWidth;
+        int localDuration = parser.get<int>("d");
+        int xBlockSize = parser.get<int>("x");
+        int yBlockSize = xBlockSize;
+        int tBlockSize = parser.get<int>("t");
+        int xStep = parser.get<int>("a");
+        int yStep = xStep;
+        int tStep = parser.get<int>("c");
+        std::vector<double> scales = {1.0};
+        int baseScale = parser.get<int>("s");
+
+        std::string forestPath = rootDirectoryPath + parser.get<std::string>("f");
+        std::string aspectPath = rootDirectoryPath + "average_aspect_ratios/";
+        std::string durationPath = rootDirectoryPath + "average_durations/";
+        std::string outputPath = rootDirectoryPath + parser.get<std::string>("o");
+        std::string videoPath = rootDirectoryPath + parser.get<std::string>("v");
+        int nClasses = 7;
+        int nThreads = 6;
+        std::vector<int> binSizes = {10, 20, 20};
+        int votesDeleteStep = 50;
+        int votesBufferLength = 200;
+        std::vector<double> scores(nClasses - 1, 0.1);
+        double iouThreshold = 0.3;
+        detectMIRU2016CV(forestPath, outputPath, videoPath, durationPath, aspectPath, localWidth,
+                         localHeight, localDuration, xBlockSize, yBlockSize, tBlockSize, xStep,
+                         yStep, tStep, scales, nThreads, 640, 360, baseScale, binSizes,
+                         votesDeleteStep, votesBufferLength, scores, iouThreshold, 0, 10);
     }
 
     // std::string rootDirectoryPath = "D:/UT-Interaction/";

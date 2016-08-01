@@ -31,7 +31,7 @@ class Trainer {
     void train(const std::string& featureDirectoryPath, const std::string& labelFilePath,
                const std::string& forestsDirectoryPath, const std::vector<int> trainingDataIndices,
                int nClasses, int baseScale, int nTrees, double bootstrapRatio, int maxDepth,
-               int minData, int nSplits, int nThresholds);
+               int minData, int nSplits, int nThresholds, bool isMaskUsed = true);
 
    private:
     void extractPositiveFeatures(const std::string& videoDirectoryPath,
@@ -58,10 +58,11 @@ class Trainer {
 
     std::vector<FeaturePtr> readData(const std::string& directoryPath, int dataIndex,
                                      const std::vector<cv::Vec3i>& positiveActionPositions,
-                                     int negativeLabel) const;
+                                     int negativeLabel, bool isMaskUsed) const;
     std::vector<FeaturePtr> readPositiveData(const std::string& directoryPath, int dataIndex,
                                              int labelIndex, int classLabel,
-                                             const cv::Vec3i& actionPosition) const;
+                                             const cv::Vec3i& actionPosition,
+                                             bool isMaskUsed) const;
     std::vector<FeaturePtr> readNegativeData(const std::string& directoryPath, int dataIndex,
                                              int negativeLabel) const;
     std::vector<FeaturePtr> readLocalFeatures(const std::string& pointFilePath,

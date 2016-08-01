@@ -167,7 +167,7 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
                 video.pop_front();
             }
         }
-        // auto readEnd = std::chrono::system_clock::now();
+        auto readEnd = std::chrono::system_clock::now();
         // std::cout << "read: "
         //<< std::chrono::duration_cast<std::chrono::milliseconds>(readEnd - begin).count()
         //<< std::endl;
@@ -175,11 +175,11 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
         std::vector<std::vector<cv::Vec3i>> scalePoints;
         std::vector<std::vector<std::vector<float>>> scaleDescriptors;
         extractor.extractLocalFeatures(inputVideo, scalePoints, scaleDescriptors);
-        // auto featEnd = std::chrono::system_clock::now();
-        // std::cout << "extract features: "
-        //         << std::chrono::duration_cast<std::chrono::milliseconds>(featEnd -
-        //         readEnd).count()
-        //         << std::endl;
+        auto featEnd = std::chrono::system_clock::now();
+        std::cout
+                << "extract features: "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(featEnd - readEnd).count()
+                << std::endl;
 
         std::vector<std::vector<FeaturePtr>> scaleFeatures;
         scaleFeatures.reserve(scalePoints.size());
@@ -189,16 +189,16 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
                                                           extractor.N_CHANNELS_));
         }
 
-        // auto voteBegin = std::chrono::system_clock::now();
+        auto voteBegin = std::chrono::system_clock::now();
         std::vector<std::pair<std::size_t, std::size_t>> minMaxRanges;
         votingProcess(scaleFeatures, minMaxRanges);
-        // auto voteEnd = std::chrono::system_clock::now();
-        // std::cout << "voting process: "
-        //         << std::chrono::duration_cast<std::chrono::milliseconds>(voteEnd - voteBegin)
-        //                    .count()
-        //         << std::endl;
+        auto voteEnd = std::chrono::system_clock::now();
+        std::cout << "voting process: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(voteEnd - voteBegin)
+                             .count()
+                  << std::endl;
 
-        // auto postStart = std::chrono::system_clock::now();
+        auto postStart = std::chrono::system_clock::now();
         updateDetectionCuboids(minMaxRanges, detectionCuboids);
         for (int classLabel = 0; classLabel < detectionCuboids.size(); ++classLabel) {
             {
@@ -210,11 +210,11 @@ void HoughForests::detect(LocalFeatureExtractor& extractor, cv::VideoCapture& ca
                 }
             }
         }
-        // auto postEnd = std::chrono::system_clock::now();
-        // std::cout << "post: "
-        //         << std::chrono::duration_cast<std::chrono::milliseconds>(postEnd - postStart)
-        //                    .count()
-        //         << std::endl;
+        auto postEnd = std::chrono::system_clock::now();
+        std::cout << "post: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(postEnd - postStart)
+                             .count()
+                  << std::endl;
 
         for (int classLabel = 0; classLabel < votingSpaces_.size(); ++classLabel) {
             deleteOldVotes(classLabel, minMaxRanges.at(classLabel).second);

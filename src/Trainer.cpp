@@ -239,7 +239,7 @@ void Trainer::train(const std::string& featureDirectoryPath, const std::string& 
                     const std::string& forestsDirectoryPath,
                     const std::vector<int> trainingDataIndices, int nClasses, int baseScale,
                     int nTrees, double bootstrapRatio, int maxDepth, int minData, int nSplits,
-                    int nThresholds) {
+                    int nThresholds, bool isMaskUsed) {
     using namespace nuisken;
     using namespace nuisken::houghforests;
     using namespace nuisken::randomforests;
@@ -269,8 +269,8 @@ void Trainer::train(const std::string& featureDirectoryPath, const std::string& 
 
         int negativeLabel = nClasses - 1;
 
-        auto tmpData =
-                readData(featureDirectoryPath, dataIndex, positiveActionPositions, negativeLabel);
+        auto tmpData = readData(featureDirectoryPath, dataIndex, positiveActionPositions,
+                                negativeLabel, isMaskUsed);
         std::copy(std::begin(tmpData), std::end(tmpData), std::back_inserter(trainingData));
     }
 
@@ -299,7 +299,8 @@ void Trainer::train(const std::string& featureDirectoryPath, const std::string& 
 
 std::vector<Trainer::FeaturePtr> Trainer::readData(
         const std::string& directoryPath, int dataIndex,
-        const std::vector<cv::Vec3i>& positiveActionPositions, int negativeLabel) const {
+        const std::vector<cv::Vec3i>& positiveActionPositions, int negativeLabel,
+        bool isMaskUsed) const {
     std::tr2::sys::path directory(directoryPath);
     std::tr2::sys::directory_iterator end;
     std::vector<int> usedLabelIndices;
@@ -335,7 +336,7 @@ std::vector<Trainer::FeaturePtr> Trainer::readData(
 
             int classLabel = std::stoi(tokens.at(2));
             auto positives = readPositiveData(directoryPath, dataIndex, labelIndex, classLabel,
-                                              positiveActionPositions.at(labelIndex));
+                                              positiveActionPositions.at(labelIndex), isMaskUsed);
             std::copy(std::begin(positives), std::end(positives), std::back_inserter(trainingData));
 
             usedLabelIndices.push_back(labelIndex);
@@ -348,7 +349,8 @@ std::vector<Trainer::FeaturePtr> Trainer::readData(
 std::vector<Trainer::FeaturePtr> Trainer::readPositiveData(const std::string& directoryPath,
                                                            int dataIndex, int labelIndex,
                                                            int classLabel,
-                                                           const cv::Vec3i& actionPosition) const {
+                                                           const cv::Vec3i& actionPosition,
+                                                           bool isMaskUsed) const {
     std::string pointFilePath = (boost::format("%s%d_%d_%d_pt.npy") % directoryPath % dataIndex %
                                  labelIndex % classLabel)
                                         .str();
@@ -358,8 +360,14 @@ std::vector<Trainer::FeaturePtr> Trainer::readPositiveData(const std::string& di
     std::string foregroundFilePath = (boost::format("%s%d_%d_%d_fgd.npy") % directoryPath %
                                       dataIndex % labelIndex % classLabel)
                                              .str();
-    auto tmpFeatures =
-            readLocalFeatures(pointFilePath, descriptorFilePath, foregroundFilePath, classLabel, actionPosition);
+    std::vector<Trainer::FeaturePtr> tmpFeatures;
+    if (isMaskUsed) {
+        tmpFeatures = readLocalFeatures(pointFilePath, descriptorFilePath, foregroundFilePath,
+                                        classLabel, actionPosition);
+    } else {
+        tmpFeatures =
+                readLocalFeatures(pointFilePath, descriptorFilePath, classLabel, actionPosition);
+    }
 
     std::string flippedPointFilePath = (boost::format("%s%d_%d_%d_flip_pt.npy") % directoryPath %
                                         dataIndex % labelIndex % classLabel)
@@ -370,8 +378,15 @@ std::vector<Trainer::FeaturePtr> Trainer::readPositiveData(const std::string& di
     std::string flippedForegroundFilePath = (boost::format("%s%d_%d_%d_flip_fgd.npy") %
                                              directoryPath % dataIndex % labelIndex % classLabel)
                                                     .str();
-    auto tmpFlippedFeatures = readLocalFeatures(flippedPointFilePath, flippedDescriptorFilePath,
-                                                flippedForegroundFilePath, classLabel, actionPosition);
+    std::vector<Trainer::FeaturePtr> tmpFlippedFeatures;
+    if (isMaskUsed) {
+        tmpFlippedFeatures =
+                readLocalFeatures(flippedPointFilePath, flippedDescriptorFilePath,
+                                  flippedForegroundFilePath, classLabel, actionPosition);
+    } else {
+        tmpFlippedFeatures = readLocalFeatures(flippedPointFilePath, flippedDescriptorFilePath,
+                                               classLabel, actionPosition);
+    }
 
     std::vector<FeaturePtr> trainingData;
     std::copy(std::begin(tmpFeatures), std::end(tmpFeatures), std::back_inserter(trainingData));
